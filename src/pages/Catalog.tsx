@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter } from "lucide-react";
+import { Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,67 +12,19 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import CompanyCard from "@/components/CompanyCard";
 import Navbar from "@/components/Navbar";
+import { useCompanies } from "@/hooks/useCompanies";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Catalog = () => {
-  const [city, setCity] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [city, setCity] = useState<string>("all");
+  const [category, setCategory] = useState<string>("all");
+  const [search, setSearch] = useState<string>("");
 
-  const companies = [
-    {
-      id: "1",
-      name: "СтройМастер KZ",
-      description: "Полный цикл строительных работ. Жилые и коммерческие объекты.",
-      city: "Алматы",
-      rating: 4.8,
-      reviewCount: 156,
-      category: "Строительство",
-    },
-    {
-      id: "2",
-      name: "АлемСтрой",
-      description: "Современные решения в строительстве и проектировании.",
-      city: "Астана",
-      rating: 4.9,
-      reviewCount: 203,
-      category: "Строительство",
-    },
-    {
-      id: "3",
-      name: "РемонтПро",
-      description: "Качественный ремонт квартир и офисов под ключ.",
-      city: "Шымкент",
-      rating: 4.7,
-      reviewCount: 89,
-      category: "Ремонт",
-    },
-    {
-      id: "4",
-      name: "ТехноСтрой",
-      description: "Аренда строительной техники и оборудования по доступным ценам.",
-      city: "Алматы",
-      rating: 4.6,
-      reviewCount: 124,
-      category: "Аренда техники",
-    },
-    {
-      id: "5",
-      name: "МатериалСнаб",
-      description: "Оптовые поставки строительных материалов по всему Казахстану.",
-      city: "Астана",
-      rating: 4.8,
-      reviewCount: 278,
-      category: "Материалы",
-    },
-    {
-      id: "6",
-      name: "ЭлитРемонт",
-      description: "Премиум ремонт элитных квартир и коттеджей.",
-      city: "Алматы",
-      rating: 4.9,
-      reviewCount: 167,
-      category: "Ремонт",
-    },
-  ];
+  const { data: companies, isLoading, error } = useCompanies({
+    city: city === "all" ? undefined : city,
+    category: category === "all" ? undefined : category,
+    search: search || undefined,
+  });
 
   const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
   const categories = ["Строительство", "Ремонт", "Аренда техники", "Материалы"];
@@ -88,7 +40,7 @@ const Catalog = () => {
           <SelectContent>
             <SelectItem value="all">Все города</SelectItem>
             {cities.map((c) => (
-              <SelectItem key={c} value={c.toLowerCase()}>
+              <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>
             ))}
@@ -105,7 +57,7 @@ const Catalog = () => {
           <SelectContent>
             <SelectItem value="all">Все категории</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat.toLowerCase()}>
+              <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
             ))}
@@ -117,12 +69,31 @@ const Catalog = () => {
         variant="outline" 
         className="w-full"
         onClick={() => {
-          setCity("");
-          setCategory("");
+          setCity("all");
+          setCategory("all");
+          setSearch("");
         }}
       >
         Сбросить фильтры
       </Button>
+    </div>
+  );
+
+  const CompanyCardSkeleton = () => (
+    <div className="bg-card rounded-lg border p-6">
+      <div className="flex gap-4 mb-4">
+        <Skeleton className="w-12 h-12 rounded-lg" />
+        <div className="flex-1">
+          <Skeleton className="h-5 w-32 mb-2" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-3/4 mb-4" />
+      <div className="flex justify-between">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-24" />
+      </div>
     </div>
   );
 
@@ -134,7 +105,7 @@ const Catalog = () => {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Каталог компаний</h1>
           <p className="text-lg text-muted-foreground">
-            Найдено {companies.length} компаний
+            {isLoading ? "Загрузка..." : `Найдено ${companies?.length || 0} компаний`}
           </p>
         </div>
 
@@ -172,17 +143,56 @@ const Catalog = () => {
             {/* Search */}
             <div className="mb-6">
               <Input
-                placeholder="Поиск по названию или описанию..."
+                placeholder="Поиск по названию..."
                 className="max-w-md"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <CompanyCardSkeleton key={i} />
+                ))}
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="text-center py-12">
+                <p className="text-destructive">Ошибка загрузки данных</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoading && !error && companies?.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg mb-4">Компании не найдены</p>
+                <p className="text-sm text-muted-foreground">
+                  Попробуйте изменить параметры поиска или фильтры
+                </p>
+              </div>
+            )}
+
             {/* Companies Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {companies.map((company) => (
-                <CompanyCard key={company.id} {...company} />
-              ))}
-            </div>
+            {!isLoading && !error && companies && companies.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {companies.map((company) => (
+                  <CompanyCard
+                    key={company.id}
+                    id={company.id}
+                    name={company.name}
+                    description={company.description || ""}
+                    city={company.city}
+                    rating={Number(company.rating)}
+                    reviewCount={company.review_count}
+                    category={company.category}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
