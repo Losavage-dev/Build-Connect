@@ -1,44 +1,99 @@
-import { Link } from "react-router-dom";
-import { User, Building2, MessageSquare, Star, Settings } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Building2, MessageSquare, Star, Settings, LogOut, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRequests } from "@/hooks/useRequests";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
 const Profile = () => {
-  // Mock data - will be replaced with real data
-  const user = {
-    name: "Алексей Иванов",
-    email: "alexey@example.com",
-    type: "client",
+  const navigate = useNavigate();
+  const { user, profile, isLoading: authLoading, signOut, updateProfile } = useAuth();
+  const { data: requests, isLoading: requestsLoading } = useRequests();
+
+  const [firstName, setFirstName] = useState(profile?.first_name || "");
+  const [lastName, setLastName] = useState(profile?.last_name || "");
+  const [phone, setPhone] = useState(profile?.phone || "");
+  const [city, setCity] = useState(profile?.city || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Redirect if not logged in
+  if (!authLoading && !user) {
+    navigate("/auth");
+    return null;
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container px-4 py-8 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      await updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        city,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const orders = [
-    {
-      id: 1,
-      company: "СтройМастер KZ",
-      service: "Строительство дома",
-      status: "В процессе",
-      date: "10 янв 2025",
-    },
-    {
-      id: 2,
-      company: "РемонтПро",
-      service: "Ремонт квартиры",
-      status: "Завершён",
-      date: "5 дек 2024",
-    },
-  ];
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
-  const reviews = [
-    {
-      id: 1,
-      company: "РемонтПро",
-      rating: 5,
-      text: "Отличная работа, всё сделано качественно и в срок!",
-      date: "15 дек 2024",
-    },
-  ];
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "На рассмотрении";
+      case "accepted":
+        return "Принят";
+      case "rejected":
+        return "Отклонён";
+      case "completed":
+        return "Завершён";
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "accepted":
+        return "bg-primary/10 text-primary";
+      case "rejected":
+        return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+      case "completed":
+        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const activeRequestsCount = requests?.filter((r) => r.status === "pending" || r.status === "accepted").length || 0;
+
+  const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,20 +101,28 @@ const Profile = () => {
       
       <div className="container px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Личный кабинет</h1>
-            <p className="text-muted-foreground">Управляйте своим профилем и заказами</p>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Личный кабинет</h1>
+              <p className="text-muted-foreground">
+                {profile?.first_name || user?.email?.split("@")[0]} • {profile?.role === "client" ? "Заказчик" : profile?.role === "contractor" ? "Подрядчик" : "Поставщик"}
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Выйти
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Заказов</CardTitle>
+                <CardTitle className="text-sm font-medium">Заявок</CardTitle>
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2</div>
-                <p className="text-xs text-muted-foreground">1 активный</p>
+                <div className="text-2xl font-bold">{requests?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">{activeRequestsCount} активных</p>
               </CardContent>
             </Card>
 
@@ -69,8 +132,8 @@ const Profile = () => {
                 <Star className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">Средняя оценка 5.0</p>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">Нет отзывов</p>
               </CardContent>
             </Card>
 
@@ -80,75 +143,66 @@ const Profile = () => {
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
-                <p className="text-xs text-muted-foreground">1 новое</p>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">Нет новых</p>
               </CardContent>
             </Card>
           </div>
 
-          <Tabs defaultValue="orders" className="space-y-6">
+          <Tabs defaultValue="requests" className="space-y-6">
             <TabsList>
-              <TabsTrigger value="orders">Заказы</TabsTrigger>
-              <TabsTrigger value="reviews">Отзывы</TabsTrigger>
+              <TabsTrigger value="requests">Заявки</TabsTrigger>
               <TabsTrigger value="settings">Настройки</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="orders" className="space-y-4">
-              {orders.map((order) => (
-                <Card key={order.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{order.company}</CardTitle>
-                        <CardDescription>{order.service}</CardDescription>
+            <TabsContent value="requests" className="space-y-4">
+              {requestsLoading ? (
+                Array.from({ length: 2 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-4 w-32" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-4 w-24" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : requests && requests.length > 0 ? (
+                requests.map((request) => (
+                  <Card key={request.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{request.company?.name || "Компания"}</CardTitle>
+                          <CardDescription>{request.title}</CardDescription>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm ${getStatusColor(request.status)}`}>
+                          {getStatusLabel(request.status)}
+                        </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-sm ${
-                        order.status === "В процессе" 
-                          ? "bg-primary/10 text-primary"
-                          : "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                      }`}>
-                        {order.status}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(request.created_at), "d MMM yyyy", { locale: ru })}
+                        </p>
+                        <Button variant="outline" size="sm">
+                          Подробнее
+                        </Button>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">{order.date}</p>
-                      <Button variant="outline" size="sm">
-                        Подробнее
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="reviews" className="space-y-4">
-              {reviews.map((review) => (
-                <Card key={review.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg">{review.company}</CardTitle>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-2">{review.text}</p>
-                    <p className="text-sm text-muted-foreground">{review.date}</p>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">У вас пока нет заявок</p>
+                  <Button onClick={() => navigate("/catalog")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Найти компанию
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="settings">
@@ -160,25 +214,77 @@ const Profile = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Имя</label>
-                    <input
-                      type="text"
-                      defaultValue={user.name}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Имя</Label>
+                      <Input
+                        id="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="Введите имя"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Фамилия</Label>
+                      <Input
+                        id="lastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Введите фамилию"
+                      />
+                    </div>
                   </div>
+
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
-                    <input
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
                       type="email"
-                      defaultValue={user.email}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={user?.email || ""}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">Email нельзя изменить</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Телефон</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+7 (777) 123-45-67"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Город</Label>
+                    <Select value={city} onValueChange={setCity}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите город" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex gap-3 pt-4">
-                    <Button>Сохранить изменения</Button>
-                    <Button variant="outline">Отмена</Button>
+                    <Button onClick={handleSaveProfile} disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Сохранение...
+                        </>
+                      ) : (
+                        "Сохранить изменения"
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

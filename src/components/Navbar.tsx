@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Building2, Search, User, Menu } from "lucide-react";
+import { Building2, Search, User, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -7,8 +7,33 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = () => {
+  const { user, profile, signOut, isLoading } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const getInitials = () => {
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -42,15 +67,52 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
-            <Link to="/profile">
-              <User className="h-5 w-5" />
-            </Link>
-          </Button>
-          
-          <Button asChild className="hidden md:flex">
-            <Link to="/auth">Войти</Link>
-          </Button>
+          {!isLoading && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || "User"} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    {profile?.first_name && (
+                      <p className="font-medium">{profile.first_name} {profile.last_name}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Личный кабинет
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Выйти
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+                <Link to="/profile">
+                  <User className="h-5 w-5" />
+                </Link>
+              </Button>
+              
+              <Button asChild className="hidden md:flex">
+                <Link to="/auth">Войти</Link>
+              </Button>
+            </>
+          )}
 
           <Sheet>
             <SheetTrigger asChild>
@@ -69,12 +131,25 @@ const Navbar = () => {
                 <Link to="/catalog?type=equipment" className="text-lg font-medium hover:text-primary transition-colors">
                   Аренда техники
                 </Link>
-                <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
-                  Профиль
-                </Link>
-                <Button asChild className="mt-4">
-                  <Link to="/auth">Войти</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
+                      Профиль
+                    </Link>
+                    <Button variant="outline" onClick={handleSignOut} className="mt-4">
+                      Выйти
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
+                      Профиль
+                    </Link>
+                    <Button asChild className="mt-4">
+                      <Link to="/auth">Войти</Link>
+                    </Button>
+                  </>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
