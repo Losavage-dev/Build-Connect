@@ -93,6 +93,14 @@ const Navbar = () => {
                     Личный кабинет
                   </Link>
                 </DropdownMenuItem>
+                {profile?.role !== "client" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/create-company">
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Добавить компанию
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
