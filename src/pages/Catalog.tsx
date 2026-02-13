@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Filter, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,9 +17,20 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Catalog = () => {
-  const [city, setCity] = useState<string>("all");
-  const [category, setCategory] = useState<string>("all");
-  const [search, setSearch] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [city, setCity] = useState<string>(searchParams.get("city") || "all");
+  const [category, setCategory] = useState<string>(searchParams.get("category") || "all");
+  const [search, setSearch] = useState<string>(searchParams.get("search") || "");
+
+  // Sync URL params to state on mount / URL change
+  useEffect(() => {
+    const urlCategory = searchParams.get("category");
+    const urlCity = searchParams.get("city");
+    const urlSearch = searchParams.get("search");
+    if (urlCategory) setCategory(urlCategory);
+    if (urlCity) setCity(urlCity);
+    if (urlSearch) setSearch(urlSearch);
+  }, [searchParams]);
 
   const { data: companies, isLoading, error } = useCompanies({
     city: city === "all" ? undefined : city,
@@ -27,7 +39,14 @@ const Catalog = () => {
   });
 
   const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
-  const categories = ["Строительство", "Ремонт", "Аренда техники", "Материалы"];
+  const categories = ["Строительство", "Ремонт", "Аренда техники", "Материалы", "Проектирование", "Инженерные системы"];
+
+  const handleReset = () => {
+    setCity("all");
+    setCategory("all");
+    setSearch("");
+    setSearchParams({});
+  };
 
   const FilterContent = () => (
     <div className="space-y-4">
@@ -40,9 +59,7 @@ const Catalog = () => {
           <SelectContent>
             <SelectItem value="all">Все города</SelectItem>
             {cities.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
+              <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -57,23 +74,13 @@ const Catalog = () => {
           <SelectContent>
             <SelectItem value="all">Все категории</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <Button 
-        variant="outline" 
-        className="w-full"
-        onClick={() => {
-          setCity("all");
-          setCategory("all");
-          setSearch("");
-        }}
-      >
+      <Button variant="outline" className="w-full" onClick={handleReset}>
         Сбросить фильтры
       </Button>
     </div>
@@ -81,13 +88,8 @@ const Catalog = () => {
 
   const CompanyCardSkeleton = () => (
     <div className="bg-card rounded-lg border p-6">
-      <div className="flex gap-4 mb-4">
-        <Skeleton className="w-12 h-12 rounded-lg" />
-        <div className="flex-1">
-          <Skeleton className="h-5 w-32 mb-2" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-      </div>
+      <Skeleton className="aspect-video rounded-lg mb-4" />
+      <Skeleton className="h-5 w-32 mb-2" />
       <Skeleton className="h-4 w-full mb-2" />
       <Skeleton className="h-4 w-3/4 mb-4" />
       <div className="flex justify-between">
@@ -150,7 +152,6 @@ const Catalog = () => {
               />
             </div>
 
-            {/* Loading State */}
             {isLoading && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -159,14 +160,12 @@ const Catalog = () => {
               </div>
             )}
 
-            {/* Error State */}
             {error && (
               <div className="text-center py-12">
                 <p className="text-destructive">Ошибка загрузки данных</p>
               </div>
             )}
 
-            {/* Empty State */}
             {!isLoading && !error && companies?.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg mb-4">Компании не найдены</p>
@@ -176,7 +175,6 @@ const Catalog = () => {
               </div>
             )}
 
-            {/* Companies Grid */}
             {!isLoading && !error && companies && companies.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {companies.map((company) => (
