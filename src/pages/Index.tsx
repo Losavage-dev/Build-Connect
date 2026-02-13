@@ -1,68 +1,36 @@
+import { useState } from "react";
 import { Search, Building, Truck, Hammer, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CategoryCard from "@/components/CategoryCard";
 import CompanyCard from "@/components/CompanyCard";
 import Navbar from "@/components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useCompanies } from "@/hooks/useCompanies";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const { data: companies, isLoading } = useCompanies();
+
   const categories = [
-    {
-      title: "Строительство",
-      icon: Building,
-      href: "/catalog?category=construction",
-      description: "Подрядчики и строительные компании",
-    },
-    {
-      title: "Ремонт",
-      icon: Hammer,
-      href: "/catalog?category=renovation",
-      description: "Отделочные работы и ремонт",
-    },
-    {
-      title: "Аренда техники",
-      icon: Truck,
-      href: "/catalog?category=equipment",
-      description: "Спецтехника и оборудование",
-    },
-    {
-      title: "Материалы",
-      icon: Package,
-      href: "/catalog?category=materials",
-      description: "Поставщики строительных материалов",
-    },
+    { title: "Строительство", icon: Building, href: "/catalog?category=Строительство", description: "Подрядчики и строительные компании" },
+    { title: "Ремонт", icon: Hammer, href: "/catalog?category=Ремонт", description: "Отделочные работы и ремонт" },
+    { title: "Аренда техники", icon: Truck, href: "/catalog?category=Аренда техники", description: "Спецтехника и оборудование" },
+    { title: "Материалы", icon: Package, href: "/catalog?category=Материалы", description: "Поставщики строительных материалов" },
   ];
 
-  const featuredCompanies = [
-    {
-      id: "1",
-      name: "СтройМастер KZ",
-      description: "Полный цикл строительных работ. Жилые и коммерческие объекты.",
-      city: "Алматы",
-      rating: 4.8,
-      reviewCount: 156,
-      category: "Строительство",
-    },
-    {
-      id: "2",
-      name: "АлемСтрой",
-      description: "Современные решения в строительстве и проектировании.",
-      city: "Астана",
-      rating: 4.9,
-      reviewCount: 203,
-      category: "Строительство",
-    },
-    {
-      id: "3",
-      name: "РемонтПро",
-      description: "Качественный ремонт квартир и офисов под ключ.",
-      city: "Шымкент",
-      rating: 4.7,
-      reviewCount: 89,
-      category: "Ремонт",
-    },
-  ];
+  const featuredCompanies = companies?.slice(0, 3) || [];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate("/catalog");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,18 +48,20 @@ const Index = () => {
               Маркетплейс строительных компаний, поставщиков материалов и аренды техники
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Введите услугу или компанию..."
                   className="pl-12 h-14 text-base"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button size="lg" className="h-14 px-8" asChild>
-                <Link to="/catalog">Найти</Link>
+              <Button type="submit" size="lg" className="h-14 px-8">
+                Найти
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       </section>
@@ -125,11 +95,40 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredCompanies.map((company) => (
-              <CompanyCard key={company.id} {...company} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-card rounded-lg border p-6">
+                  <Skeleton className="aspect-video rounded-lg mb-4" />
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+          ) : featuredCompanies.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredCompanies.map((company) => (
+                <CompanyCard
+                  key={company.id}
+                  id={company.id}
+                  name={company.name}
+                  description={company.description || ""}
+                  city={company.city}
+                  rating={Number(company.rating)}
+                  reviewCount={company.review_count}
+                  category={company.category}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">Компании пока не зарегистрированы</p>
+              <Button asChild>
+                <Link to="/auth">Добавить свою компанию</Link>
+              </Button>
+            </div>
+          )}
 
           <div className="mt-8 text-center md:hidden">
             <Button variant="outline" asChild>
@@ -169,7 +168,6 @@ const Index = () => {
                 Маркетплейс для строительной отрасли Казахстана
               </p>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">Компаниям</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -177,7 +175,6 @@ const Index = () => {
                 <li><Link to="/catalog" className="hover:text-primary transition-colors">Каталог</Link></li>
               </ul>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">Поддержка</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -185,7 +182,6 @@ const Index = () => {
                 <li><a href="#" className="hover:text-primary transition-colors">Контакты</a></li>
               </ul>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">О нас</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -194,7 +190,6 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
             <p>© 2025 BuildConnect. Все права защищены.</p>
           </div>

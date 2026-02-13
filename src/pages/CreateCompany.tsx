@@ -13,12 +13,12 @@ import { useCreateCompany } from "@/hooks/useCompanies";
 import { toast } from "sonner";
 
 const categories = [
-  { value: "construction", label: "Строительство" },
-  { value: "renovation", label: "Ремонт" },
-  { value: "equipment", label: "Аренда техники" },
-  { value: "materials", label: "Материалы" },
-  { value: "design", label: "Проектирование" },
-  { value: "engineering", label: "Инженерные системы" },
+  "Строительство",
+  "Ремонт",
+  "Аренда техники",
+  "Материалы",
+  "Проектирование",
+  "Инженерные системы",
 ];
 
 const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
@@ -37,13 +37,11 @@ const CreateCompany = () => {
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
 
-  // Redirect if not logged in
   if (!authLoading && !user) {
     navigate("/auth");
     return null;
   }
 
-  // Only contractors and suppliers can create companies
   if (!authLoading && profile && profile.role === "client") {
     return (
       <div className="min-h-screen bg-background">
@@ -143,7 +141,6 @@ const CreateCompany = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Info */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     Основная информация
@@ -170,8 +167,8 @@ const CreateCompany = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              {c.label}
+                            <SelectItem key={c} value={c}>
+                              {c}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -211,7 +208,6 @@ const CreateCompany = () => {
                   </div>
                 </div>
 
-                {/* Contact Info */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     Контактная информация

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, MessageSquare, Star, Settings, LogOut, Loader2, Plus } from "lucide-react";
+import { Building2, MessageSquare, Star, LogOut, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,19 +19,29 @@ const Profile = () => {
   const { user, profile, isLoading: authLoading, signOut, updateProfile } = useAuth();
   const { data: requests, isLoading: requestsLoading } = useRequests();
 
-  const [firstName, setFirstName] = useState(profile?.first_name || "");
-  const [lastName, setLastName] = useState(profile?.last_name || "");
-  const [phone, setPhone] = useState(profile?.phone || "");
-  const [city, setCity] = useState(profile?.city || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Redirect if not logged in
-  if (!authLoading && !user) {
-    navigate("/auth");
-    return null;
-  }
+  // Sync form state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setPhone(profile.phone || "");
+      setCity(profile.city || "");
+    }
+  }, [profile]);
 
-  if (authLoading) {
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -45,12 +55,7 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      await updateProfile({
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        city,
-      });
+      await updateProfile({ first_name: firstName, last_name: lastName, phone, city });
     } finally {
       setIsSaving(false);
     }
@@ -63,36 +68,25 @@ const Profile = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "pending":
-        return "На рассмотрении";
-      case "accepted":
-        return "Принят";
-      case "rejected":
-        return "Отклонён";
-      case "completed":
-        return "Завершён";
-      default:
-        return status;
+      case "pending": return "На рассмотрении";
+      case "accepted": return "Принят";
+      case "rejected": return "Отклонён";
+      case "completed": return "Завершён";
+      default: return status;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "accepted":
-        return "bg-primary/10 text-primary";
-      case "rejected":
-        return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
-      case "completed":
-        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
-      default:
-        return "bg-muted text-muted-foreground";
+      case "pending": return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "accepted": return "bg-primary/10 text-primary";
+      case "rejected": return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+      case "completed": return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
   const activeRequestsCount = requests?.filter((r) => r.status === "pending" || r.status === "accepted").length || 0;
-
   const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
 
   return (
@@ -125,7 +119,6 @@ const Profile = () => {
                 <p className="text-xs text-muted-foreground">{activeRequestsCount} активных</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Отзывов</CardTitle>
@@ -136,7 +129,6 @@ const Profile = () => {
                 <p className="text-xs text-muted-foreground">Нет отзывов</p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Сообщения</CardTitle>
@@ -159,13 +151,8 @@ const Profile = () => {
               {requestsLoading ? (
                 Array.from({ length: 2 }).map((_, i) => (
                   <Card key={i}>
-                    <CardHeader>
-                      <Skeleton className="h-6 w-48" />
-                      <Skeleton className="h-4 w-32" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-4 w-24" />
-                    </CardContent>
+                    <CardHeader><Skeleton className="h-6 w-48" /><Skeleton className="h-4 w-32" /></CardHeader>
+                    <CardContent><Skeleton className="h-4 w-24" /></CardContent>
                   </Card>
                 ))
               ) : requests && requests.length > 0 ? (
@@ -183,14 +170,9 @@ const Profile = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(request.created_at), "d MMM yyyy", { locale: ru })}
-                        </p>
-                        <Button variant="outline" size="sm">
-                          Подробнее
-                        </Button>
-                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(request.created_at), "d MMM yyyy", { locale: ru })}
+                      </p>
                     </CardContent>
                   </Card>
                 ))
@@ -209,53 +191,29 @@ const Profile = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Настройки профиля</CardTitle>
-                  <CardDescription>
-                    Обновите информацию о вашем профиле
-                  </CardDescription>
+                  <CardDescription>Обновите информацию о вашем профиле</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">Имя</Label>
-                      <Input
-                        id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Введите имя"
-                      />
+                      <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Введите имя" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Фамилия</Label>
-                      <Input
-                        id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Введите фамилию"
-                      />
+                      <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Введите фамилию" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={user?.email || ""}
-                      disabled
-                      className="bg-muted"
-                    />
+                    <Input id="email" type="email" value={user?.email || ""} disabled className="bg-muted" />
                     <p className="text-xs text-muted-foreground">Email нельзя изменить</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">Телефон</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+7 (777) 123-45-67"
-                    />
+                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (777) 123-45-67" />
                   </div>
 
                   <div className="space-y-2">
@@ -266,9 +224,7 @@ const Profile = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {cities.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -277,10 +233,7 @@ const Profile = () => {
                   <div className="flex gap-3 pt-4">
                     <Button onClick={handleSaveProfile} disabled={isSaving}>
                       {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Сохранение...
-                        </>
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Сохранение...</>
                       ) : (
                         "Сохранить изменения"
                       )}

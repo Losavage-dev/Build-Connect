@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Building2, Search, User, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar = () => {
   const { user, profile, signOut, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
   };
 
   const getInitials = () => {
@@ -47,23 +58,25 @@ const Navbar = () => {
             <Link to="/catalog" className="text-sm font-medium hover:text-primary transition-colors">
               Компании
             </Link>
-            <Link to="/catalog?type=materials" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/catalog?category=Материалы" className="text-sm font-medium hover:text-primary transition-colors">
               Материалы
             </Link>
-            <Link to="/catalog?type=equipment" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/catalog?category=Аренда техники" className="text-sm font-medium hover:text-primary transition-colors">
               Аренда техники
             </Link>
           </nav>
         </div>
 
         <div className="hidden md:flex flex-1 max-w-md mx-6">
-          <div className="relative w-full">
+          <form onSubmit={handleSearch} className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Поиск компаний и услуг..."
               className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </form>
         </div>
 
         <div className="flex items-center gap-3">
@@ -110,12 +123,6 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
-                <Link to="/profile">
-                  <User className="h-5 w-5" />
-                </Link>
-              </Button>
-              
               <Button asChild className="hidden md:flex">
                 <Link to="/auth">Войти</Link>
               </Button>
@@ -133,10 +140,10 @@ const Navbar = () => {
                 <Link to="/catalog" className="text-lg font-medium hover:text-primary transition-colors">
                   Компании
                 </Link>
-                <Link to="/catalog?type=materials" className="text-lg font-medium hover:text-primary transition-colors">
+                <Link to="/catalog?category=Материалы" className="text-lg font-medium hover:text-primary transition-colors">
                   Материалы
                 </Link>
-                <Link to="/catalog?type=equipment" className="text-lg font-medium hover:text-primary transition-colors">
+                <Link to="/catalog?category=Аренда техники" className="text-lg font-medium hover:text-primary transition-colors">
                   Аренда техники
                 </Link>
                 {user ? (
@@ -144,19 +151,19 @@ const Navbar = () => {
                     <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
                       Профиль
                     </Link>
+                    {profile?.role !== "client" && (
+                      <Link to="/create-company" className="text-lg font-medium hover:text-primary transition-colors">
+                        Добавить компанию
+                      </Link>
+                    )}
                     <Button variant="outline" onClick={handleSignOut} className="mt-4">
                       Выйти
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
-                      Профиль
-                    </Link>
-                    <Button asChild className="mt-4">
-                      <Link to="/auth">Войти</Link>
-                    </Button>
-                  </>
+                  <Button asChild className="mt-4">
+                    <Link to="/auth">Войти</Link>
+                  </Button>
                 )}
               </nav>
             </SheetContent>
