@@ -15,6 +15,7 @@ import { useCompany } from "@/hooks/useCompanies";
 import { useCreateRequest } from "@/hooks/useRequests";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import ReviewForm from "@/components/ReviewForm";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -335,6 +336,13 @@ const CompanyProfile = () => {
                   ))
                 ) : (
                   <p className="text-muted-foreground text-center py-6">Отзывов пока нет</p>
+                )}
+
+                {user && (
+                  <>
+                    <Separator className="my-6" />
+                    <ReviewForm companyId={id!} />
+                  </>
                 )}
               </CardContent>
             </Card>
