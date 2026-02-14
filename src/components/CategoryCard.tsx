@@ -12,13 +12,13 @@ interface CategoryCardProps {
 const CategoryCard = ({ title, icon: Icon, href, description }: CategoryCardProps) => {
   return (
     <Link to={href}>
-      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-        <CardContent className="flex flex-col items-center gap-4 p-6">
-          <div className="rounded-full bg-primary/10 p-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <Icon className="h-8 w-8 text-primary group-hover:text-primary-foreground" />
+      <Card className="group hover-lift cursor-pointer border-2 border-transparent hover:border-primary/20 transition-all duration-300">
+        <CardContent className="flex flex-col items-center gap-4 p-8">
+          <div className="rounded-2xl bg-primary/10 p-5 group-hover:bg-primary transition-colors duration-300">
+            <Icon className="h-8 w-8 text-primary group-hover:text-primary-foreground transition-colors duration-300" />
           </div>
           <div className="text-center">
-            <h3 className="font-semibold text-lg mb-2">{title}</h3>
+            <h3 className="font-bold text-lg mb-1">{title}</h3>
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         </CardContent>
