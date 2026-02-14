@@ -26,37 +26,37 @@ const CompanyCard = ({
 }: CompanyCardProps) => {
   return (
     <Link to={`/company/${id}`}>
-      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
+      <Card className="group hover-lift cursor-pointer h-full border-2 border-transparent hover:border-primary/20 transition-all duration-300 overflow-hidden">
         <CardHeader className="p-0">
-          <div className="aspect-video relative overflow-hidden rounded-t-lg bg-muted">
+          <div className="aspect-video relative overflow-hidden bg-muted">
             {imageUrl ? (
               <img
                 src={imageUrl}
                 alt={name}
-                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
               />
             ) : (
-              <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/20 to-secondary/20">
-                <span className="text-4xl font-bold text-muted-foreground/20">{name.charAt(0)}</span>
+              <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 via-secondary/5 to-muted">
+                <span className="text-5xl font-black text-primary/15 group-hover:text-primary/25 transition-colors duration-300">{name.charAt(0)}</span>
               </div>
             )}
-            <Badge className="absolute top-3 left-3">{category}</Badge>
+            <Badge className="absolute top-3 left-3 rounded-lg font-semibold shadow-md">{category}</Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg mb-2 line-clamp-1">{name}</h3>
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{description}</p>
+        <CardContent className="p-5">
+          <h3 className="font-bold text-lg mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">{name}</h3>
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{description}</p>
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm">
+            <div className="flex items-center gap-1.5 text-sm">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">{city}</span>
             </div>
             
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{rating.toFixed(1)}</span>
-              <span className="text-sm text-muted-foreground">({reviewCount})</span>
+            <div className="flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-lg">
+              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+              <span className="font-semibold text-sm text-primary">{rating.toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">({reviewCount})</span>
             </div>
           </div>
         </CardContent>

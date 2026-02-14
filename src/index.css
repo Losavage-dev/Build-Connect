@@ -6,27 +6,29 @@
 All colors MUST be HSL.
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
+    --foreground: 220 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
+    --card-foreground: 220 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 24 95% 53%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 84% 56%;
+    --secondary: 214 90% 52%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 13% 95%;
+    --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 24 95% 53%;
+    --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -34,55 +36,59 @@ All colors MUST be HSL.
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 24 95% 53%;
+    --ring: 24 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(24 100% 50%), hsl(36 100% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(24 100% 50% / 0.08), hsl(214 90% 52% / 0.06), hsl(0 0% 100%));
+    --gradient-cta: linear-gradient(135deg, hsl(24 100% 45%), hsl(214 90% 52%));
+    --shadow-card: 0 4px 24px -4px hsl(220 20% 10% / 0.08);
+    --shadow-card-hover: 0 12px 32px -8px hsl(24 100% 50% / 0.18);
+    --shadow-button: 0 4px 14px -2px hsl(24 100% 50% / 0.4);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 220 18% 10%;
+    --background: 220 20% 7%;
     --foreground: 0 0% 98%;
 
-    --card: 220 15% 15%;
+    --card: 220 18% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 15% 15%;
+    --popover: 220 18% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 24 95% 53%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 84% 56%;
+    --secondary: 214 90% 52%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 20%;
+    --muted: 220 18% 16%;
     --muted-foreground: 220 9% 65%;
 
-    --accent: 24 95% 53%;
+    --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 25%;
-    --input: 220 15% 25%;
-    --ring: 24 95% 53%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 24 100% 50%;
+
+    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+    --shadow-card-hover: 0 12px 32px -8px hsl(24 100% 50% / 0.25);
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +106,76 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-[var(--shadow-card)];
+  }
+
+  .glass-card:hover {
+    @apply shadow-[var(--shadow-card-hover)];
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .btn-glow {
+    @apply shadow-[var(--shadow-button)] hover:shadow-[0_6px_20px_-2px_hsl(24_100%_50%_/_0.5)];
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[var(--shadow-card-hover)];
+  }
+
+  .animate-in-view {
+    animation: fade-slide-up 0.6s ease-out both;
+  }
+}
+
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, hsl(24 100% 50% / 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }

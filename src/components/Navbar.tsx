@@ -46,22 +46,24 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">BuildConnect</span>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center group-hover:shadow-[var(--shadow-button)] transition-shadow">
+              <Building2 className="h-4.5 w-4.5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">BuildConnect</span>
           </Link>
           
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/catalog" className="text-sm font-medium hover:text-primary transition-colors">
+          <nav className="hidden md:flex items-center gap-1">
+            <Link to="/catalog" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
               Компании
             </Link>
-            <Link to="/catalog?category=Материалы" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/catalog?category=Материалы" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
               Материалы
             </Link>
-            <Link to="/catalog?category=Аренда техники" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/catalog?category=Аренда техники" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
               Аренда техники
             </Link>
           </nav>
@@ -72,7 +74,7 @@ const Navbar = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Поиск компаний и услуг..."
-              className="pl-10"
+              className="pl-10 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30 focus-visible:bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -83,18 +85,18 @@ const Navbar = () => {
           {!isLoading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || "User"} />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex items-center justify-start gap-2 p-2">
+              <DropdownMenuContent className="w-56 rounded-xl" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-3">
                   <div className="flex flex-col space-y-1 leading-none">
                     {profile?.first_name && (
-                      <p className="font-medium">{profile.first_name} {profile.last_name}</p>
+                      <p className="font-semibold">{profile.first_name} {profile.last_name}</p>
                     )}
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
@@ -123,7 +125,7 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <>
-              <Button asChild className="hidden md:flex">
+              <Button asChild className="hidden md:flex rounded-xl btn-glow font-semibold">
                 <Link to="/auth">Войти</Link>
               </Button>
             </>
@@ -156,12 +158,12 @@ const Navbar = () => {
                         Добавить компанию
                       </Link>
                     )}
-                    <Button variant="outline" onClick={handleSignOut} className="mt-4">
+                    <Button variant="outline" onClick={handleSignOut} className="mt-4 rounded-xl">
                       Выйти
                     </Button>
                   </>
                 ) : (
-                  <Button asChild className="mt-4">
+                  <Button asChild className="mt-4 rounded-xl btn-glow">
                     <Link to="/auth">Войти</Link>
                   </Button>
                 )}
