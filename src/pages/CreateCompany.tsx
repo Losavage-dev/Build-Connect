@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,8 +37,13 @@ const CreateCompany = () => {
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
   if (!authLoading && !user) {
-    navigate("/auth");
     return null;
   }
 
