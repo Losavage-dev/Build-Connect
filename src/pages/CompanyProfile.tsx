@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Image as ImageIcon } from "lucide-react";
+import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Image as ImageIcon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import { ru } from "date-fns/locale";
 const CompanyProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { data: company, isLoading, error } = useCompany(id);
   const createRequest = useCreateRequest();
 
@@ -145,6 +145,15 @@ const CompanyProfile = () => {
                 <span className="text-2xl font-bold">{Number(company.rating).toFixed(1)}</span>
                 <span className="text-muted-foreground">({company.review_count} отзывов)</span>
               </div>
+
+              {profile && company.owner_id === profile.id && (
+                <Button asChild variant="outline" className="rounded-xl">
+                  <Link to={`/company/${id}/manage`}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Управление компанией
+                  </Link>
+                </Button>
+              )}
             </div>
 
             <Card className="md:w-80 shrink-0">

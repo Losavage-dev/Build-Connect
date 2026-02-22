@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import CompanyProfile from "./pages/CompanyProfile";
+import ManageCompany from "./pages/ManageCompany";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import CreateCompany from "./pages/CreateCompany";
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/company/:id" element={<CompanyProfile />} />
+            <Route path="/company/:id/manage" element={<ManageCompany />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/create-company" element={<CreateCompany />} />
