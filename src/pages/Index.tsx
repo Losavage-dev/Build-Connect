@@ -139,16 +139,17 @@ const Index = () => {
           ) : featuredCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCompanies.map((company) => (
-                <CompanyCard
-                  key={company.id}
-                  id={company.id}
-                  name={company.name}
-                  description={company.description || ""}
-                  city={company.city}
-                  rating={Number(company.rating)}
-                  reviewCount={company.review_count}
-                  category={company.category}
-                />
+                  <CompanyCard
+                    key={company.id}
+                    id={company.id}
+                    name={company.name}
+                    description={company.description || ""}
+                    city={company.city}
+                    rating={Number(company.rating)}
+                    reviewCount={company.review_count}
+                    category={company.category}
+                    imageUrl={company.logo_url || undefined}
+                  />
               ))}
             </div>
           ) : (
@@ -229,7 +230,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 BuildConnect. Все права защищены.</p>
+            <p>© 2026 BuildConnect. Все права защищены.</p>
           </div>
         </div>
       </footer>

@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequests } from "@/hooks/useRequests";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -24,6 +26,37 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch review count for the current user
+  const { data: reviewCount } = useQuery({
+    queryKey: ["user-review-count", profile?.id],
+    queryFn: async () => {
+      if (!profile) return 0;
+      const { count, error } = await supabase
+        .from("reviews")
+        .select("*", { count: "exact", head: true })
+        .eq("author_id", profile.id);
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!profile,
+  });
+
+  // Fetch unread message count
+  const { data: unreadCount } = useQuery({
+    queryKey: ["user-unread-messages", profile?.id],
+    queryFn: async () => {
+      if (!profile) return 0;
+      const { count, error } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false)
+        .neq("sender_id", profile.id);
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!profile,
+  });
 
   // Sync form state when profile loads
   useEffect(() => {
@@ -125,8 +158,8 @@ const Profile = () => {
                 <Star className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">Нет отзывов</p>
+                <div className="text-2xl font-bold">{reviewCount ?? 0}</div>
+                <p className="text-xs text-muted-foreground">{reviewCount ? "Оставлено вами" : "Нет отзывов"}</p>
               </CardContent>
             </Card>
             <Card>
@@ -135,8 +168,8 @@ const Profile = () => {
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">Нет новых</p>
+                <div className="text-2xl font-bold">{unreadCount ?? 0}</div>
+                <p className="text-xs text-muted-foreground">{unreadCount ? "Непрочитанных" : "Нет новых"}</p>
               </CardContent>
             </Card>
           </div>
