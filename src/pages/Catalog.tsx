@@ -187,6 +187,7 @@ const Catalog = () => {
                     rating={Number(company.rating)}
                     reviewCount={company.review_count}
                     category={company.category}
+                    imageUrl={company.logo_url || undefined}
                   />
                 ))}
               </div>
