@@ -50,15 +50,34 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## Стек технологий / Tech Stack
 
-This project is built with:
+### Frontend
+- **React 18** — библиотека для построения пользовательского интерфейса
+- **TypeScript** — типизированный JavaScript
+- **Vite** — быстрый сборщик и dev-сервер
+- **TailwindCSS 3** — utility-first CSS фреймворк
+- **shadcn/ui** — библиотека UI-компонентов на базе Radix UI
+- **React Router** — клиентская маршрутизация (SPA)
+- **TanStack React Query** — управление серверным состоянием и кэширование
+- **React Hook Form + Zod** — формы и валидация
+- **Recharts** — графики и визуализация данных
+- **Lucide React** — иконки
+- **Sonner** — уведомления (toast)
+- **Framer Motion ready** — анимации
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Backend (Lovable Cloud)
+- **Supabase** — BaaS платформа:
+  - **PostgreSQL** — реляционная база данных с Row Level Security (RLS)
+  - **Auth** — аутентификация (Email/Password, Google OAuth)
+  - **Storage** — хранилище файлов (галереи проектов)
+  - **Realtime** — подписки на изменения в БД
+  - **Edge Functions** — серверные функции (Deno)
+
+### Инфраструктура
+- **Lovable** — AI-платформа для разработки и деплоя
+- **ESLint** — линтинг кода
+- **PostCSS + Autoprefixer** — обработка CSS
 
 ## How can I deploy this project?
 
