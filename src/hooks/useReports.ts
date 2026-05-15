@@ -9,6 +9,8 @@ export type SubmitReportInput = {
   target_id: string;
   reason: string;
   details?: string;
+  /** Жалоба с роли модератора (пометка в БД и в очереди) */
+  initiated_by_staff?: boolean;
 };
 
 export function useSubmitReport() {
@@ -26,6 +28,7 @@ export function useSubmitReport() {
           target_id: input.target_id,
           reason: input.reason.trim(),
           details: input.details?.trim() || null,
+          initiated_by_staff: input.initiated_by_staff ?? false,
         })
         .select("id")
         .single();

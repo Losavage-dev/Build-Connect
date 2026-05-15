@@ -20,6 +20,7 @@ export interface ModerationReportRow {
   details: string | null;
   status: ReportStatus;
   created_at: string;
+  initiated_by_staff?: boolean;
   reporter?: {
     first_name: string | null;
     last_name: string | null;
@@ -112,6 +113,7 @@ export function useModerationReports(filter: ModerationReportsFilter = "new") {
           details,
           status,
           created_at,
+          initiated_by_staff,
           reporter:profiles!reports_reporter_id_fkey (first_name, last_name, phone)
         `,
         )

@@ -458,6 +458,7 @@ export type Database = {
           details: string | null
           status: string
           created_at: string
+          initiated_by_staff: boolean
         }
         Insert: {
           id?: string
@@ -468,6 +469,7 @@ export type Database = {
           details?: string | null
           status?: string
           created_at?: string
+          initiated_by_staff?: boolean
         }
         Update: {
           id?: string
@@ -478,6 +480,7 @@ export type Database = {
           details?: string | null
           status?: string
           created_at?: string
+          initiated_by_staff?: boolean
         }
         Relationships: [
           {

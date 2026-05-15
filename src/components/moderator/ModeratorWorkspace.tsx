@@ -69,6 +69,11 @@ function ReportCard({
             {report.escalated ? (
               <Badge variant="destructive">Эскалация · {REPORT_ESCALATION_THRESHOLD}+ жалоб</Badge>
             ) : null}
+            {report.initiated_by_staff ? (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                От модератора
+              </Badge>
+            ) : null}
             <Badge variant={report.status === "new" ? "destructive" : "secondary"}>
               {report.status === "new"
                 ? "Новая"

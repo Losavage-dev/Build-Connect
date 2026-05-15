@@ -11,6 +11,7 @@ import {
   ChevronUp,
   Send,
   Clapperboard,
+  Shield,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
@@ -40,6 +41,7 @@ import { openRequestChat } from "@/lib/openRequestChat";
 import { useMyCompanies } from "@/hooks/useServices";
 import { useCapabilities } from "@/hooks/useCapabilities";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
+import { ModeratorPromoContactDialog } from "@/components/moderator/ModeratorPromoContactDialog";
 import { youtubeEmbedUrl } from "@/lib/youtube";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -65,6 +67,9 @@ function PromoPostCard({
   onLike,
   likePending,
   onOpenContact,
+  canRegularContact,
+  showStaffPromoActions,
+  onOpenStaffContact,
 }: {
   post: PromoPostEnriched;
   user: ReturnType<typeof useAuth>["user"];
@@ -80,6 +85,11 @@ function PromoPostCard({
   onLike: () => void;
   likePending: boolean;
   onOpenContact: () => void;
+  /** Обычная заявка «Связаться» (не для модераторов) */
+  canRegularContact: boolean;
+  /** Кнопка служебного обращения для модератора */
+  showStaffPromoActions: boolean;
+  onOpenStaffContact: () => void;
 }) {
   const c = post.company;
   const initials = (c.name || "?").slice(0, 2).toUpperCase();
@@ -137,7 +147,7 @@ function PromoPostCard({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full">
             <Button
               type="button"
               variant={post.likedByMe ? "default" : "outline"}
@@ -157,9 +167,24 @@ function PromoPostCard({
               {post.comments.length}
               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
-            <Button type="button" variant="secondary" size="sm" className="rounded-full ml-auto" onClick={onOpenContact}>
-              Связаться
-            </Button>
+            <span className="flex-1 min-w-2" aria-hidden />
+            {canRegularContact ? (
+              <Button type="button" variant="secondary" size="sm" className="rounded-full shrink-0" onClick={onOpenContact}>
+                Связаться
+              </Button>
+            ) : null}
+            {showStaffPromoActions ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full gap-1.5 border-primary/40 text-primary shrink-0"
+                onClick={onOpenStaffContact}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Служебное обращение
+              </Button>
+            ) : null}
           </div>
 
           {!user ? (
@@ -202,7 +227,12 @@ function PromoPostCard({
               {user && profile ? (
                 <div className="space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Комментарии публичны на витрине. Для личного диалога с компанией нажмите «Связаться».
+                    Комментарии публичны на витрине.{" "}
+                    {canRegularContact
+                      ? "Для личного диалога с компанией нажмите «Связаться»."
+                      : showStaffPromoActions
+                        ? "Для служебного контакта с владельцем используйте «Служебное обращение»."
+                        : "Личная переписка с этой компанией с этого аккаунта недоступна."}
                   </p>
                   <Textarea
                     placeholder="Комментарий или уточняющий вопрос…"
@@ -284,13 +314,32 @@ const PromoFeed = () => {
   const [requestTitle, setRequestTitle] = useState("");
   const [requestDescription, setRequestDescription] = useState("");
 
+  const [staffPromoOpen, setStaffPromoOpen] = useState(false);
+  const [staffPromoCompanyId, setStaffPromoCompanyId] = useState("");
+  const [staffPromoCompanyName, setStaffPromoCompanyName] = useState("");
+  const [staffPromoPostId, setStaffPromoPostId] = useState("");
+  const [staffPromoPostTitle, setStaffPromoPostTitle] = useState("");
+
   useEffect(() => {
     if (!highlightPostId || !posts?.length) return;
     const el = postAnchors.current[highlightPostId];
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightPostId, posts]);
 
+  const openStaffPromoContact = (companyId: string, companyName: string, postId: string, postTitle: string) => {
+    if (!user || !caps.isStaff) return;
+    setStaffPromoCompanyId(companyId);
+    setStaffPromoCompanyName(companyName);
+    setStaffPromoPostId(postId);
+    setStaffPromoPostTitle(postTitle.trim());
+    setStaffPromoOpen(true);
+  };
+
   const openContact = (companyId: string, companyName: string, postId: string, postTitle: string) => {
+    if (caps.isStaff) {
+      toast.error("Для модераторов доступно только «Служебное обращение».");
+      return;
+    }
     if (!user) {
       toast.error("Войдите, чтобы отправить заявку");
       navigate(authPath(`${location.pathname}${location.search}`));
@@ -540,6 +589,13 @@ const PromoFeed = () => {
               onOpenContact={() =>
                 openContact(post.company_id, post.company.name, post.id, post.title || "")
               }
+              canRegularContact={caps.canContactCompany(post.company.owner_id)}
+              showStaffPromoActions={
+                caps.isStaff && profile?.id !== post.company.owner_id
+              }
+              onOpenStaffContact={() =>
+                openStaffPromoContact(post.company_id, post.company.name, post.id, post.title || "")
+              }
             />
             </div>
           ))
@@ -589,6 +645,15 @@ const PromoFeed = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ModeratorPromoContactDialog
+        open={staffPromoOpen}
+        onOpenChange={setStaffPromoOpen}
+        companyId={staffPromoCompanyId}
+        companyName={staffPromoCompanyName}
+        postId={staffPromoPostId}
+        postTitle={staffPromoPostTitle}
+      />
     </div>
   );
 };

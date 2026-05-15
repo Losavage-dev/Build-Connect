@@ -9,6 +9,7 @@ export interface PromoPostCompany {
   logo_url: string | null;
   city: string;
   category: string;
+  owner_id: string;
 }
 
 export interface PromoComment {
@@ -59,7 +60,7 @@ async function fetchEnrichedFeed(myProfileId: string | null): Promise<PromoPostE
       title,
       caption,
       created_at,
-      company:companies!inner(id, name, logo_url, city, category, verification_status)
+      company:companies!inner(id, name, logo_url, city, category, verification_status, owner_id)
     `,
     )
     .eq("company.verification_status", "verified")

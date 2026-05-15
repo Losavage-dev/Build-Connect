@@ -315,7 +315,12 @@ export function TenderCard({
 
                 {user && !isOwner ? (
                   <div className="flex justify-end border-t pt-4">
-                    <ReportDialog targetType="tender" targetId={tender.id} targetLabel={tender.title} />
+                    <ReportDialog
+                      targetType="tender"
+                      targetId={tender.id}
+                      targetLabel={tender.title}
+                      variant={caps.isStaff ? "moderator" : "user"}
+                    />
                   </div>
                 ) : null}
               </SheetContent>

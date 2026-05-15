@@ -33,6 +33,7 @@ export function useModerationReportDetail(reportId: string | null) {
           details,
           status,
           created_at,
+          initiated_by_staff,
           reporter:profiles!reports_reporter_id_fkey (first_name, last_name, phone)
         `,
         )

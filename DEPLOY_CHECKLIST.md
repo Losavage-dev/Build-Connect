@@ -5,30 +5,20 @@
 ## 1. База данных
 
 - [ ] `npx supabase link --project-ref ВАШ_REF`
-- [ ] `npx supabase db push` — без ошибок (**33** миграции)
+- [ ] `npx supabase db push` — без ошибок (**34** миграции)
 - [ ] В SQL Editor: `supabase/diploma_quick_setup.sql` — проверка таблиц (NOTICE)
 - [ ] Seed для демо: `seed_test_accounts.sql`, затем `seed_moderator_account.sql` (пароль `123456`)
 
-### Все миграции (31 файл, порядок по имени)
+### Все миграции (см. `supabase/migrations/`, порядок по имени)
 
-| # | Файл | Зачем |
-|---|------|--------|
-| 1–6 | `20240328000000` … `000005` | Схема, профили, storage, RLS |
-| 7 | `20260514120000_api_grants.sql` | Data API grants |
-| 8 | `20260515120000` … `15130000` | Витрина, проекты, удаление участника заявки |
-| 9 | `20260516120000_company_promo_feed.sql` | Промо-лента |
-| 10 | `20260517100000_company_categories_and_role_cooldown.sql` | Категории, кулдаун смены роли |
-| 11 | `20260518120000` … `18140000` | Промо, уведомления, dedupe |
-| 12 | `20260519100000_realtime_messages_notifications.sql` | Realtime |
-| 13 | `20260520120000` … `20160000` | Город тендера, материалы, тип тендера, рейтинг |
-| 14 | `20260521120000_request_source_tender.sql` | CRM откликов |
-| 15 | `20260522120000_trust_reviews_and_reports.sql` | Отзывы, жалобы |
-| 16 | `20260523120000_company_verification.sql` | Верификация, moderator |
-| 17 | `20260524120000_verification_grants_and_visibility.sql` | Документы, видимость |
-| 18 | `20260525120000` … `25130000` | Grants и staff update для reports |
-| 19 | `20260526120000` … `26120001` | Suspend, действия модератора |
-| 20 | `20260527120000` … `27120002` | Revoked, журнал, ban, каталог |
-| 21 | `20260528120000_notifications_grant_unban_warning.sql` | INSERT в notifications, разбан, предупреждение |
+К последним относятся:
+
+| Файл | Зачем |
+|------|--------|
+| `20260528120000_notifications_grant_unban_warning.sql` | notifications, разбан |
+| `20260529120000_user_events_recommendations.sql` | user_events, RPC трендов |
+| `20260529120001_user_events_grants.sql` | GRANT на user_events |
+| `20260530120000_reports_initiated_by_staff.sql` | флаг жалобы от модератора |
 
 ## 2. Переменные окружения
 

@@ -69,6 +69,11 @@ export function ModerationReportDetail() {
               {report.escalated ? (
                 <Badge variant="destructive">{REPORT_ESCALATION_THRESHOLD}+ жалоб на объект</Badge>
               ) : null}
+              {report.initiated_by_staff ? (
+                <Badge variant="outline" className="border-primary/50 text-primary">
+                  От модератора
+                </Badge>
+              ) : null}
               <Badge variant={report.status === "new" ? "destructive" : "secondary"}>
                 {report.status === "new"
                   ? "Новая"

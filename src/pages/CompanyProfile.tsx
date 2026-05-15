@@ -590,7 +590,8 @@ const CompanyProfile = () => {
                       targetType="company"
                       targetId={company.id}
                       targetLabel={company.name}
-                      variant="outline"
+                      variant={caps.isStaff ? "moderator" : "user"}
+                      triggerVariant="outline"
                       triggerClassName="w-full rounded-xl"
                     />
                   </>
