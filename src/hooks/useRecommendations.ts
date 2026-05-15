@@ -90,23 +90,42 @@ export function useSortedCompanies(companies: Company[] | undefined, sortMode: S
   }, [companies, sortMode, ctx]);
 }
 
-export function useRecommendedCompanies(companies: Company[] | undefined, limit = 6) {
-  const { ctx } = useRecommendationContext();
+/** Есть ли сигналы для персонального блока «Для вас» (события в БД или в localStorage у гостя). */
+export function useHasPersonalizationSignals(): boolean {
+  const { profile } = useAuth();
+  const { data: events = [] } = useUserEvents();
 
   return useMemo(() => {
-    if (!companies?.length) return [];
-    return rankCompanies(companies, ctx).slice(0, limit);
-  }, [companies, ctx, limit]);
+    if (profile?.id) return events.length > 0;
+    return readGuestEvents().length > 0;
+  }, [profile?.id, events.length]);
 }
 
-export function useRecommendedTenders(tenders: Tender[] | undefined, limit = 4) {
+/** Рекомендации только при наличии поведенческих сигналов; число карточек — сколько есть, не больше maxItems. */
+export function useRecommendedCompanies(companies: Company[] | undefined, maxItems = 6) {
   const { ctx } = useRecommendationContext();
+  const hasSignals = useHasPersonalizationSignals();
 
   return useMemo(() => {
-    if (!tenders?.length) return [];
+    if (!companies?.length || !hasSignals) return [];
+    const ranked = rankCompanies(companies, ctx);
+    const cap = Math.min(maxItems, ranked.length);
+    return ranked.slice(0, cap);
+  }, [companies, ctx, maxItems, hasSignals]);
+}
+
+export function useRecommendedTenders(tenders: Tender[] | undefined, maxItems = 6) {
+  const { ctx } = useRecommendationContext();
+  const hasSignals = useHasPersonalizationSignals();
+
+  return useMemo(() => {
+    if (!tenders?.length || !hasSignals) return [];
     const open = tenders.filter((t) => t.status === "open");
-    return rankTenders(open.length > 0 ? open : tenders, ctx).slice(0, limit);
-  }, [tenders, ctx, limit]);
+    const pool = open.length > 0 ? open : tenders;
+    const ranked = rankTenders(pool, ctx);
+    const cap = Math.min(maxItems, ranked.length);
+    return ranked.slice(0, cap);
+  }, [tenders, ctx, maxItems, hasSignals]);
 }
 
 export function useSortedTenders(tenders: Tender[] | undefined, sortMode: SortMode) {

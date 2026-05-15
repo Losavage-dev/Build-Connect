@@ -17,7 +17,7 @@ type Props = {
 export function RecommendedCompaniesSection({
   companies,
   title = "Рекомендуем вам",
-  subtitle = "На основе ваших просмотров, города и активности на платформе",
+  subtitle = "Появляется после просмотров и действий; чем больше активности — тем точнее подбор",
   catalogLink = "/catalog?sort=for_you",
 }: Props) {
   const { profile } = useAuth();

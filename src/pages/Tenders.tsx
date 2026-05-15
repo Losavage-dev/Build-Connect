@@ -79,7 +79,7 @@ const Tenders = () => {
   }, [tenders, search, cityFilter, typeFilter, listingIdFromUrl]);
 
   const sortedTenders = useSortedTenders(filteredTenders, sortMode);
-  const recommendedTenders = useRecommendedTenders(tenders, 4);
+  const recommendedTenders = useRecommendedTenders(tenders);
 
   useEffect(() => {
     const listingId = searchParams.get("listing") || searchParams.get("tender");

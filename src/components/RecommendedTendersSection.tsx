@@ -17,18 +17,18 @@ export function RecommendedTendersSection({ tenders }: Props) {
   if (tenders.length === 0) return null;
 
   return (
-    <section className="mb-10 rounded-2xl border bg-primary/5 p-6">
-      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-        <div>
-          <p className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-1">
-            <Sparkles className="h-4 w-4" />
+    <section className="mb-6 rounded-xl border bg-primary/5 p-4">
+      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-primary text-xs font-medium mb-0.5">
+            <Sparkles className="h-3.5 w-3.5" />
             Для вас
           </p>
-          <h2 className="text-xl font-bold">Рекомендуемые тендеры</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-lg font-bold">Рекомендуемые тендеры</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {profile
-              ? "Город, роль и ваши просмотры учитываются при подборе"
-              : "Откройте тендеры — рекомендации улучшатся"}
+              ? "Подбор по городу, роли и вашим просмотрам"
+              : "Войдите и откройте тендеры — блок появится после активности"}
           </p>
         </div>
         <Button variant="outline" size="sm" asChild className="gap-1">
@@ -38,12 +38,12 @@ export function RecommendedTendersSection({ tenders }: Props) {
           </Link>
         </Button>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid gap-2 sm:grid-cols-2">
         {tenders.map((t) => (
           <li key={t.id}>
             <Link
               to="/tenders"
-              className="block rounded-xl border bg-card p-4 hover:border-primary/40 transition-colors"
+              className="block rounded-lg border bg-card px-3 py-2.5 hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <span className="font-semibold line-clamp-2">{t.title}</span>
