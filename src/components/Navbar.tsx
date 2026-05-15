@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, Search, User, Menu, LogOut, Shield } from "lucide-react";
+import { Building2, Search, User, Menu, LogOut, Shield, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useInboxCounts } from "@/hooks/useInboxCounts";
 import { useInboxRealtime } from "@/hooks/useInboxRealtime";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BuildConnectLogo } from "@/components/BuildConnectLogo";
 import { resolveUniversalSearchPath } from "@/lib/universalSearchRoute";
 import { isStaffRole } from "@/lib/userRoles";
 
@@ -42,25 +42,16 @@ const Navbar = () => {
     setSearchQuery("");
   };
 
-  const getInitials = () => {
-    if (profile?.first_name) {
-      return profile.first_name.charAt(0).toUpperCase();
-    }
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase();
-    }
-    return "U";
-  };
+  const profileLabel =
+    profile?.first_name?.trim() ||
+    (user?.email ? user.email.split("@")[0] : "Профиль");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center group-hover:shadow-[var(--shadow-button)] transition-shadow">
-              <Building2 className="h-4.5 w-4.5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">BuildConnect</span>
+          <Link to="/" className="flex items-center group rounded-lg outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+            <BuildConnectLogo />
           </Link>
           
           <nav className="hidden md:flex items-center gap-1">
@@ -98,13 +89,15 @@ const Navbar = () => {
           {!isLoading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-1 ring-border hover:ring-border transition-all overflow-visible">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || "User"} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials()}</AvatarFallback>
-                  </Avatar>
+                <Button
+                  variant="outline"
+                  className="relative h-9 rounded-full px-3 gap-1.5 font-semibold shrink-0"
+                >
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="max-w-[140px] truncate hidden sm:inline">{profileLabel}</span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0 hidden sm:inline" />
                   {(inbox?.total ?? 0) > 0 ? (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center border-2 border-background">
+                    <span className="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center border-2 border-background">
                       {inbox!.total > 9 ? "9+" : inbox!.total}
                     </span>
                   ) : null}

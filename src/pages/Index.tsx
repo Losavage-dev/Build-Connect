@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CategoryCard from "@/components/CategoryCard";
 import CompanyCard from "@/components/CompanyCard";
+import { BuildConnectLogo } from "@/components/BuildConnectLogo";
 import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import Navbar from "@/components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
@@ -28,6 +29,7 @@ const Index = () => {
   ];
 
   const featuredCompanies = companies?.slice(0, 3) || [];
+  const recommended = useRecommendedCompanies(companies, 6);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,11 +229,10 @@ const Index = () => {
         <div className="container px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-                  <Building className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-lg font-bold">BuildConnect</span>
+              <div className="mb-4">
+                <Link to="/" className="inline-flex rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                  <BuildConnectLogo size="sm" />
+                </Link>
               </div>
               <p className="text-sm text-muted-foreground">
                 Маркетплейс для строительной отрасли Казахстана
