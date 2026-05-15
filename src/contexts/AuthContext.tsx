@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, pingSupabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 
-type UserRole = "client" | "contractor" | "supplier";
+type UserRole = "client" | "contractor" | "supplier" | "moderator" | "admin";
 
 interface Profile {
   id: string;
@@ -15,6 +15,9 @@ interface Profile {
   avatar_url: string | null;
   role: UserRole;
   city: string | null;
+  last_role_change_at?: string | null;
+  banned_until?: string | null;
+  ban_reason?: string | null;
 }
 
 interface AuthContextType {
@@ -31,6 +34,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function loadProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[Auth] profile load:", error.message);
+    return null;
+  }
+  return data as Profile | null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -38,52 +55,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener BEFORE checking session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch profile with setTimeout to avoid race conditions
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("user_id", session.user.id)
-              .maybeSingle();
-            
-            setProfile(profileData as Profile | null);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
+    let mounted = true;
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            setProfile(data as Profile | null);
+    const finishLoading = async (nextSession: Session | null) => {
+      if (!mounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        const p = await loadProfile(nextSession.user.id);
+        if (p?.banned_until && new Date(p.banned_until) > new Date()) {
+          const until = new Date(p.banned_until).toLocaleString("ru-RU");
+          toast.error(
+            p.ban_reason
+              ? `Аккаунт заблокирован до ${until}. Причина: ${p.ban_reason}`
+              : `Аккаунт заблокирован до ${until}`,
+          );
+          await supabase.auth.signOut();
+          if (mounted) {
+            setProfile(null);
+            setUser(null);
+            setSession(null);
             setIsLoading(false);
-          });
+          }
+          return;
+        }
+        if (mounted) setProfile(p);
       } else {
-        setIsLoading(false);
+        setProfile(null);
       }
+
+      if (mounted) setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void finishLoading(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    void (async () => {
+      const ping = await pingSupabase();
+      if (!ping.ok && ping.message) {
+        console.error("[BuildConnect] Supabase ping failed:", ping.message);
+      }
+
+      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.warn("[Auth] getSession:", error.message);
+        await supabase.auth.signOut();
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      await finishLoading(initialSession);
+    })();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name: string, role: UserRole) => {
@@ -114,7 +148,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      toast.error(error.message);
+      const msg =
+        error.message === "Invalid login credentials"
+          ? "Неверный email или пароль. Для moderator@test.com выполните seed_moderator_account.sql в Supabase."
+          : error.message;
+      toast.error(msg);
       throw error;
     }
 
@@ -122,9 +160,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { lovable } = await import("@/integrations/lovable/index");
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
     });
 
     if (error) {

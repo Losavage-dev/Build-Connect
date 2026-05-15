@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, Search, User, Menu, LogOut } from "lucide-react";
+import { Building2, Search, User, Menu, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,23 +16,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInboxCounts } from "@/hooks/useInboxCounts";
+import { useInboxRealtime } from "@/hooks/useInboxRealtime";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { resolveUniversalSearchPath } from "@/lib/universalSearchRoute";
+import { isStaffRole } from "@/lib/userRoles";
 
 const Navbar = () => {
   const { user, profile, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: inbox } = useInboxCounts();
+  useInboxRealtime();
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
-    }
+    const q = searchQuery.trim();
+    if (!q) return;
+    const path = await resolveUniversalSearchPath(q);
+    navigate(path);
+    setSearchQuery("");
   };
 
   const getInitials = () => {
@@ -60,11 +67,17 @@ const Navbar = () => {
             <Link to="/catalog" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
               Компании
             </Link>
-            <Link to="/catalog?category=Материалы" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Материалы
+            <Link to="/feed" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
+              Витрина роликов
             </Link>
-            <Link to="/catalog?category=Аренда техники" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Аренда техники
+            <Link to="/tenders" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
+              Тендеры
+            </Link>
+            <Link to="/services" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
+              Услуги
+            </Link>
+            <Link to="/materials" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
+              Материалы
             </Link>
           </nav>
         </div>
@@ -73,7 +86,7 @@ const Navbar = () => {
           <form onSubmit={handleSearch} className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Поиск компаний и услуг..."
+              placeholder="Компании, услуги, материалы, тендеры..."
               className="pl-10 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30 focus-visible:bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -85,11 +98,16 @@ const Navbar = () => {
           {!isLoading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-1 ring-border hover:ring-border transition-all overflow-visible">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || "User"} />
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials()}</AvatarFallback>
                   </Avatar>
+                  {(inbox?.total ?? 0) > 0 ? (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center border-2 border-background">
+                      {inbox!.total > 9 ? "9+" : inbox!.total}
+                    </span>
+                  ) : null}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 rounded-xl" align="end" forceMount>
@@ -108,14 +126,22 @@ const Navbar = () => {
                     Личный кабинет
                   </Link>
                 </DropdownMenuItem>
-                {profile?.role !== "client" && (
+                {!isStaffRole(profile?.role) ? (
                   <DropdownMenuItem asChild>
                     <Link to="/create-company">
                       <Building2 className="mr-2 h-4 w-4" />
                       Добавить компанию
                     </Link>
                   </DropdownMenuItem>
-                )}
+                ) : null}
+                {isStaffRole(profile?.role) ? (
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile?tab=reports">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Кабинет модератора
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -142,22 +168,33 @@ const Navbar = () => {
                 <Link to="/catalog" className="text-lg font-medium hover:text-primary transition-colors">
                   Компании
                 </Link>
-                <Link to="/catalog?category=Материалы" className="text-lg font-medium hover:text-primary transition-colors">
-                  Материалы
+                <Link to="/feed" className="text-lg font-medium hover:text-primary transition-colors">
+                  Витрина роликов
                 </Link>
-                <Link to="/catalog?category=Аренда техники" className="text-lg font-medium hover:text-primary transition-colors">
-                  Аренда техники
+                <Link to="/tenders" className="text-lg font-medium hover:text-primary transition-colors">
+                  Тендеры
+                </Link>
+                <Link to="/services" className="text-lg font-medium hover:text-primary transition-colors">
+                  Услуги
+                </Link>
+                <Link to="/materials" className="text-lg font-medium hover:text-primary transition-colors">
+                  Материалы
                 </Link>
                 {user ? (
                   <>
                     <Link to="/profile" className="text-lg font-medium hover:text-primary transition-colors">
                       Профиль
                     </Link>
-                    {profile?.role !== "client" && (
+                    {!isStaffRole(profile?.role) ? (
                       <Link to="/create-company" className="text-lg font-medium hover:text-primary transition-colors">
                         Добавить компанию
                       </Link>
-                    )}
+                    ) : null}
+                    {isStaffRole(profile?.role) ? (
+                      <Link to="/profile?tab=reports" className="text-lg font-medium hover:text-primary transition-colors">
+                        Кабинет модератора
+                      </Link>
+                    ) : null}
                     <Button variant="outline" onClick={handleSignOut} className="mt-4 rounded-xl">
                       Выйти
                     </Button>

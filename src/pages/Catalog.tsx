@@ -12,15 +12,25 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import CompanyCard from "@/components/CompanyCard";
+import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import Navbar from "@/components/Navbar";
 import { useCompanies } from "@/hooks/useCompanies";
+import { companyCardCategoryProps } from "@/lib/companyDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
+import QueryErrorBlock from "@/components/QueryErrorBlock";
+import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
+import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
+import { useSortedCompanies } from "@/hooks/useRecommendations";
+import type { SortMode } from "@/lib/recommendations";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [city, setCity] = useState<string>(searchParams.get("city") || "all");
   const [category, setCategory] = useState<string>(searchParams.get("category") || "all");
   const [search, setSearch] = useState<string>(searchParams.get("search") || "");
+  const sortParam = searchParams.get("sort");
+  const [sortMode, setSortMode] = useState<SortMode>(sortParam === "for_you" ? "for_you" : "rating");
 
   // Sync URL params to state on mount / URL change
   useEffect(() => {
@@ -30,16 +40,20 @@ const Catalog = () => {
     if (urlCategory) setCategory(urlCategory);
     if (urlCity) setCity(urlCity);
     if (urlSearch) setSearch(urlSearch);
+    const urlSort = searchParams.get("sort");
+    if (urlSort === "for_you") setSortMode("for_you");
+    else if (urlSort === "rating") setSortMode("rating");
   }, [searchParams]);
 
-  const { data: companies, isLoading, error } = useCompanies({
+  const { data: companies, isLoading, isError, error, refetch } = useCompanies({
     city: city === "all" ? undefined : city,
     category: category === "all" ? undefined : category,
     search: search || undefined,
   });
+  const displayCompanies = useSortedCompanies(companies, sortMode);
 
-  const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
-  const categories = ["Строительство", "Ремонт", "Аренда техники", "Материалы", "Проектирование", "Инженерные системы"];
+  const cities = KAZAKHSTAN_CITIES;
+  const categories = BUSINESS_CATEGORIES;
 
   const handleReset = () => {
     setCity("all");
@@ -104,10 +118,11 @@ const Catalog = () => {
       <Navbar />
       
       <div className="container px-4 py-8">
+        <StaffBrowsingBanner />
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Каталог компаний</h1>
           <p className="text-lg text-muted-foreground">
-            {isLoading ? "Загрузка..." : `Найдено ${companies?.length || 0} компаний`}
+            {isLoading ? "Загрузка..." : `Найдено ${displayCompanies.length || companies?.length || 0} компаний`}
           </p>
         </div>
 
@@ -142,14 +157,29 @@ const Catalog = () => {
               </Sheet>
             </div>
 
-            {/* Search */}
-            <div className="mb-6">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
               <Input
                 placeholder="Поиск по названию..."
                 className="max-w-md"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              <Tabs
+                value={sortMode}
+                onValueChange={(v) => {
+                  const mode = v as SortMode;
+                  setSortMode(mode);
+                  const next = new URLSearchParams(searchParams);
+                  if (mode === "for_you") next.set("sort", "for_you");
+                  else next.delete("sort");
+                  setSearchParams(next, { replace: true });
+                }}
+              >
+                <TabsList>
+                  <TabsTrigger value="rating">По рейтингу</TabsTrigger>
+                  <TabsTrigger value="for_you">Для вас</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {isLoading && (
@@ -160,13 +190,11 @@ const Catalog = () => {
               </div>
             )}
 
-            {error && (
-              <div className="text-center py-12">
-                <p className="text-destructive">Ошибка загрузки данных</p>
-              </div>
-            )}
+            {isError ? (
+              <QueryErrorBlock error={error} onRetry={() => refetch()} />
+            ) : null}
 
-            {!isLoading && !error && companies?.length === 0 && (
+            {!isLoading && !isError && companies?.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg mb-4">Компании не найдены</p>
                 <p className="text-sm text-muted-foreground">
@@ -175,21 +203,27 @@ const Catalog = () => {
               </div>
             )}
 
-            {!isLoading && !error && companies && companies.length > 0 && (
+            {!isLoading && !isError && displayCompanies.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {companies.map((company) => (
+                {displayCompanies.map((company) => {
+                  const cat = companyCardCategoryProps(
+                    company as { category: string; company_categories?: { category: string }[] },
+                  );
+                  return (
                   <CompanyCard
                     key={company.id}
                     id={company.id}
                     name={company.name}
                     description={company.description || ""}
                     city={company.city}
-                    rating={Number(company.rating)}
-                    reviewCount={company.review_count}
-                    category={company.category}
+                    reviewStats={statsFromCompanyRow(company)}
+                    overlayLabel={cat.overlayLabel}
+                    categoriesLine={cat.categoriesLine}
                     imageUrl={company.logo_url || undefined}
+                    isVerified={!!company.is_verified}
                   />
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

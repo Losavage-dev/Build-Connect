@@ -7,9 +7,11 @@ import { toast } from "sonner";
 
 interface ReviewFormProps {
   companyId: string;
+  disabled?: boolean;
+  blockMessage?: string;
 }
 
-const ReviewForm = ({ companyId }: ReviewFormProps) => {
+const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -33,11 +35,19 @@ const ReviewForm = ({ companyId }: ReviewFormProps) => {
     } catch (error: any) {
       if (error?.message?.includes("unique_review_per_user_company")) {
         toast.error("Вы уже оставляли отзыв для этой компании");
+      } else if (error?.message?.includes("completed")) {
+        toast.error("Отзыв доступен только после завершённой заявки с компанией");
       } else {
         toast.error("Ошибка при отправке отзыва");
       }
     }
   };
+
+  if (disabled && blockMessage) {
+    return (
+      <p className="text-sm text-muted-foreground border rounded-lg p-4 bg-muted/30 leading-relaxed">{blockMessage}</p>
+    );
+  }
 
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-muted/30">

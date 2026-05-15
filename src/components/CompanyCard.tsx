@@ -1,17 +1,23 @@
 import { Link } from "react-router-dom";
-import { MapPin, Star } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import CompanyRatingBadge from "@/components/CompanyRatingBadge";
+import type { CompanyReviewStats } from "@/lib/companyReviewStats";
 
 interface CompanyCardProps {
   id: string;
   name: string;
   description: string;
   city: string;
-  rating: number;
-  reviewCount: number;
-  category: string;
+  reviewStats: CompanyReviewStats;
+  /** Краткая подпись на превью (например первая категория + «+2») */
+  overlayLabel: string;
+  /** Полный список категорий — под описанием, не перекрывает обложку */
+  categoriesLine: string;
   imageUrl?: string;
+  isVerified?: boolean;
 }
 
 const CompanyCard = ({
@@ -19,10 +25,11 @@ const CompanyCard = ({
   name,
   description,
   city,
-  rating,
-  reviewCount,
-  category,
+  reviewStats,
+  overlayLabel,
+  categoriesLine,
   imageUrl,
+  isVerified,
 }: CompanyCardProps) => {
   return (
     <Link to={`/company/${id}`}>
@@ -37,27 +44,39 @@ const CompanyCard = ({
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 via-secondary/5 to-muted">
-                <span className="text-5xl font-black text-primary/15 group-hover:text-primary/25 transition-colors duration-300">{name.charAt(0)}</span>
+                <span className="text-5xl font-black text-primary/15 group-hover:text-primary/25 transition-colors duration-300">
+                  {name.charAt(0)}
+                </span>
               </div>
             )}
-            <Badge className="absolute top-3 left-3 rounded-lg font-semibold shadow-md">{category}</Badge>
+            {overlayLabel ? (
+              <Badge className="absolute top-3 right-3 max-w-[min(12rem,55%)] truncate rounded-lg font-medium shadow-md text-xs">
+                {overlayLabel}
+              </Badge>
+            ) : null}
           </div>
         </CardHeader>
         <CardContent className="p-5">
-          <h3 className="font-bold text-lg mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">{name}</h3>
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{description}</p>
-          
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">{name}</h3>
+            {isVerified ? <VerifiedBadge /> : null}
+          </div>
+          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{description}</p>
+          {categoriesLine ? (
+            <p className="text-xs text-muted-foreground mb-4 line-clamp-2 leading-relaxed" title={categoriesLine}>
+              {categoriesLine}
+            </p>
+          ) : (
+            <div className="mb-4" />
+          )}
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-muted-foreground">{city}</span>
             </div>
-            
-            <div className="flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-lg">
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-              <span className="font-semibold text-sm text-primary">{rating.toFixed(1)}</span>
-              <span className="text-xs text-muted-foreground">({reviewCount})</span>
-            </div>
+
+            <CompanyRatingBadge stats={reviewStats} className="bg-primary/10 px-2.5 py-1 rounded-lg shrink-0" />
           </div>
         </CardContent>
       </Card>

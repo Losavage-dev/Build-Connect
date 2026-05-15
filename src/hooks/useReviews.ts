@@ -25,6 +25,8 @@ export function useCreateReview() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["company", variables.company_id] });
       queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: ["review-eligibility"] });
+      queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
     },
   });
 }

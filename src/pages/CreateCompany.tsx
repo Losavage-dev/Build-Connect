@@ -7,21 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableMultiCategoryPicker } from "@/components/SearchableMultiCategoryPicker";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { toast } from "sonner";
+import { createCompanySchema, firstZodError } from "@/lib/validation";
 
-const categories = [
-  "Строительство",
-  "Ремонт",
-  "Аренда техники",
-  "Материалы",
-  "Проектирование",
-  "Инженерные системы",
-];
+import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
 
-const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе"];
+const categories = BUSINESS_CATEGORIES;
+const cities = KAZAKHSTAN_CITIES;
 
 const CreateCompany = () => {
   const navigate = useNavigate();
@@ -30,7 +26,7 @@ const CreateCompany = () => {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -47,23 +43,6 @@ const CreateCompany = () => {
     return null;
   }
 
-  if (!authLoading && profile && profile.role === "client") {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container px-4 py-16 text-center">
-          <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Доступ ограничен</h1>
-          <p className="text-muted-foreground mb-6">
-            Создание компании доступно только подрядчикам и поставщикам.
-            Измените тип аккаунта в настройках профиля.
-          </p>
-          <Button onClick={() => navigate("/profile")}>Перейти в профиль</Button>
-        </div>
-      </div>
-    );
-  }
-
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -78,28 +57,24 @@ const CreateCompany = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || name.length > 100) {
-      toast.error("Введите название компании (до 100 символов)");
-      return;
-    }
-    if (!category) {
-      toast.error("Выберите категорию");
-      return;
-    }
-    if (!city) {
-      toast.error("Выберите город");
-      return;
-    }
     if (!profile) {
       toast.error("Профиль не загружен");
       return;
     }
-    if (phone && phone.length > 20) {
-      toast.error("Телефон слишком длинный");
-      return;
-    }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Введите корректный email");
+
+    const parsed = createCompanySchema.safeParse({
+      name,
+      categories: selectedCategories,
+      city,
+      description,
+      phone,
+      email,
+      website,
+      address,
+    });
+    const validationErr = firstZodError(parsed);
+    if (validationErr) {
+      toast.error(validationErr);
       return;
     }
 
@@ -107,7 +82,7 @@ const CreateCompany = () => {
       const result = await createCompany.mutateAsync({
         name: name.trim(),
         description: description.trim() || null,
-        category,
+        category: selectedCategories[0],
         city,
         address: address.trim() || null,
         phone: phone.trim() || null,
@@ -115,9 +90,10 @@ const CreateCompany = () => {
         website: website.trim() || null,
         logo_url: null,
         owner_id: profile.id,
+        categories: selectedCategories,
       });
-      toast.success("Компания успешно создана!");
-      navigate(`/company/${result.id}`);
+      toast.success("Компания создана. Загрузите документы для проверки.");
+      navigate(`/company/${result.id}/manage?tab=verification`);
     } catch (error: any) {
       toast.error(error?.message || "Ошибка при создании компании");
     }
@@ -141,7 +117,8 @@ const CreateCompany = () => {
                 Добавить компанию
               </CardTitle>
               <CardDescription>
-                Заполните информацию о вашей компании. Она появится в каталоге после создания.
+                Заполните информацию о компании. После создания загрузите документы для верификации — в каталоге
+                компания появится только после одобрения модератором. Можно указать несколько категорий деятельности.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -163,38 +140,28 @@ const CreateCompany = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Категория *</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите категорию" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <SearchableMultiCategoryPicker
+                      options={categories}
+                      value={selectedCategories}
+                      onChange={setSelectedCategories}
+                    />
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Город *</Label>
-                      <Select value={city} onValueChange={setCity}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите город" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cities.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Город *</Label>
+                    <Select value={city} onValueChange={setCity}>
+                      <SelectTrigger id="city">
+                        <SelectValue placeholder="Выберите город" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {cities.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">

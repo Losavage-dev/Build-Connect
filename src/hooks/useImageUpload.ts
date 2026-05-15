@@ -7,7 +7,7 @@ export function useImageUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
 
-  const uploadImage = async (file: File, folder: string = "projects"): Promise<string | null> => {
+  const uploadImage = async (file: File, bucket: string = "projects"): Promise<string | null> => {
     if (!user) {
       toast.error("Необходимо войти в аккаунт");
       return null;
@@ -17,16 +17,16 @@ export function useImageUpload() {
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/${folder}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("project-images")
+        .from(bucket)
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from("project-images")
+        .from(bucket)
         .getPublicUrl(fileName);
 
       return data.publicUrl;
@@ -39,14 +39,14 @@ export function useImageUpload() {
     }
   };
 
-  const deleteImage = async (url: string): Promise<boolean> => {
+  const deleteImage = async (url: string, bucket: string = "projects"): Promise<boolean> => {
     try {
       // Extract path from URL
-      const path = url.split("/project-images/")[1];
+      const path = url.split(`/${bucket}/`)[1];
       if (!path) return false;
 
       const { error } = await supabase.storage
-        .from("project-images")
+        .from(bucket)
         .remove([path]);
 
       if (error) throw error;

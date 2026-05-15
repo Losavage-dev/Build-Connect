@@ -1,92 +1,62 @@
-# Welcome to your Lovable project
+# BuildConnect
 
-## Project info
+B2B-маркетплейс для строительной отрасли Казахстана: каталог компаний, тендеры, витрина услуг и материалов, заявки и realtime-чат. Фронтенд — **React 18 + Vite + TypeScript + Tailwind + shadcn/ui**, бэкенд — **Supabase** (PostgreSQL, Auth, Storage, Realtime).
 
-**URL**: https://lovable.dev/projects/8a10dc30-d159-41d0-b3da-b784c396238b
+## Основной вариант: Supabase Cloud (без Docker)
 
-## How can I edit this code?
+Для разработки и демо **не нужен** Docker: фронт крутится на вашем ПК, а база и авторизация — в облаке [supabase.com](https://supabase.com).
 
-There are several ways of editing your application.
+1. Создайте проект в Supabase (регион, например, **Frankfurt** или **Mumbai**).
+2. Примените миграции из `supabase/migrations/` по порядку (все файлы по дате в имени, включая `20260514120000_api_grants.sql`) — через **SQL Editor** или CLI `supabase link` + `supabase db push` (Docker для этого **не** требуется).
+3. Скопируйте **Project URL** и **anon key** (Settings → API).
+4. В корне проекта:
+   ```bash
+   cd buildconnectmarket
+   cp .env.example .env
+   ```
+   Впишите в `.env`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+5. Установите зависимости и запустите фронт:
+   ```bash
+   npm install
+   npm run dev
+   ```
+   Если в консоли слишком много лишних **Network** URL (старые Ethernet, виртуальные адаптеры), в `.env` добавьте строку `DEV_SERVER_HOST=10.202.27.47` (ваш IPv4 из Wi‑Fi, см. `ipconfig`) и снова `npm run dev` — Vite будет слушать только этот адрес; открывайте сайт как `http://10.202.27.47:8080` (и у друга тот же URL). При смене сети обновите IP.
+6. В Supabase: **Authentication → URL Configuration** — укажите `http://localhost:8080` (или ваш порт Vite) в **Site URL** и в **Redirect URLs** (`http://localhost:8080/**`), чтобы вход и сброс пароля работали локально.
+7. Для демо-данных см. раздел «Seed» в [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
 
-**Use Lovable**
+Полная пошаговая инструкция (облако + Vercel + Auth + seed): **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)**.  
+Сценарий защиты диплома (10–15 мин, тестовые аккаунты): **[DIPLOMA_DEMO.md](DIPLOMA_DEMO.md)**.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8a10dc30-d159-41d0-b3da-b784c396238b) and start prompting.
+## Требования
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 18+
+- npm
+- Аккаунт Supabase (бесплатный тариф достаточно)
 
-**Use your preferred IDE**
+Опционально: [Supabase CLI](https://supabase.com/docs/guides/cli) (`npx supabase …`) для `link` / `db push` без ручной вставки SQL.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Локальный Supabase + Docker (опционально)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Нужен только если хотите **полностью офлайн-БД** на своём ПК:
 
-Follow these steps:
+- [Docker Desktop](https://docs.docker.com/desktop/)
+- Команды: `npx supabase start`, затем `npx supabase db reset` (поднимет контейнеры и применит миграции + `seed.sql`).
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Без Docker эти команды работать не будут — используйте облако, как выше.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Сборка
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm run build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+Результат в каталоге `dist/`. Деплой фронта на **Vercel** — см. [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Документация по коду
 
-**Use GitHub Codespaces**
+- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) — функции, таблицы, ограничения.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Лицензия
 
-## Стек технологий / Tech Stack
-
-### Frontend
-- **React 18** — библиотека для построения пользовательского интерфейса
-- **TypeScript** — типизированный JavaScript
-- **Vite** — быстрый сборщик и dev-сервер
-- **TailwindCSS 3** — utility-first CSS фреймворк
-- **shadcn/ui** — библиотека UI-компонентов на базе Radix UI
-- **React Router** — клиентская маршрутизация (SPA)
-- **TanStack React Query** — управление серверным состоянием и кэширование
-- **React Hook Form + Zod** — формы и валидация
-- **Recharts** — графики и визуализация данных
-- **Lucide React** — иконки
-- **Sonner** — уведомления (toast)
-- **Framer Motion ready** — анимации
-
-### Backend (Lovable Cloud)
-- **Supabase** — BaaS платформа:
-  - **PostgreSQL** — реляционная база данных с Row Level Security (RLS)
-  - **Auth** — аутентификация (Email/Password, Google OAuth)
-  - **Storage** — хранилище файлов (галереи проектов)
-  - **Realtime** — подписки на изменения в БД
-  - **Edge Functions** — серверные функции (Deno)
-
-### Инфраструктура
-- **Lovable** — AI-платформа для разработки и деплоя
-- **ESLint** — линтинг кода
-- **PostCSS + Autoprefixer** — обработка CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8a10dc30-d159-41d0-b3da-b784c396238b) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Приватный учебный / дипломный проект.

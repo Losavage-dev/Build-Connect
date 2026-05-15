@@ -79,6 +79,29 @@ export type Database = {
           },
         ]
       }
+      company_categories: {
+        Row: {
+          category: string
+          company_id: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_members: {
         Row: {
           company_id: string
@@ -127,6 +150,7 @@ export type Database = {
           name: string
           price_from: number | null
           price_to: number | null
+          vitrine_listing_id: string | null
         }
         Insert: {
           company_id: string
@@ -136,6 +160,7 @@ export type Database = {
           name: string
           price_from?: number | null
           price_to?: number | null
+          vitrine_listing_id?: string | null
         }
         Update: {
           company_id?: string
@@ -145,6 +170,7 @@ export type Database = {
           name?: string
           price_from?: number | null
           price_to?: number | null
+          vitrine_listing_id?: string | null
         }
         Relationships: [
           {
@@ -206,6 +232,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_role_change_at: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -218,6 +245,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_role_change_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -230,6 +258,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_role_change_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -242,6 +271,7 @@ export type Database = {
           caption: string | null
           created_at: string
           id: string
+          image_role: string
           image_url: string
           project_id: string
           sort_order: number | null
@@ -250,6 +280,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          image_role?: string
           image_url: string
           project_id: string
           sort_order?: number | null
@@ -258,6 +289,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           id?: string
+          image_role?: string
           image_url?: string
           project_id?: string
           sort_order?: number | null
@@ -279,6 +311,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          project_phase: string
+          start_date: string | null
           title: string
         }
         Insert: {
@@ -287,6 +321,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          project_phase?: string
+          start_date?: string | null
           title: string
         }
         Update: {
@@ -295,6 +331,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          project_phase?: string
+          start_date?: string | null
           title?: string
         }
         Relationships: [
@@ -310,7 +348,9 @@ export type Database = {
       requests: {
         Row: {
           client_id: string
-          company_id: string
+          company_id: string | null
+          recipient_profile_id: string | null
+          source_tender_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -320,7 +360,9 @@ export type Database = {
         }
         Insert: {
           client_id: string
-          company_id: string
+          company_id?: string | null
+          recipient_profile_id?: string | null
+          source_tender_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -330,7 +372,9 @@ export type Database = {
         }
         Update: {
           client_id?: string
-          company_id?: string
+          company_id?: string | null
+          recipient_profile_id?: string | null
+          source_tender_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -351,6 +395,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -393,6 +444,328 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          id: string
+          reporter_id: string
+          target_type: string
+          target_id: string
+          reason: string
+          details: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reporter_id: string
+          target_type: string
+          target_id: string
+          reason: string
+          details?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reporter_id?: string
+          target_type?: string
+          target_id?: string
+          reason?: string
+          details?: string | null
+          status?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenders: {
+        Row: {
+          id: string
+          client_id: string
+          title: string
+          description: string
+          budget: number | null
+          deadline: string | null
+          status: string
+          city: string | null
+          tender_type: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          title: string
+          description: string
+          budget?: number | null
+          deadline?: string | null
+          status?: string
+          city?: string | null
+          tender_type?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          title?: string
+          description?: string
+          budget?: number | null
+          deadline?: string | null
+          status?: string
+          city?: string | null
+          tender_type?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          id: string
+          company_id: string
+          title: string
+          description: string
+          price: number
+          category: string
+          material_group: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          title: string
+          description: string
+          price: number
+          category: string
+          material_group?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          title?: string
+          description?: string
+          price?: number
+          category?: string
+          material_group?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_promo_posts: {
+        Row: {
+          id: string
+          company_id: string
+          youtube_video_id: string
+          title: string
+          caption: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          youtube_video_id: string
+          title?: string
+          caption?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          youtube_video_id?: string
+          title?: string
+          caption?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_promo_posts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_promo_likes: {
+        Row: {
+          post_id: string
+          profile_id: string
+          created_at: string
+        }
+        Insert: {
+          post_id: string
+          profile_id: string
+          created_at?: string
+        }
+        Update: {
+          post_id?: string
+          profile_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_promo_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "company_promo_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_promo_likes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_promo_comments: {
+        Row: {
+          id: string
+          post_id: string
+          author_id: string
+          content: string
+          is_quote_request: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          author_id: string
+          content: string
+          is_quote_request?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          author_id?: string
+          content?: string
+          is_quote_request?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_promo_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "company_promo_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_promo_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_promo_post_categories: {
+        Row: {
+          category: string
+          post_id: string
+        }
+        Insert: {
+          category: string
+          post_id: string
+        }
+        Update: {
+          category?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_promo_post_categories_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "company_promo_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          recipient_id: string
+          request_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id: string
+          request_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          request_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]

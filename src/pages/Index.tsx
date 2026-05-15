@@ -1,41 +1,50 @@
 import { useState } from "react";
-import { Search, Building, Truck, Hammer, Package, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Search, Building, Truck, Hammer, Package, ArrowRight, CheckCircle2, Clapperboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CategoryCard from "@/components/CategoryCard";
 import CompanyCard from "@/components/CompanyCard";
+import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import Navbar from "@/components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useRecommendedCompanies } from "@/hooks/useRecommendations";
+import { RecommendedCompaniesSection } from "@/components/RecommendedCompaniesSection";
+import { companyCategoryLabel, companyCardCategoryProps } from "@/lib/companyDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
+import { resolveUniversalSearchPath } from "@/lib/universalSearchRoute";
+import QueryErrorBlock from "@/components/QueryErrorBlock";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { data: companies, isLoading } = useCompanies();
+  const { data: companies, isLoading, isError, error, refetch } = useCompanies();
 
   const categories = [
     { title: "Строительство", icon: Building, href: "/catalog?category=Строительство", description: "Подрядчики и строительные компании" },
     { title: "Ремонт", icon: Hammer, href: "/catalog?category=Ремонт", description: "Отделочные работы и ремонт" },
-    { title: "Аренда техники", icon: Truck, href: "/catalog?category=Аренда техники", description: "Спецтехника и оборудование" },
+    { title: "Аренда техники", icon: Truck, href: "/catalog?category=Аренда спецтехники", description: "Спецтехника и оборудование" },
     { title: "Материалы", icon: Package, href: "/catalog?category=Материалы", description: "Поставщики строительных материалов" },
   ];
 
   const featuredCompanies = companies?.slice(0, 3) || [];
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
+    const q = searchQuery.trim();
+    if (!q) {
       navigate("/catalog");
+      return;
     }
+    const path = await resolveUniversalSearchPath(q);
+    navigate(path);
+    setSearchQuery("");
   };
 
   const stats = [
-    { label: "Компаний", value: companies?.length || 0 },
-    { label: "Городов", value: "5+" },
-    { label: "Категорий", value: "6" },
+    { label: "Компаний", value: isLoading ? "..." : (companies?.length || 0) },
+    { label: "Городов", value: isLoading ? "..." : (companies ? new Set(companies.map(c => c.city)).size : 0) },
+    { label: "Категорий", value: isLoading ? "..." : (companies ? new Set(companies.flatMap((c) => (c as { company_categories?: { category: string }[] }).company_categories?.map((x) => x.category) || [c.category])).size : 0) },
   ];
 
   return (
@@ -67,7 +76,7 @@ const Index = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Введите услугу или компанию..."
+                  placeholder="Компания, услуга, материал или тендер..."
                   className="pl-12 h-14 text-base rounded-xl border-2 border-border/60 focus-visible:border-primary/40 shadow-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -77,6 +86,15 @@ const Index = () => {
                 Найти
               </Button>
             </form>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Button asChild variant="secondary" size="lg" className="h-12 rounded-xl font-semibold gap-2 shadow-md">
+                <Link to="/feed">
+                  <Clapperboard className="h-5 w-5" />
+                  Витрина роликов
+                </Link>
+              </Button>
+            </div>
 
             {/* Stats */}
             <div className="flex items-center justify-center gap-8 md:gap-12 pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
@@ -109,6 +127,10 @@ const Index = () => {
         </div>
       </section>
 
+      {!isLoading && !isError && recommended.length > 0 && (
+        <RecommendedCompaniesSection companies={recommended} />
+      )}
+
       {/* Featured Companies */}
       <section className="py-20 md:py-28 bg-muted/40">
         <div className="container px-4">
@@ -125,7 +147,9 @@ const Index = () => {
             </Button>
           </div>
           
-          {isLoading ? (
+          {isError ? (
+            <QueryErrorBlock error={error} onRetry={() => refetch()} />
+          ) : isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="bg-card rounded-xl border p-6">
@@ -138,19 +162,25 @@ const Index = () => {
             </div>
           ) : featuredCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredCompanies.map((company) => (
+                  {featuredCompanies.map((company) => {
+                    const cat = companyCardCategoryProps(
+                      company as { category: string; company_categories?: { category: string }[] },
+                    );
+                    return (
                   <CompanyCard
                     key={company.id}
                     id={company.id}
                     name={company.name}
                     description={company.description || ""}
                     city={company.city}
-                    rating={Number(company.rating)}
-                    reviewCount={company.review_count}
-                    category={company.category}
+                    reviewStats={statsFromCompanyRow(company)}
+                    overlayLabel={cat.overlayLabel}
+                    categoriesLine={cat.categoriesLine}
                     imageUrl={company.logo_url || undefined}
+                    isVerified={!!company.is_verified}
                   />
-              ))}
+                    );
+                  })}
             </div>
           ) : (
             <div className="text-center py-16">
@@ -217,15 +247,15 @@ const Index = () => {
             <div>
               <h3 className="font-semibold mb-4">Поддержка</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Помощь</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Контакты</a></li>
+                <li><Link to="/help" className="hover:text-primary transition-colors">Помощь</Link></li>
+                <li><Link to="/contacts" className="hover:text-primary transition-colors">Контакты</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">О нас</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">О проекте</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Условия использования</a></li>
+                <li><Link to="/about" className="hover:text-primary transition-colors">О проекте</Link></li>
+                <li><Link to="/terms" className="hover:text-primary transition-colors">Условия использования</Link></li>
               </ul>
             </div>
           </div>

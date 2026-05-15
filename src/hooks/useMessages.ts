@@ -56,6 +56,8 @@ export function useMessages(requestId: string | undefined) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["messages", requestId] });
+          queryClient.invalidateQueries({ queryKey: ["request-chat-summaries"] });
+          queryClient.invalidateQueries({ queryKey: ["inbox-counts"] });
         }
       )
       .subscribe();
@@ -91,6 +93,9 @@ export function useSendMessage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.request_id] });
+      queryClient.invalidateQueries({ queryKey: ["inbox-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["user-unread-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["request-chat-summaries"] });
     },
   });
 }
