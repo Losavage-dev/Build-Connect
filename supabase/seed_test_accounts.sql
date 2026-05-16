@@ -192,7 +192,7 @@ BEGIN
 
   INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, rating, review_count)
   VALUES (p_clientco, 'ZakazTech LLP', 'Ремонт', 'Астана',
-    'Компания заказчика с витриной — тест «клиент + компания».', false, 0, 0)
+    'Компания заказчика с витриной — тест «клиент + компания».', true, 0, 0)
   RETURNING id INTO c_clientco;
 
   -- Категории компаний (если таблица есть)
@@ -235,25 +235,48 @@ BEGIN
     (c_materials, 'Бетон М300', 'Доставка миксером по Астане', 28000, 'Материалы', 'Бетон и растворы'),
     (c_materials, 'Газобетонный блок', 'D500, поддоны', 185000, 'Материалы', 'Кирпич и блоки');
 
-  -- Отзыв
+  -- Завершённые заявки (в проде отзыв возможен только при status = completed и client_id = автор отзыва)
+  INSERT INTO public.requests (client_id, company_id, title, description, status) VALUES
+    (p_client, c_alatau, 'Коттедж в Алматы', 'Строительно-монтажные работы сданы', 'completed'),
+    (p_clientco, c_alatau, 'Ремонт офиса', 'Договор закрыт, акт подписан', 'completed'),
+    (p_sup_noco, c_alatau, 'Консультация по смете', 'Выезд и расчёт выполнены', 'completed'),
+    (p_client, c_monolit, 'Фундамент склада', 'Монолит принят', 'completed'),
+    (p_sup, c_monolit, 'Поставка и заливка', 'Партия бетона и работы по графику', 'completed'),
+    (p_cont_noco, c_monolit, 'Подсобные работы на объекте', 'Бригадир подтвердил объём', 'completed'),
+    (p_client, c_materials, 'Закупка арматуры', 'Накладные и оплата сверены', 'completed'),
+    (p_clientco, c_materials, 'Цемент на объект', 'Доставка без расхождений', 'completed'),
+    (p_cont1, c_materials, 'Металл на стройку', 'Комплектация в срок', 'completed'),
+    (p_client, c_clientco, 'Мелкий ремонт помещения', 'Снили акт', 'completed'),
+    (p_cont1, c_clientco, 'Доработки по договору', 'Гарантийный осмотр пройден', 'completed'),
+    (p_sup, c_clientco, 'Материалы для ремонта', 'Поставка закрыта', 'completed');
+
+  -- Отзывы: разные авторы, рейтинги и тексты (для витрины каталога)
   INSERT INTO public.reviews (company_id, author_id, rating, comment) VALUES
-    (c_alatau, p_client, 5, 'Тестовый отзыв: сдали объект в срок.');
+    (c_alatau, p_client, 5, 'Сроки выдержали, бригада на связи была каждый день. Рекомендую для генподряда.'),
+    (c_alatau, p_clientco, 4, 'Качество хорошее, пара мелких правок — устранили за выходные.'),
+    (c_alatau, p_sup_noco, 3, 'Смету разобрали подробно; ждал документ чуть дольше обещанного.'),
+    (c_monolit, p_client, 4, 'Фундамент ровный, геодезия без замечаний. Пыль на объекте — нюанс.'),
+    (c_monolit, p_sup, 5, 'Миксеры по графику, паспорта качества на месте. Отлично для снабжения.'),
+    (c_monolit, p_cont_noco, 2, 'Небольшая задержка на полдня; в остальном нормально.'),
+    (c_materials, p_client, 5, 'Арматура с маркировкой, вес сошёлся. Закажу ещё на следующий объект.'),
+    (c_materials, p_clientco, 5, 'Цемент привезли окном в 2 часа, как договаривались.'),
+    (c_materials, p_cont1, 4, 'Прекрасная партия; один поддон с вмятиной — заменили без споров.'),
+    (c_clientco, p_client, 4, 'Ремонт аккуратный, смета почти не расползлась — это редкость.'),
+    (c_clientco, p_cont1, 5, 'Доработки сделали быстро, документы в порядке.'),
+    (c_clientco, p_sup, 3, 'Небольшая путаница в количестве мешков, в итоге нашли компромисс.');
 END $$;
 
 -- Города у любых тендеров без city
 UPDATE public.tenders SET city = COALESCE(city, 'Алматы'), updated_at = now() WHERE city IS NULL;
 
--- Верификация компаний (если колонка уже есть после миграции 20260523120000)
+-- Верификация всех компаний в БД (для демо-каталога; в проде не перезапускать вслепую)
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'companies' AND column_name = 'verification_status'
   ) THEN
-    UPDATE public.companies SET verification_status = 'verified', is_verified = true
-    WHERE name IN ('Alatau Build LLP', 'Astana Monolit', 'Steppe Materials');
-    UPDATE public.companies SET verification_status = 'draft', is_verified = false
-    WHERE name = 'ZakazTech LLP';
+    UPDATE public.companies SET verification_status = 'verified', is_verified = true;
   END IF;
 END $$;
 

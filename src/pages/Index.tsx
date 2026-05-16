@@ -8,6 +8,7 @@ import { BuildConnectLogo } from "@/components/BuildConnectLogo";
 import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import Navbar from "@/components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useRecommendedCompanies } from "@/hooks/useRecommendations";
 import { RecommendedCompaniesSection } from "@/components/RecommendedCompaniesSection";
@@ -19,6 +20,7 @@ import QueryErrorBlock from "@/components/QueryErrorBlock";
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: companies, isLoading, isError, error, refetch } = useCompanies();
 
   const categories = [
@@ -217,7 +219,7 @@ const Index = () => {
                 Присоединяйтесь к BuildConnect и получайте больше заказов от клиентов по всему Казахстану
               </p>
               <Button size="lg" variant="secondary" asChild className="rounded-xl text-base font-semibold px-10 h-14 bg-background text-foreground hover:bg-background/90">
-                <Link to="/auth">Начать сейчас</Link>
+                <Link to={user ? "/profile" : "/auth"}>Начать сейчас</Link>
               </Button>
             </div>
           </div>
@@ -243,6 +245,7 @@ const Index = () => {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Разместить компанию</Link></li>
                 <li><Link to="/catalog" className="hover:text-primary transition-colors">Каталог</Link></li>
+                <li><Link to="/contracts" className="hover:text-primary transition-colors">Шаблоны договоров</Link></li>
               </ul>
             </div>
             <div>

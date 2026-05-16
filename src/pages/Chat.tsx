@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Send, ArrowLeft, Building2, CheckCircle2, Star } from "lucide-react";
+import { Send, ArrowLeft, Building2, CheckCircle2, Star, Paperclip, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +24,9 @@ import type { Request } from "@/hooks/useRequests";
 import { useUpdateRequestStatus } from "@/hooks/useRequests";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { ChatFileAttachment } from "@/components/ChatFileAttachment";
+import { buildChatFileMessage, tryParseChatFileMessage } from "@/lib/chatAttachmentMessage";
+import { uploadRequestChatFile } from "@/lib/requestChatUpload";
 
 function linkActionLabel(url: string): string {
   try {
@@ -99,6 +102,17 @@ function formatCompanyLine(name: string): string {
 }
 
 function ChatMessageBody({ content, isMe }: { content: string; isMe: boolean }) {
+  const filePayload = tryParseChatFileMessage(content);
+  if (filePayload) {
+    return (
+      <ChatFileAttachment
+        displayName={filePayload.displayName}
+        storagePath={filePayload.storagePath}
+        isMe={isMe}
+      />
+    );
+  }
+
   const { body, meta } = splitRequestOpeningMessage(content);
   const parsed = parseOpeningMessageBody(body);
   const companyName = parsed.companyName || companyNameFromMeta(meta);
@@ -141,6 +155,8 @@ const Chat = () => {
   const updateRequest = useUpdateRequestStatus();
 
   const [content, setContent] = useState("");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: requestInfo } = useQuery({
@@ -214,6 +230,30 @@ const Chat = () => {
     }
   };
 
+  const handlePickFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !requestId || !profile || chatClosed) return;
+    setUploadingFile(true);
+    try {
+      const path = await uploadRequestChatFile(requestId, profile.id, file);
+      await sendMessage.mutateAsync({
+        request_id: requestId,
+        content: buildChatFileMessage(file.name, path),
+      });
+      toast.success("Файл отправлен");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Не удалось отправить файл";
+      toast.error(msg);
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const formatMessageTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString("ru-RU", {
       hour: "2-digit",
@@ -232,6 +272,15 @@ const Chat = () => {
 
   const canCompleteRequest =
     requestInfo &&
+    profile?.id === requestInfo.client_id &&
+    requestInfo.status !== "completed" &&
+    requestInfo.status !== "rejected";
+
+  /** Сторона исполнителя: не заказчик, заявка ещё не закрыта — объясняем, кто подтверждает приёмку. */
+  const showRequestCompleteHint =
+    requestInfo &&
+    profile &&
+    profile.id !== requestInfo.client_id &&
     requestInfo.status !== "completed" &&
     requestInfo.status !== "rejected";
 
@@ -306,6 +355,11 @@ const Chat = () => {
                 Завершить заявку
               </Button>
             ) : null}
+            {showRequestCompleteHint ? (
+              <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
+                Завершить заявку и открыть возможность отзыва может только заказчик после приёмки работ или услуг.
+              </span>
+            ) : null}
             {canLeaveReview ? (
               <Button type="button" variant="outline" size="sm" className="rounded-lg h-8" asChild>
                 <Link to={`/company/${requestInfo.company_id}#reviews`}>
@@ -314,6 +368,11 @@ const Chat = () => {
                 </Link>
               </Button>
             ) : null}
+            <Button type="button" variant="ghost" size="sm" className="rounded-lg h-8 text-muted-foreground" asChild>
+              <Link to="/contracts" target="_blank" rel="noreferrer">
+                Шаблоны договоров
+              </Link>
+            </Button>
           </div>
         ) : null}
 
@@ -377,23 +436,46 @@ const Chat = () => {
                 : "Заявка завершена — новые сообщения отправить нельзя. История чата сохранена."}
             </p>
           ) : (
-            <form onSubmit={handleSend} className="flex gap-2 items-end">
-              <Input
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435\u2026"}
-                className="flex-1 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30"
-                autoComplete="off"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="rounded-xl shrink-0 h-10 w-10"
-                disabled={!content.trim() || sendMessage.isPending}
-              >
-                <Send className="h-5 w-5 ml-0.5" />
-              </Button>
-            </form>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-muted-foreground">
+                <span>До 20 МБ. Подписанный договор можно приложить кнопкой «Файл».</span>
+              </div>
+              <form onSubmit={handleSend} className="flex gap-2 items-end">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.odt,.jpg,.jpeg,.png,.webp,.txt,application/pdf,image/*"
+                  onChange={(ev) => void handleFileChange(ev)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="rounded-xl shrink-0 h-10 w-10"
+                  disabled={uploadingFile || sendMessage.isPending}
+                  onClick={handlePickFile}
+                  title="Прикрепить файл"
+                >
+                  {uploadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                </Button>
+                <Input
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435\u2026"}
+                  className="flex-1 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30"
+                  autoComplete="off"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="rounded-xl shrink-0 h-10 w-10"
+                  disabled={!content.trim() || sendMessage.isPending || uploadingFile}
+                >
+                  <Send className="h-5 w-5 ml-0.5" />
+                </Button>
+              </form>
+            </div>
           )}
         </div>
       </main>

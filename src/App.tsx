@@ -26,6 +26,7 @@ import Contacts from "./pages/Contacts";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Moderation from "./pages/Moderation";
+import ContractTemplates from "./pages/ContractTemplates";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/contracts" element={<ContractTemplates />} />
             <Route path="/tenders" element={<Tenders />} />
             <Route path="/services" element={<Services />} />
             <Route path="/materials" element={<Materials />} />
