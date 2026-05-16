@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,11 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  buildContractDocument,
   CONTRACT_TEMPLATE_LABELS,
-  downloadTextFile,
   type ContractTemplateId,
 } from "@/lib/contractTemplates";
+import { downloadContractDocx, downloadContractPdf } from "@/lib/contractDocumentExport";
+import { toast } from "sonner";
 
 const dateToday = (): string =>
   new Date().toLocaleDateString("ru-RU", {
@@ -31,13 +31,27 @@ export default function ContractTemplates() {
   const [city, setCity] = useState("Астана");
   const [docDate, setDocDate] = useState(dateToday());
   const [templateId, setTemplateId] = useState<ContractTemplateId>("services");
+  const [exportingDocx, setExportingDocx] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
-  const handleDownload = () => {
-    const text = buildContractDocument(templateId, { city, docDate });
-    const slug =
-      templateId === "services" ? "dogovor-uslug" : templateId === "supply" ? "dogovor-postavki" : "akt-priemki";
-    const safeCity = city.replace(/[^\w\u0400-\u04FF-]+/g, "_").slice(0, 40) || "gorod";
-    downloadTextFile(`buildconnect-${slug}-${safeCity}.txt`, text);
+  const runExport = async (kind: "docx" | "pdf") => {
+    if (kind === "docx") setExportingDocx(true);
+    else setExportingPdf(true);
+    try {
+      if (kind === "docx") {
+        await downloadContractDocx(templateId, { city, docDate });
+        toast.success("Файл .docx сохранён");
+      } else {
+        await downloadContractPdf(templateId, { city, docDate });
+        toast.success("Файл .pdf сохранён");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Не удалось сформировать файл";
+      toast.error(msg);
+    } finally {
+      if (kind === "docx") setExportingDocx(false);
+      else setExportingPdf(false);
+    }
   };
 
   return (
@@ -45,9 +59,9 @@ export default function ContractTemplates() {
       <Navbar />
       <main className="container max-w-2xl px-4 py-10 pb-24">
         <Button variant="ghost" asChild className="mb-6 -ml-2 gap-2">
-          <Link to="/">
+          <Link to="/profile">
             <ArrowLeft className="h-4 w-4" />
-            На главную
+            В профиль
           </Link>
         </Button>
 
@@ -55,9 +69,8 @@ export default function ContractTemplates() {
           <CardHeader>
             <CardTitle className="text-2xl">Шаблоны договоров</CardTitle>
             <CardDescription>
-              Заполните реквизиты в текстовом редакторе после скачивания. Откройте файл в Word / Google Docs /
-              сохраните как PDF, подпишите и отправьте контрагенту — в том числе через вложение в чате заявки
-              BuildConnect.
+              Скачайте документ в формате Word (.docx) или PDF. Дополните реквизиты в редакторе при необходимости,
+              подпишите и передайте контрагенту — в том числе через скрепку в чате заявки.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -95,14 +108,32 @@ export default function ContractTemplates() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Файл скачивается в кодировке UTF-8 с BOM — корректно открывается в Microsoft Word. Формулировки носят
-              ознакомительный характер; перед подписанием документ нужно проверить с юристом.
+              Тексты носят ознакомительный характер; перед подписанием документ нужно согласовать с юристом.
             </p>
 
-            <Button type="button" size="lg" className="w-full sm:w-auto rounded-xl gap-2" onClick={handleDownload}>
-              <Download className="h-4 w-4" />
-              Скачать шаблон (.txt)
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                type="button"
+                size="lg"
+                className="rounded-xl gap-2"
+                disabled={exportingDocx || exportingPdf}
+                onClick={() => void runExport("docx")}
+              >
+                {exportingDocx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Скачать .docx
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="rounded-xl gap-2"
+                disabled={exportingDocx || exportingPdf}
+                onClick={() => void runExport("pdf")}
+              >
+                {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                Скачать .pdf
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

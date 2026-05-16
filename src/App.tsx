@@ -57,7 +57,6 @@ const App = () => (
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/contracts" element={<ContractTemplates />} />
             <Route path="/tenders" element={<Tenders />} />
             <Route path="/services" element={<Services />} />
             <Route path="/materials" element={<Materials />} />
@@ -67,6 +66,7 @@ const App = () => (
 
             {/* Protected routes (any authenticated user) */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/contracts" element={<ProtectedRoute><ContractTemplates /></ProtectedRoute>} />
             <Route path="/chat/:requestId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
 
             {/* Protected routes (contractors & suppliers only) */}

@@ -245,7 +245,6 @@ const Index = () => {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Разместить компанию</Link></li>
                 <li><Link to="/catalog" className="hover:text-primary transition-colors">Каталог</Link></li>
-                <li><Link to="/contracts" className="hover:text-primary transition-colors">Шаблоны договоров</Link></li>
               </ul>
             </div>
             <div>

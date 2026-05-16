@@ -6,6 +6,7 @@ import {
   Flag,
   Loader2,
   LogOut,
+  Scale,
   ScrollText,
   Settings as SettingsIcon,
   Shield,
@@ -270,6 +271,13 @@ export function ModeratorWorkspace() {
                 </Badge>
               ) : null}
             </button>
+            <Link
+              to="/contracts"
+              className="flex items-center px-4 py-3.5 rounded-xl transition-all hover:bg-muted font-medium text-foreground"
+            >
+              <Scale className="h-5 w-5 mr-3 shrink-0" />
+              Шаблоны договоров
+            </Link>
             <button
               type="button"
               onClick={() => switchTab("settings")}

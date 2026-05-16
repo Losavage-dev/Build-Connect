@@ -70,9 +70,6 @@ const Navbar = () => {
             <Link to="/materials" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
               Материалы
             </Link>
-            <Link to="/contracts" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Договоры
-            </Link>
           </nav>
         </div>
 
@@ -175,9 +172,6 @@ const Navbar = () => {
                 </Link>
                 <Link to="/materials" className="text-lg font-medium hover:text-primary transition-colors">
                   Материалы
-                </Link>
-                <Link to="/contracts" className="text-lg font-medium hover:text-primary transition-colors">
-                  Шаблоны договоров
                 </Link>
                 {user ? (
                   <>

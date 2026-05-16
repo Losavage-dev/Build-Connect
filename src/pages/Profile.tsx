@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { Building2, MessageSquare, Star, LogOut, Loader2, Plus, Upload, Settings as SettingsIcon, Trash2, FileText, MapPin } from "lucide-react";
+import { Building2, MessageSquare, Star, LogOut, Loader2, Plus, Upload, Settings as SettingsIcon, Trash2, FileText, MapPin, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -328,6 +328,14 @@ const Profile = () => {
                 <Star className="h-5 w-5 mr-3" />
                 Мои отзывы
               </button>
+
+              <Link
+                to="/contracts"
+                className="flex items-center px-4 py-3.5 rounded-xl transition-all hover:bg-muted text-foreground font-medium"
+              >
+                <ScrollText className="h-5 w-5 mr-3 shrink-0" />
+                Шаблоны договоров
+              </Link>
 
               <button 
                 onClick={() => setActiveTab("settings")}

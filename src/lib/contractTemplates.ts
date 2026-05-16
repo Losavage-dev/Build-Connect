@@ -165,17 +165,3 @@ export function buildContractDocument(
   }
   return body.replaceAll("[ГОРОД]", city).replaceAll("[ДАТА_ДОГОВОРА]", docDate);
 }
-
-export function downloadTextFile(filename: string, text: string): void {
-  const BOM = "\uFEFF";
-  const blob = new Blob([BOM + text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
