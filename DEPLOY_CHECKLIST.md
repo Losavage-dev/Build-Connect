@@ -5,7 +5,7 @@
 ## 1. База данных
 
 - [ ] `npx supabase link --project-ref ВАШ_REF`
-- [ ] `npx supabase db push` — без ошибок (**34** миграции)
+- [ ] `npx supabase db push` — без ошибок (**37** миграций)
 - [ ] В SQL Editor: `supabase/diploma_quick_setup.sql` — проверка таблиц (NOTICE)
 - [ ] Seed для демо: `seed_test_accounts.sql`, затем `seed_moderator_account.sql` (пароль `123456`)
 
@@ -19,6 +19,11 @@
 | `20260529120000_user_events_recommendations.sql` | user_events, RPC трендов |
 | `20260529120001_user_events_grants.sql` | GRANT на user_events |
 | `20260530120000_reports_initiated_by_staff.sql` | флаг жалобы от модератора |
+| `20260531120000_request_completed_by_client.sql` | завершение заявки клиентом |
+| `20260601120000_companies_pending_readable_by_auth.sql` | pending-компании для модератора |
+| `20260602130000_request_attachments_bucket.sql` | вложения в чат (Storage) |
+
+**Production URL:** https://build-connect-market.vercel.app/
 
 ## 2. Переменные окружения
 
@@ -29,8 +34,8 @@
 
 ## 3. Supabase Auth
 
-- [ ] **URL Configuration**: Site URL = URL Vercel (и `http://localhost:8080` для dev)
-- [ ] **Redirect URLs**: `https://ваш-домен/**`, `http://localhost:8080/**`
+- [ ] **URL Configuration**: Site URL = `https://build-connect-market.vercel.app` (и `http://localhost:8080` для dev)
+- [ ] **Redirect URLs**: `https://build-connect-market.vercel.app/**`, `http://localhost:8080/**`
 - [ ] Email: для демо отключить обязательное подтверждение или подтвердить тестовых пользователей
 
 ## 4. Автоматическая проверка
@@ -63,4 +68,5 @@ npm run build
 
 ---
 
-Подробнее: [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) · Демо для защиты: [DIPLOMA_DEMO.md](DIPLOMA_DEMO.md)
+Подробнее: [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) · Демо для защиты: [DIPLOMA_DEMO.md](DIPLOMA_DEMO.md)  
+План завершения: [docs/PROJECT_COMPLETION_PLAN.md](docs/PROJECT_COMPLETION_PLAN.md) · QA: [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md)

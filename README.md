@@ -55,7 +55,9 @@ npm run preview
 
 ## Документация по коду
 
-- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) — функции, таблицы, ограничения.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — архитектура (9 диаграмм + справочник)
+- [docs/architecture/README.md](docs/architecture/README.md) — оглавление 01–09
+- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) — функции, таблицы, ограничения
 
 ## Лицензия
 

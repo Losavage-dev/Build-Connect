@@ -104,40 +104,46 @@
 
 ---
 
-## 6. Что остаётся сделать ❌
+## 6. Статус MVP (май 2026)
 
-### На стороне инфраструктуры (выполняет владелец проекта)
+**Готовность:** ~85–90%. Production: https://build-connect-market.vercel.app/
 
-| # | Задача |
+### Реализовано после первого аудита (13.05)
+
+- [x] Статусы заявок в чате (принять / отклонить / завершить) + RLS
+- [x] Модерация: `/moderation`, верификация, жалобы, бан, журнал
+- [x] Рекомендации (`user_events`), promo feed, шаблоны договоров DOCX/PDF
+- [x] **37** миграций, seed `seed_test_accounts.sql` + `seed_moderator_account.sql`
+- [x] Архитектурная документация (9 диаграмм + reference)
+
+### Остаётся (см. [docs/PROJECT_COMPLETION_PLAN.md](docs/PROJECT_COMPLETION_PLAN.md))
+
+| Фаза | Задачи |
 |:---|:---|
-| A1 | Создать проект **Supabase Cloud** (основной вариант, Docker не нужен), применить **все** миграции из `supabase/migrations` (`supabase login` + `link` + `db push` или SQL Editor — см. [README](README.md) и [DEPLOY_GUIDE](DEPLOY_GUIDE.md)) |
-| A2 | Задать переменные `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` в Vercel и в локальном `.env` |
-| A3 | В Supabase: **Authentication → URL Configuration** — Site URL и Redirect URLs под домен Vercel |
-| A4 | При необходимости отключить обязательное подтверждение email для демо или настроить почту |
-| A5 | Опционально: включить провайдер Google в Supabase и снова показать кнопки в `Auth.tsx` |
-
-### Улучшения продукта (код)
-
-| # | Задача |
-|:---|:---|
-| B1 | Кнопки смены статуса заявки (принять / отклонить / завершить) + согласованные RLS |
-| B2 | Пагинация списков |
-| B3 | Систематическая валидация форм (Zod уже в зависимостях — довести до всех форм) |
-| B4 | Админ-модерация и верификация компаний (в дипломе заявлено шире, чем в текущем UI) |
-| B5 | SEO: OG-изображение своего домена, sitemap |
-| B6 | Error Boundary, аналитика, e2e-тесты |
+| **1** | Auth URLs на prod, вход test-аккаунтов на Vercel |
+| **2** | Полный QA по [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md) |
+| **3** | Rich demo seed (доп. компании, pending verification) |
+| **4** | Security audit — [docs/SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md) |
+| **5** | БИН в UI, пагинация, Error Boundary, Zod, Playwright (опц.) |
+| **6** | PDF диплома = код (SPA-BaaS, не microservices) |
 
 ---
 
 ## 7. План (актуализировано)
 
-**Сделано в коде и SQL:** пункты 1.1–1.4, 1.2 (Lovable), 2.2 (ProtectedRoute), подготовка к 1.7 (`vercel.json`, `.env.example`, документация).
-
-**Дальше:** 1.5–1.7 — ваши шаги по `DEPLOY_GUIDE.md`; затем фазы B из раздела 6 при необходимости.
+**Дорожная карта:** [docs/PROJECT_COMPLETION_PLAN.md](docs/PROJECT_COMPLETION_PLAN.md)  
+**Сейчас:** Фаза 1 — Production & Auth.  
+**Демо:** [DIPLOMA_DEMO.md](DIPLOMA_DEMO.md) · **Деплой:** [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md)
 
 ---
 
-## 8. История работы над проектом
+## 8. Архитектурная документация
+
+Архитектура: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 9 основных диаграмм (`docs/architecture/01`–`08`) + справочник `09-reference.md`.
+
+---
+
+## 9. История работы над проектом
 
 | Дата | Что сделано |
 |:---|:---|
@@ -159,3 +165,4 @@
 | 28.03.2026 | Создана отдельная страница «Материалы» |
 | 28.03.2026 | Динамическая статистика на главной странице |
 | 13.05.2026 | Полный аудит проекта, создание плана завершения |
+| 20.05.2026 | Актуализация аудита; план завершения (7 фаз), QA/Security checklists, ROADMAP |

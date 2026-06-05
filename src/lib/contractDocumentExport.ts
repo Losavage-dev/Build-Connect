@@ -36,11 +36,31 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function contractDownloadBaseName(templateId: ContractTemplateId, city: string): string {
-  const slug =
-    templateId === "services" ? "dogovor-uslug" : templateId === "supply" ? "dogovor-postavki" : "akt-priemki";
-  const safeCity = city.replace(/[^\w\u0400-\u04FF-]+/g, "_").slice(0, 40) || "gorod";
-  return `buildconnect-${slug}-${safeCity}`;
+/** Базовое имя файла без расширения (DOCX/PDF скачиваются в браузере с этим именем). */
+export function contractDownloadBaseName(
+  templateId: ContractTemplateId,
+  fields: { city: string; docDate: string },
+): string {
+  const templatePart =
+    templateId === "services"
+      ? "Dogovor-okazaniya-uslug"
+      : templateId === "supply"
+        ? "Dogovor-postavki-tovarov"
+        : "Akt-sdachi-priemki";
+
+  const sanitize = (raw: string, max: number) => {
+    const s = raw
+      .trim()
+      .replace(/[^\w\s\u0400-\u04FF.-]+/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, max);
+    return s;
+  };
+
+  const citySlug = sanitize(fields.city || "", 42) || "gorod";
+  const dateSlug = sanitize(fields.docDate || "", 44) || "bez-daty-v-shapke";
 }
 
 function noCellBorders() {
@@ -377,7 +397,7 @@ export async function downloadContractDocx(
   });
 
   const blob = await Packer.toBlob(doc);
-  triggerBlobDownload(blob, `${contractDownloadBaseName(templateId, fields.city)}.docx`);
+  triggerBlobDownload(blob, `${contractDownloadBaseName(templateId, fields)}.docx`);
 }
 
 type PdfMakerInstance = {
@@ -553,5 +573,5 @@ export async function downloadContractPdf(
   };
 
   const pdf = pdfMake.createPdf(docDefinition);
-  await pdf.download(`${contractDownloadBaseName(templateId, fields.city)}.pdf`);
+  await pdf.download(`${contractDownloadBaseName(templateId, fields)}.pdf`);
 }

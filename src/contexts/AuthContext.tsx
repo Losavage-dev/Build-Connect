@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       const msg =
         error.message === "Invalid login credentials"
-          ? "Неверный email или пароль. Для moderator@test.com выполните seed_moderator_account.sql в Supabase."
+          ? "Неверный email или пароль."
           : error.message;
       toast.error(msg);
       throw error;
