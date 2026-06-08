@@ -14,7 +14,8 @@ Tables, routes, and enums — appendix for the report. Diagrams: [01](01-system-
 | `messages` | Chat per request |
 | `tenders` | Customer RFQ |
 | `services` | Public vitrine (services & materials) |
-| `reviews` | Ratings after completed request |
+| `reviews` | Ratings after completed request (company, B2B trust) |
+| `email_outbox` | Email notification queue (optional Resend) |
 | `notifications` | In-app inbox |
 | `company_documents` | Verification files |
 | `reports` | User complaints |

@@ -156,7 +156,7 @@ export function useCreateRequest() {
       if (!company_id && !recipient_profile_id) {
         throw new Error("Укажите получателя заявки (компания или профиль)");
       }
-      if (company_id && recipient_profile_id) {
+      if (company_id && recipient_profile_id && !source_tender_id) {
         throw new Error("Нельзя указать одновременно компанию и профиль получателя");
       }
       if (recipient_profile_id === profile.id) {
@@ -244,6 +244,7 @@ export function useUpdateRequestStatus() {
       queryClient.invalidateQueries({ queryKey: ["request-info", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["tender-responses"] });
       queryClient.invalidateQueries({ queryKey: ["review-eligibility"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-company-review"] });
       if (variables.status === "completed") {
         queryClient.invalidateQueries({ queryKey: ["tenders"] });
         queryClient.invalidateQueries({ queryKey: ["my-tenders"] });

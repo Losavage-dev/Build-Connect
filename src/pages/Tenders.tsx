@@ -240,15 +240,11 @@ const Tenders = () => {
         }),
       };
 
-      const req = authorCompanies?.length
-        ? await createRequest.mutateAsync({
-            ...payload,
-            company_id: authorCompanies[0].id,
-          })
-        : await createRequest.mutateAsync({
-            ...payload,
-            recipient_profile_id: tender.client_id,
-          });
+      const req = await createRequest.mutateAsync({
+        ...payload,
+        company_id: bidCompanyId,
+        recipient_profile_id: tender.client_id,
+      });
 
       toast.success("Отклик отправлен — откройте чат для переписки.");
       openRequestChat(navigate, req.id);

@@ -27,6 +27,9 @@ import { toast } from "sonner";
 import { ChatFileAttachment } from "@/components/ChatFileAttachment";
 import { buildChatFileMessage, tryParseChatFileMessage } from "@/lib/chatAttachmentMessage";
 import { uploadRequestChatFile } from "@/lib/requestChatUpload";
+import { PostDealReviewDialog } from "@/components/PostDealReviewDialog";
+import { usePendingCompanyReview } from "@/hooks/usePendingCompanyReview";
+import { canProfileCompleteRequest } from "@/lib/requestCompletion";
 
 function linkActionLabel(url: string): string {
   try {
@@ -156,6 +159,7 @@ const Chat = () => {
 
   const [content, setContent] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -179,10 +183,22 @@ const Chat = () => {
     enabled: !!requestId,
   });
 
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  const { data: pendingCompanyReview } = usePendingCompanyReview(requestId, requestInfo);
+  const reviewAutoOpenedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (requestInfo?.status !== "completed" || !pendingCompanyReview || !requestId) return;
+    const key = `${requestId}:${pendingCompanyReview.companyId}`;
+    if (reviewAutoOpenedRef.current === key) return;
+    reviewAutoOpenedRef.current = key;
+    setReviewDialogOpen(true);
+  }, [requestInfo?.status, requestId, pendingCompanyReview]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -272,22 +288,20 @@ const Chat = () => {
 
   const canCompleteRequest =
     requestInfo &&
-    profile?.id === requestInfo.client_id &&
+    profile?.id &&
+    canProfileCompleteRequest(requestInfo, profile.id) &&
     requestInfo.status !== "completed" &&
     requestInfo.status !== "rejected";
 
-  /** Сторона исполнителя: не заказчик, заявка ещё не закрыта — объясняем, кто подтверждает приёмку. */
+  /** Исполнитель: завершение — у заказчика / автора тендера. */
   const showRequestCompleteHint =
     requestInfo &&
     profile &&
-    profile.id !== requestInfo.client_id &&
+    !canProfileCompleteRequest(requestInfo, profile.id) &&
     requestInfo.status !== "completed" &&
     requestInfo.status !== "rejected";
 
-  const canLeaveReview =
-    requestInfo?.status === "completed" &&
-    requestInfo.company_id &&
-    profile?.id === requestInfo.client_id;
+  const canLeaveReview = Boolean(pendingCompanyReview);
 
   const chatClosed =
     requestInfo?.status === "completed" || requestInfo?.status === "rejected";
@@ -299,9 +313,12 @@ const Chat = () => {
       const linkedTender = requestInfo?.source_tender_id;
       toast.success(
         linkedTender
-          ? "Заявка завершена, тендер закрыт. Можно оставить отзыв о компании."
-          : "Заявка завершена — теперь можно оставить отзыв о компании",
+          ? "Заявка завершена, тендер закрыт."
+          : "Заявка завершена.",
       );
+      reviewAutoOpenedRef.current = null;
+      await queryClient.refetchQueries({ queryKey: ["request-info", requestId] });
+      await queryClient.refetchQueries({ queryKey: ["pending-company-review", requestId] });
     } catch {
       toast.error("Не удалось завершить заявку");
     }
@@ -309,6 +326,8 @@ const Chat = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      {!user ? null : (
+        <>
       <Navbar />
 
       <main className="flex-1 container max-w-4xl mx-auto p-4 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
@@ -357,15 +376,19 @@ const Chat = () => {
             ) : null}
             {showRequestCompleteHint ? (
               <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
-                Завершить заявку и открыть возможность отзыва может только заказчик после приёмки работ или услуг.
+                Завершить заявку и оставить отзыв может заказчик (автор тендера или инициатор заявки из каталога).
               </span>
             ) : null}
             {canLeaveReview ? (
-              <Button type="button" variant="outline" size="sm" className="rounded-lg h-8" asChild>
-                <Link to={`/company/${requestInfo.company_id}#reviews`}>
-                  <Star className="h-3.5 w-3.5 mr-1" />
-                  Оставить отзыв
-                </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-8"
+                onClick={() => setReviewDialogOpen(true)}
+              >
+                <Star className="h-3.5 w-3.5 mr-1" />
+                Оставить отзыв
               </Button>
             ) : null}
             <Button type="button" variant="ghost" size="sm" className="rounded-lg h-8 text-muted-foreground" asChild>
@@ -479,6 +502,17 @@ const Chat = () => {
           )}
         </div>
       </main>
+
+      {requestId && pendingCompanyReview ? (
+        <PostDealReviewDialog
+          open={reviewDialogOpen}
+          onOpenChange={setReviewDialogOpen}
+          companyId={pendingCompanyReview.companyId}
+          companyName={pendingCompanyReview.companyName}
+        />
+      ) : null}
+        </>
+      )}
     </div>
   );
 };

@@ -24,8 +24,8 @@
 | Фаза | Название | Срок | Статус |
 |------|----------|------|--------|
 | **0** | Базовая линия | 1 день | ✅ см. [PHASE_00_BASELINE.md](PHASE_00_BASELINE.md) |
-| **1** | Production & Auth | 1–2 дня | 🔄 в работе |
-| **2** | Функциональный QA | 2–3 дня | ⏳ |
+| **1** | Production & Auth | 1–2 дня | ✅ |
+| **2** | Функциональный QA | 2–3 дня | 🔄 **сейчас** |
 | **3** | Rich demo data | 2–3 дня | ⏳ |
 | **4** | Security audit | 1–2 дня | ⏳ |
 | **5** | Продуктовый polish | 2–4 дня | ⏳ |
@@ -46,30 +46,30 @@
 
 ---
 
-## Фаза 1 — Production & Auth 🔄
+## Фаза 1 — Production & Auth ✅
 
 **Цель:** вход, регистрация и API работают на **prod**, без сюрпризов на защите.
 
-| # | Задача | Ответственный | Done |
-|---|--------|---------------|------|
-| 1.1 | Supabase Auth: Site URL = `https://build-connect-market.vercel.app` | Вы (Dashboard) | [ ] |
-| 1.2 | Redirect URLs: prod + `http://localhost:8080/**` | Вы | [ ] |
-| 1.3 | Vercel env: `VITE_SUPABASE_*` на Production | Вы | [ ] |
-| 1.4 | Вход `client@test.com` / `123456` на **prod** | Вы + мы | [ ] |
-| 1.5 | Все 37 миграций применены (`db push` или сверка) | Вы | [ ] |
-| 1.6 | Realtime: publications `messages`, `notifications` | Supabase Dashboard | [ ] |
-| 1.7 | Опционально: переименовать проект Vercel → `buildconnect` | Вы | [ ] |
+| # | Задача | Done |
+|---|--------|------|
+| 1.1 | Supabase Auth: Site URL = prod Vercel | [x] |
+| 1.2 | Redirect URLs: prod + localhost | [x] |
+| 1.3 | Vercel env на Production | [x] |
+| 1.4 | Вход `client@test.com` на prod | [x] |
+| 1.5 | 37 миграций | [x] |
+| 1.6 | Realtime publications | [ ] сверить при QA |
+| 1.7 | Переименовать Vercel (опц.) | [ ] |
 
-**Артеfact:** отметки в [DEPLOY_CHECKLIST.md](../DEPLOY_CHECKLIST.md) + [QA_CHECKLIST.md](QA_CHECKLIST.md) раздел «Prod Auth».  
-**Пошагово:** [PHASE_01_PRODUCTION_AUTH.md](PHASE_01_PRODUCTION_AUTH.md)
+**Артеfact:** [PHASE_01_PRODUCTION_AUTH.md](PHASE_01_PRODUCTION_AUTH.md)
 
 ---
 
-## Фаза 2 — Функциональный QA
+## Фаза 2 — Функциональный QA 🔄
 
 **Цель:** каждая кнопка и сценарий из [DIPLOMA_DEMO.md](../DIPLOMA_DEMO.md) на production.
 
-Использовать [QA_CHECKLIST.md](QA_CHECKLIST.md) — 40+ пунктов по модулям.
+**Инструкция:** [PHASE_02_QA.md](PHASE_02_QA.md)  
+**Чеклист:** [QA_CHECKLIST.md](QA_CHECKLIST.md) — 40+ пунктов
 
 **Exit criteria:** все пункты P0 (критичные) зелёные; P1 — не более 3 известных багов с workaround.
 

@@ -62,6 +62,7 @@ const Profile = () => {
 
   const [activeTab, setActiveTab] = useState("requests");
   const [requestsScope, setRequestsScope] = useState<"all" | "incoming" | "outgoing">("all");
+  const [requestsLifecycle, setRequestsLifecycle] = useState<"active" | "archive">("active");
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -222,22 +223,41 @@ const Profile = () => {
   };
 
   const requestScopeCounts = useMemo(() => {
-    if (!requests?.length || !profile?.id) return { all: 0, incoming: 0, outgoing: 0 };
+    if (!requests?.length || !profile?.id) {
+      return { all: 0, incoming: 0, outgoing: 0, active: 0, archive: 0 };
+    }
     let incoming = 0;
+    let active = 0;
+    let archive = 0;
     for (const r of requests) {
       if (isRequestIncoming(r, profile.id)) incoming++;
+      if (r.status === "completed" || r.status === "rejected") archive++;
+      else active++;
     }
-    return { all: requests.length, incoming, outgoing: requests.length - incoming };
+    return {
+      all: requests.length,
+      incoming,
+      outgoing: requests.length - incoming,
+      active,
+      archive,
+    };
   }, [requests, profile?.id]);
 
   const filteredRequests = useMemo(() => {
     if (!requests?.length) return [];
-    if (!profile?.id || requestsScope === "all") return requests;
-    return requests.filter((r) => {
-      const incoming = isRequestIncoming(r, profile.id);
-      return requestsScope === "incoming" ? incoming : !incoming;
+    let list = requests;
+    if (profile?.id && requestsScope !== "all") {
+      list = list.filter((r) => {
+        const incoming = isRequestIncoming(r, profile.id);
+        return requestsScope === "incoming" ? incoming : !incoming;
+      });
+    }
+    list = list.filter((r) => {
+      const isArchived = r.status === "completed" || r.status === "rejected";
+      return requestsLifecycle === "archive" ? isArchived : !isArchived;
     });
-  }, [requests, requestsScope, profile?.id]);
+    return list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }, [requests, requestsScope, requestsLifecycle, profile?.id]);
 
   const cooldownUntil = profile?.last_role_change_at
     ? addDays(new Date(profile.last_role_change_at), 14)
@@ -359,10 +379,8 @@ const Profile = () => {
                   <h2 className="text-2xl font-bold mb-1">Заявки и Чаты</h2>
                   <p className="text-muted-foreground">История ваших обращений и переписки с компаниями</p>
                   <p className="text-xs text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-                    Плашка «На рассмотрении» — статус заявки: вы или компания ещё не сменили его на «в работе» / «отклонена».
-                    Входящие — заявки к вашим компаниям и личные отклики на тендеры (если у вас нет компании, отклики
-                    приходят в профиль, а не в карточку фирмы). Исходящие — то, что вы отправили. После отправки заявки
-                    открывается чат; в первом сообщении — контекст (каталог, услуга, материал, тендер или ролик).
+                    По умолчанию показаны <strong>активные</strong> заявки (на рассмотрении и в работе). Завершённые и отклонённые — во вкладке «Архив».
+                    Входящие — заявки к вашим компаниям и личные отклики на тендеры. Исходящие — то, что вы отправили.
                   </p>
                 </div>
                 
@@ -410,19 +428,45 @@ const Profile = () => {
                         </ToggleGroupItem>
                       </ToggleGroup>
 
+                      <ToggleGroup
+                        type="single"
+                        value={requestsLifecycle}
+                        onValueChange={(v) => {
+                          if (v === "active" || v === "archive") setRequestsLifecycle(v);
+                        }}
+                        className="justify-start flex-wrap gap-1.5 p-1 rounded-xl bg-muted/40 border w-full sm:w-auto"
+                        variant="outline"
+                      >
+                        <ToggleGroupItem value="active" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm">
+                          Активные ({requestScopeCounts.active})
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="archive" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm">
+                          Архив ({requestScopeCounts.archive})
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+
                       {filteredRequests.length === 0 ? (
                         <Card className="border-dashed border-2 bg-muted/10">
                           <CardContent className="flex flex-col items-center text-center py-12">
                             <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
                             <h3 className="font-semibold mb-1">Нет заявок в этом разделе</h3>
                             <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                              {requestsScope === "incoming"
-                                ? "Входящие: заявки в ваши компании из каталога, заказы услуг/материалов и отклики на ваши тендеры. Если компании нет — отклики на тендер попадают сюда лично (поле recipient_profile_id в БД)."
-                                : "Исходящие: заявки в чужие компании, заказы с витрин и ваши отклики на тендеры (в компанию автора или лично, если у автора нет компании)."}
+                              {requestsLifecycle === "archive"
+                                ? "Завершённые и отклонённые заявки попадают сюда. Их можно открыть для истории чата или отзыва."
+                                : requestsScope === "incoming"
+                                ? "Входящие: заявки в ваши компании из каталога, заказы услуг/материалов и отклики на ваши тендеры."
+                                : "Исходящие: заявки в чужие компании, заказы с витрин и ваши отклики на тендеры."}
                             </p>
-                            <Button variant="outline" className="rounded-xl" onClick={() => setRequestsScope("all")}>
-                              Показать все
-                            </Button>
+                            <div className="flex flex-wrap gap-2 justify-center">
+                              {requestsLifecycle === "active" && requestScopeCounts.archive > 0 ? (
+                                <Button variant="outline" className="rounded-xl" onClick={() => setRequestsLifecycle("archive")}>
+                                  Открыть архив ({requestScopeCounts.archive})
+                                </Button>
+                              ) : null}
+                              <Button variant="outline" className="rounded-xl" onClick={() => { setRequestsScope("all"); setRequestsLifecycle("active"); }}>
+                                Сбросить фильтры
+                              </Button>
+                            </div>
                           </CardContent>
                         </Card>
                       ) : (
@@ -433,18 +477,21 @@ const Profile = () => {
                       const summary = chatSummaries?.[request.id];
                       const unread = summary?.unreadFromOthers ?? 0;
                       const lastPreview = summary?.lastMessage?.preview?.trim() || "";
+                      const isArchived = request.status === "completed" || request.status === "rejected";
                       
                       return (
                         <Card
                           key={request.id}
                           className={cn(
                             "hover-lift border-2 transition-all overflow-hidden group",
-                            unread > 0
+                            isArchived
+                              ? "border-border/60 bg-muted/20 opacity-90"
+                              : unread > 0
                               ? "border-primary/50 shadow-md shadow-primary/10 bg-primary/[0.04]"
                               : "border-transparent hover:border-primary/20",
                           )}
                         >
-                          <CardHeader className="bg-muted/30 pb-4">
+                          <CardHeader className={cn("pb-4", isArchived ? "bg-muted/20" : "bg-muted/30")}>
                             <div className="flex flex-wrap items-start justify-between gap-4">
                               <div className="flex items-center gap-3">
                                 {(isIncoming || request.recipient_profile_id) && (
@@ -490,13 +537,22 @@ const Profile = () => {
                               <span className="text-sm text-muted-foreground">
                                 Заявка от {format(new Date(request.created_at), "d MMM yyyy", { locale: ru })}
                               </span>
+                              {!isArchived ? (
+                                <>
                               <span className="text-xs text-muted-foreground mt-1">Последнее в чате</span>
                               <span className="text-sm text-foreground line-clamp-2 mt-0.5 max-w-xl break-words">
                                 {lastPreview || "Пока нет сообщений — откройте чат, чтобы начать переписку."}
                               </span>
+                                </>
+                              ) : (
+                                <span className="text-xs text-muted-foreground mt-1">
+                                  {request.status === "completed" ? "Сделка завершена — чат доступен для просмотра и отзыва" : "Заявка закрыта"}
+                                </span>
+                              )}
                             </div>
                             
                             <div className="flex gap-2">
+                              {!isArchived ? (
                               <Button 
                                 variant="outline" 
                                 size="icon" 
@@ -506,9 +562,10 @@ const Profile = () => {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                              <Button onClick={() => navigate(`/chat/${request.id}`)} className="rounded-xl shadow-sm group-hover:bg-primary/90 transition-colors">
+                              ) : null}
+                              <Button onClick={() => navigate(`/chat/${request.id}`)} variant={isArchived ? "outline" : "default"} className="rounded-xl shadow-sm group-hover:bg-primary/90 transition-colors">
                                 <MessageSquare className="h-4 w-4 mr-2" />
-                                Перейти в чат
+                                {isArchived ? "Открыть" : "Перейти в чат"}
                               </Button>
                             </div>
                           </CardContent>

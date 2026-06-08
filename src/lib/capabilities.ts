@@ -71,8 +71,15 @@ export function bidBlockReason(ctx: CapabilitiesInput, tender: TenderLike): stri
   if (!ctx.user) return "Войдите, чтобы откликнуться";
   if (!ctx.profile) return null;
   if (tender.status !== "open") return "Отклик возможен только на открытые тендеры";
-  if (isOwnProfile(ctx, tender.client_id)) return "Нельзя откликнуться на свой тендер";
-  if (ctx.myCompanyIds.length === 0) return "Добавьте компанию в профиле, чтобы откликнуться";
+  if (isOwnProfile(ctx, tender.client_id)) {
+    return "Это ваш тендер — отклики присылают подрядчики. Для проверки отклика войдите как contractor1@test.com";
+  }
+  if (ctx.myCompanyIds.length === 0) {
+    if (ctx.profile.role === "client") {
+      return "Заказчик публикует тендеры; отклик — от имени компании-подрядчика. Создайте компанию или войдите как contractor1@test.com (демо)";
+    }
+    return "Добавьте компанию в профиле, чтобы откликнуться на тендер";
+  }
   return null;
 }
 

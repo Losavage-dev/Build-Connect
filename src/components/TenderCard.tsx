@@ -306,11 +306,14 @@ export function TenderCard({
                 ) : null}
 
                 {user && !caps.isStaff && !isOwner && tender.status === "open" && !caps.canBidOnTender(tender) ? (
-                  <p className="text-sm text-muted-foreground text-center mb-4">
-                    {caps.myCompanyIds.length === 0
-                      ? "Добавьте компанию в профиле, чтобы откликнуться"
-                      : caps.bidBlockReason(tender) || "Отклик недоступен"}
-                  </p>
+                  <div className="text-sm text-muted-foreground text-center mb-4 space-y-2">
+                    <p>{caps.bidBlockReason(tender) || "Отклик недоступен"}</p>
+                    {caps.myCompanyIds.length === 0 && !isOwner ? (
+                      <Button variant="outline" size="sm" className="rounded-lg" asChild>
+                        <Link to="/create-company">Создать компанию</Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {user && !isOwner ? (

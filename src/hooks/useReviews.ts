@@ -27,6 +27,7 @@ export function useCreateReview() {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
       queryClient.invalidateQueries({ queryKey: ["review-eligibility"] });
       queryClient.invalidateQueries({ queryKey: ["my-reviews"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-company-review"] });
     },
   });
 }
