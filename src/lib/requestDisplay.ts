@@ -20,13 +20,22 @@ export function isRequestIncoming(
   return request.client_id !== profileId;
 }
 
+export type CounterpartyLink =
+  | { kind: "user"; profileId: string }
+  | { kind: "company"; companyId: string };
+
 export type RequestDisplayInfo = {
   direction: "incoming" | "outgoing";
   title: string;
   subtitle: string | null;
   avatarUrl: string | null;
   avatarFallback: string;
+  counterparty: CounterpartyLink;
 };
+
+export function counterpartyHref(link: CounterpartyLink): string {
+  return link.kind === "user" ? `/user/${link.profileId}` : `/company/${link.companyId}`;
+}
 
 export function getRequestDisplay(request: Request, profileId: string): RequestDisplayInfo {
   const incoming = isRequestIncoming(request, profileId);
@@ -42,6 +51,7 @@ export function getRequestDisplay(request: Request, profileId: string): RequestD
         subtitle: "Отклик на ваш тендер · лично в профиль",
         avatarUrl: request.client?.avatar_url ?? null,
         avatarFallback: clientName.charAt(0) || "З",
+        counterparty: { kind: "user", profileId: request.client_id },
       };
     }
     return {
@@ -50,6 +60,7 @@ export function getRequestDisplay(request: Request, profileId: string): RequestD
       subtitle: companyName ? `Заявка в «${companyName}»` : "Входящая заявка в компанию",
       avatarUrl: request.client?.avatar_url ?? null,
       avatarFallback: clientName.charAt(0) || "З",
+      counterparty: { kind: "user", profileId: request.client_id },
     };
   }
 
@@ -60,6 +71,7 @@ export function getRequestDisplay(request: Request, profileId: string): RequestD
       subtitle: "Лично пользователю · отклик на тендер без компании у автора",
       avatarUrl: request.recipient?.avatar_url ?? null,
       avatarFallback: recipientName.charAt(0) || "П",
+      counterparty: { kind: "user", profileId: request.recipient_profile_id },
     };
   }
 
@@ -69,5 +81,6 @@ export function getRequestDisplay(request: Request, profileId: string): RequestD
     subtitle: "Заявка в компанию из каталога или витрины",
     avatarUrl: request.company?.logo_url ?? null,
     avatarFallback: (companyName || "К").charAt(0),
+    counterparty: { kind: "company", companyId: request.company_id! },
   };
 }

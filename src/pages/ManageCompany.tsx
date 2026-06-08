@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany, useUpdateCompany, useReplaceCompanyCategories } from "@/hooks/useCompanies";
 import { useCreateService, useDeleteService } from "@/hooks/useCompanyServices";
@@ -385,29 +386,26 @@ const ManageCompany = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container px-4 py-8">
+      <PageHero
+        eyebrow="Управление"
+        eyebrowIcon={Building2}
+        title="Управление компанией"
+        description={company.name}
+        compact
+        actions={
+          <Button variant="ghost" asChild className="rounded-xl">
+            <Link to={`/company/${id}`}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              К профилю компании
+            </Link>
+          </Button>
+        }
+      />
+
+      <PageContent className="border-b-0">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" asChild>
-              <Link to={`/company/${id}`}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                К профилю компании
-              </Link>
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Управление компанией</h1>
-              <p className="text-muted-foreground">{company.name}</p>
-            </div>
-          </div>
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 h-auto p-1">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 h-auto p-1 rounded-xl bg-muted/50">
               <TabsTrigger value="info" className="text-xs sm:text-sm px-2">
                 Информация
               </TabsTrigger>
@@ -963,7 +961,7 @@ const ManageCompany = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </PageContent>
     </div>
   );
 };

@@ -84,21 +84,23 @@ const Auth = () => {
   if (user) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 blueprint-grid opacity-40" aria-hidden />
+      <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} aria-hidden />
+      <div className="w-full max-w-md relative">
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
           <Building2 className="h-8 w-8 text-primary" />
           <span className="text-2xl font-bold">BuildConnect</span>
         </Link>
 
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 rounded-xl">
             <TabsTrigger value="login">Вход</TabsTrigger>
             <TabsTrigger value="register">Регистрация</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login">
-            <Card>
+            <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
               <CardHeader>
                 <CardTitle>Вход в аккаунт</CardTitle>
                 <CardDescription>Введите email и пароль для входа</CardDescription>
@@ -113,7 +115,7 @@ const Auth = () => {
                     <Label htmlFor="password">Пароль</Label>
                     <Input id="password" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full rounded-xl btn-glow" disabled={isLoading}>
                     {isLoading ? "Загрузка..." : "Войти"}
                   </Button>
                 </form>
@@ -122,7 +124,7 @@ const Auth = () => {
           </TabsContent>
 
           <TabsContent value="register">
-            <Card>
+            <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
               <CardHeader>
                 <CardTitle>Создать аккаунт</CardTitle>
                 <CardDescription>
@@ -158,7 +160,7 @@ const Auth = () => {
                     <p className="text-xs text-muted-foreground leading-relaxed">{USER_ROLE_HINTS[regUserType]}</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">{REGISTRATION_ROLE_NOTE}</p>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full rounded-xl btn-glow" disabled={isLoading}>
                     {isLoading ? "Загрузка..." : "Зарегистрироваться"}
                   </Button>
                 </form>

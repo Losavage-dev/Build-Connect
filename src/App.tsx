@@ -10,6 +10,7 @@ import SupabaseConfigGuard from "@/components/SupabaseConfigGuard";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import CompanyProfile from "./pages/CompanyProfile";
+import UserProfile from "./pages/UserProfile";
 import ManageCompany from "./pages/ManageCompany";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/feed" element={<PromoFeed />} />
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/company/:id" element={<CompanyProfile />} />
+            <Route path="/user/:id" element={<UserProfile />} />
             <Route path="/help" element={<Help />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/about" element={<About />} />

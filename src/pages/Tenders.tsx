@@ -30,6 +30,7 @@ import { useRecommendedTenders, useSortedTenders } from "@/hooks/useRecommendati
 import { RecommendedTendersSection } from "@/components/RecommendedTendersSection";
 import type { SortMode } from "@/lib/recommendations";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 
 const Tenders = () => {
   const navigate = useNavigate();
@@ -281,31 +282,30 @@ const Tenders = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container px-4 py-8">
-        <StaffBrowsingBanner />
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Тендеры</h1>
-            <p className="text-lg text-muted-foreground">
-              {isLoading
-                ? "Загрузка..."
-                : `${filteredTenders.length} из ${tenders?.length || 0} тендеров (с учётом фильтров)`}
-            </p>
-          </div>
-
-          {!user ? (
-            <Button asChild className="rounded-xl font-semibold">
+      <PageHero
+        eyebrow="Тендеры"
+        eyebrowIcon={FileText}
+        title="Заказы и отклики подрядчиков"
+        description={
+          isLoading
+            ? "Загрузка…"
+            : `${filteredTenders.length} из ${tenders?.length || 0} тендеров (с учётом фильтров)`
+        }
+        compact
+        actions={
+          !user ? (
+            <Button asChild className="rounded-xl font-semibold btn-glow">
               <Link to={authPath(returnTo)}>Войти, чтобы создать тендер</Link>
             </Button>
           ) : caps.canCreateTender() ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="rounded-xl font-semibold gap-2">
+                <Button className="rounded-xl font-semibold gap-2 btn-glow">
                   <Plus className="h-4 w-4" />
                   Создать тендер
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Новый тендер</DialogTitle>
                 </DialogHeader>
@@ -392,28 +392,32 @@ const Tenders = () => {
                 </form>
               </DialogContent>
             </Dialog>
-          ) : null}
-        </div>
+          ) : null
+        }
+      />
 
-        {!isLoading && recommendedTenders.length > 0 && (
-          <RecommendedTendersSection tenders={recommendedTenders} />
-        )}
+      <PageContent>
+        <StaffBrowsingBanner />
 
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
             <Input
               placeholder="Поиск по названию, описанию или городу..."
-              className="max-w-md"
+              className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-              <TabsList>
+              <TabsList className="rounded-xl">
                 <TabsTrigger value="for_you">Для вас</TabsTrigger>
                 <TabsTrigger value="rating">По дате</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
+
+        {!isLoading && recommendedTenders.length > 0 && (
+          <RecommendedTendersSection items={recommendedTenders} />
+        )}
 
         {isError ? (
           <QueryErrorBlock error={error} onRetry={() => refetch()} />
@@ -424,21 +428,22 @@ const Tenders = () => {
             ))}
           </div>
         ) : tenders?.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground text-lg mb-2">Тендеров пока нет</p>
-            <p className="text-sm text-muted-foreground">
-              Создайте первый тендер, чтобы найти исполнителя или поставщика
-            </p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Тендеров пока нет"
+            description="Создайте первый тендер, чтобы найти исполнителя или поставщика"
+          />
         ) : tenders && tenders.length > 0 && filteredTenders.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg mb-2">Ничего не найдено</p>
-            <p className="text-sm text-muted-foreground mb-4">Попробуйте изменить фильтры или поиск</p>
-            <Button variant="outline" onClick={handleResetFilters}>
-              Сбросить фильтры
-            </Button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Ничего не найдено"
+            description="Попробуйте изменить фильтры или поиск"
+            action={
+              <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
+                Сбросить фильтры
+              </Button>
+            }
+          />
         ) : sortedTenders.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {sortedTenders.map((tender) => (
@@ -459,7 +464,7 @@ const Tenders = () => {
           </div>
         ) : null}
         </MarketplaceFilterLayout>
-      </div>
+      </PageContent>
     </div>
   );
 };

@@ -34,6 +34,8 @@ export function buildRecommendationContext(input: {
   const viewedTenderIds = new Set<string>();
   const contactedCompanyIds = new Set<string>();
   const myCompanyIds = new Set(input.myCompanyIds ?? []);
+  const bidTenderIds = new Set<string>();
+  const preferredTenderTypes = new Set<string>();
   const trendingCompanyScores = new Map<string, number>();
 
   for (const row of input.trending ?? []) {
@@ -62,6 +64,11 @@ export function buildRecommendationContext(input: {
     }
     if (ev.entity_type === "tender" && ev.event_type === "view_tender") {
       viewedTenderIds.add(ev.entity_id);
+      const meta = ev.metadata as Record<string, unknown> | undefined;
+      if (typeof meta?.tender_type === "string") preferredTenderTypes.add(meta.tender_type);
+    }
+    if (ev.entity_type === "tender" && ev.event_type === "bid_tender") {
+      bidTenderIds.add(ev.entity_id);
     }
     if (ev.event_type === "like_promo" && ev.metadata) {
       for (const c of categoriesFromMetadata(ev.metadata as Record<string, unknown>)) {
@@ -84,5 +91,7 @@ export function buildRecommendationContext(input: {
     contactedCompanyIds,
     myCompanyIds,
     trendingCompanyScores,
+    bidTenderIds,
+    preferredTenderTypes,
   };
 }

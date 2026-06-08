@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Loader2, FileText } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,21 +58,31 @@ export default function ContractTemplates() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container max-w-2xl px-4 py-10 pb-24">
-        <Button variant="ghost" asChild className="mb-6 -ml-2 gap-2">
-          <Link to="/profile">
-            <ArrowLeft className="h-4 w-4" />
-            В профиль
-          </Link>
-        </Button>
 
-        <Card className="border shadow-sm">
+      <PageHero
+        eyebrow="Документы"
+        eyebrowIcon={FileText}
+        title="Шаблоны договоров"
+        description="Скачайте документ в Word или PDF, дополните реквизиты и передайте контрагенту — в том числе через чат заявки."
+        compact
+        actions={
+          <Button variant="ghost" asChild className="rounded-xl">
+            <Link to="/profile">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              В профиль
+            </Link>
+          </Button>
+        }
+      />
+
+      <PageContent className="border-b-0">
+        <div className="max-w-2xl mx-auto">
+        <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur shadow-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Шаблоны договоров</CardTitle>
+            <CardTitle className="text-2xl">Параметры документа</CardTitle>
             <CardDescription>
-              Скачайте документ в формате Word (.docx) или PDF. В подвале файла добавлены краткая оговорка и строка «Сгенерировано в BuildConnect» —
-              они не входят в обязательные условия сделки и при необходимости можно убрать в редакторе. Дополните реквизиты, подпишите и передайте контрагенту
-              — в том числе через скрепку в чате заявки.
+              В подвале файла добавлены краткая оговорка и строка «Сгенерировано в BuildConnect» — при необходимости
+              их можно убрать в редакторе.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -137,7 +148,8 @@ export default function ContractTemplates() {
             </div>
           </CardContent>
         </Card>
-      </main>
+        </div>
+      </PageContent>
     </div>
   );
 }

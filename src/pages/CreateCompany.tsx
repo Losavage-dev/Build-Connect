@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableMultiCategoryPicker } from "@/components/SearchableMultiCategoryPicker";
 import Navbar from "@/components/Navbar";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { toast } from "sonner";
@@ -103,22 +104,30 @@ const CreateCompany = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+      <PageHero
+        eyebrow="Компания"
+        eyebrowIcon={Building2}
+        title="Добавить компанию"
+        description="После создания загрузите документы для верификации — в каталоге компания появится после одобрения модератором."
+        compact
+        actions={
+          <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-xl">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Назад
           </Button>
+        }
+      />
 
-          <Card>
+      <PageContent className="border-b-0">
+        <div className="max-w-2xl mx-auto">
+          <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Добавить компанию
+                <Building2 className="h-5 w-5 text-primary" />
+                Данные компании
               </CardTitle>
               <CardDescription>
-                Заполните информацию о компании. После создания загрузите документы для верификации — в каталоге
-                компания появится только после одобрения модератором. Можно указать несколько категорий деятельности.
+                Можно указать несколько категорий деятельности.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -236,7 +245,7 @@ const CreateCompany = () => {
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full rounded-xl btn-glow"
                   size="lg"
                   disabled={createCompany.isPending}
                 >
@@ -253,7 +262,7 @@ const CreateCompany = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </PageContent>
     </div>
   );
 };

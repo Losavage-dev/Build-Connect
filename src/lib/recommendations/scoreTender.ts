@@ -8,6 +8,13 @@ const ROLE_TENDER_TYPES: Partial<Record<string, TenderTypeValue[]>> = {
   client: ["subcontract", "materials", "logistics", "other"],
 };
 
+const TENDER_TYPE_INTEREST_CATEGORIES: Partial<Record<TenderTypeValue, string[]>> = {
+  subcontract: ["Строительство", "Генеральный подряд", "Отделочные работы", "Ремонт"],
+  materials: ["Материалы"],
+  logistics: ["Логистика / доставка"],
+  other: [],
+};
+
 export function scoreTender(tender: Tender, ctx: RecommendationContext): number {
   let score = 10;
 
@@ -21,6 +28,13 @@ export function scoreTender(tender: Tender, ctx: RecommendationContext): number 
   const tType = (tender.tender_type || "other") as TenderTypeValue;
   if (preferred.includes(tType)) score += 28;
 
+  const typeCats = TENDER_TYPE_INTEREST_CATEGORIES[tType] ?? [];
+  for (const cat of typeCats) {
+    if (ctx.interestCategories.includes(cat)) score += 16;
+  }
+
+  if (ctx.preferredTenderTypes.has(tType)) score += 22;
+
   if (tender.budget && tender.budget > 0) score += 8;
   if (tender.deadline) {
     const days = (new Date(tender.deadline).getTime() - Date.now()) / 86400000;
@@ -28,6 +42,7 @@ export function scoreTender(tender: Tender, ctx: RecommendationContext): number 
   }
 
   if (ctx.viewedTenderIds.has(tender.id)) score -= 15;
+  if (ctx.bidTenderIds.has(tender.id)) score -= 180;
   if (tender.client_id === ctx.profileId) score -= 200;
 
   return score;

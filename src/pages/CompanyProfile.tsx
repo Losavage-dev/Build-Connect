@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { authPath } from "@/lib/authRedirect";
-import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Image as ImageIcon, Settings, Clapperboard } from "lucide-react";
+import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Image as ImageIcon, Settings, Clapperboard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ import { ru } from "date-fns/locale";
 
 import { PortfolioProjectCard } from "@/components/PortfolioProjectCard";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 
 const CompanyProfile = () => {
   const { id } = useParams();
@@ -115,25 +116,16 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container px-4 py-8">
-          <Skeleton className="h-8 w-32 mb-6" />
-          <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl p-8 mb-8">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
-                <div className="flex items-start gap-4 mb-4">
-                  <Skeleton className="w-20 h-20 rounded-lg" />
-                  <div>
-                    <Skeleton className="h-8 w-48 mb-2" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
-                </div>
-                <Skeleton className="h-20 w-full mb-4" />
-                <Skeleton className="h-6 w-24" />
-              </div>
-              <Skeleton className="w-80 h-48" />
+        <PageHero eyebrow="Компания" title="Загрузка…" compact />
+        <PageContent className="border-b-0">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Skeleton className="h-64 lg:col-span-2 rounded-2xl" />
+              <Skeleton className="h-64 rounded-2xl" />
             </div>
           </div>
-        </div>
+        </PageContent>
       </div>
     );
   }
@@ -142,14 +134,17 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container px-4 py-8">
-          <QueryErrorBlock title="Не удалось загрузить компанию" error={error} onRetry={() => refetch()} />
-          <div className="text-center mt-4">
-            <Button asChild variant="outline" className="rounded-xl">
-              <Link to="/catalog">Вернуться в каталог</Link>
-            </Button>
+        <PageHero eyebrow="Компания" title="Ошибка загрузки" compact />
+        <PageContent className="border-b-0">
+          <div className="max-w-3xl mx-auto">
+            <QueryErrorBlock title="Не удалось загрузить компанию" error={error} onRetry={() => refetch()} />
+            <div className="text-center mt-4">
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link to="/catalog">Вернуться в каталог</Link>
+              </Button>
+            </div>
           </div>
-        </div>
+        </PageContent>
       </div>
     );
   }
@@ -158,12 +153,15 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container px-4 py-8 text-center">
-          <p className="text-destructive mb-4">Компания не найдена</p>
-          <Button asChild>
-            <Link to="/catalog">Вернуться в каталог</Link>
-          </Button>
-        </div>
+        <PageHero eyebrow="Компания" title="Не найдена" compact />
+        <PageContent className="border-b-0">
+          <div className="max-w-3xl mx-auto text-center py-8">
+            <p className="text-destructive mb-4">Компания не найдена</p>
+            <Button asChild className="rounded-xl">
+              <Link to="/catalog">Вернуться в каталог</Link>
+            </Button>
+          </div>
+        </PageContent>
       </div>
     );
   }
@@ -178,36 +176,48 @@ const CompanyProfile = () => {
   const reviews = company.reviews || [];
   const reviewStats = statsFromCompanyRow(company);
 
+  const heroMeta = [categoryLabel, company.city].filter(Boolean).join(" · ");
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <div className="container px-4 py-8">
-        <Button variant="ghost" asChild className="mb-6">
-          <Link to="/catalog">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Назад к каталогу
-          </Link>
-        </Button>
 
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl p-8 md:p-12 mb-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div className="flex-1">
+      <PageHero
+        eyebrow="Компания"
+        eyebrowIcon={Building2}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {company.name}
+            {company.is_verified ? <VerifiedBadge size="md" /> : null}
+          </span>
+        }
+        description={heroMeta}
+        compact
+        actions={
+          <Button variant="ghost" asChild className="rounded-xl">
+            <Link to="/catalog">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              К каталогу
+            </Link>
+          </Button>
+        }
+      />
+
+      <PageContent className="border-b-0">
+        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur p-6 md:p-8 shadow-sm">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-20 h-20 rounded-lg bg-background flex items-center justify-center text-3xl font-bold text-primary">
+                <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary shrink-0 overflow-hidden border border-border/60">
                   {company.logo_url ? (
-                    <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover rounded-lg" />
+                    <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
                   ) : (
                     company.name.charAt(0)
                   )}
                 </div>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h1 className="text-3xl md:text-4xl font-bold">{company.name}</h1>
-                    {company.is_verified ? <VerifiedBadge size="md" /> : null}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
                     {categoryList.map((cat: string) => (
                       <Badge key={cat} variant="secondary">
                         {cat}
@@ -218,14 +228,13 @@ const CompanyProfile = () => {
                       <span className="text-muted-foreground">{company.city}</span>
                     </div>
                   </div>
+                  <CompanyRatingBadge stats={reviewStats} size="md" />
                 </div>
               </div>
-              
-              <p className="text-lg text-muted-foreground mb-6">{company.description}</p>
-              
-              <div className="mb-6">
-                <CompanyRatingBadge stats={reviewStats} size="md" />
-              </div>
+
+              {company.description ? (
+                <p className="text-muted-foreground leading-relaxed mb-4">{company.description}</p>
+              ) : null}
 
               {profile && company.owner_id === profile.id && (
                 <div className="space-y-3">
@@ -258,8 +267,9 @@ const CompanyProfile = () => {
                 </div>
               )}
             </div>
+          </div>
 
-            <Card className="md:w-80 shrink-0">
+          <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur h-fit">
               <CardHeader>
                 <CardTitle>Контакты</CardTitle>
               </CardHeader>
@@ -365,14 +375,13 @@ const CompanyProfile = () => {
                 ) : null}
               </CardContent>
             </Card>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Видео компании (витрина) — сразу под шапкой, чтобы не терялись под услугами */}
             {(promoPosts.length > 0 || (profile && company.owner_id === profile.id)) && (
-              <Card className="border-primary/15 shadow-sm shadow-primary/5">
+              <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clapperboard className="h-5 w-5 text-primary" />
@@ -445,7 +454,7 @@ const CompanyProfile = () => {
 
             {/* Services */}
             {services.length > 0 && (
-              <Card>
+              <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
                 <CardHeader>
                   <CardTitle>Услуги</CardTitle>
                 </CardHeader>
@@ -467,7 +476,7 @@ const CompanyProfile = () => {
             )}
 
             {/* Portfolio */}
-            <Card>
+            <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
                 <CardTitle>Портфолио</CardTitle>
               </CardHeader>
@@ -485,7 +494,7 @@ const CompanyProfile = () => {
             </Card>
 
             {/* Reviews */}
-            <Card id="reviews">
+            <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur" id="reviews">
               <CardHeader>
                 <CardTitle>Отзывы ({reviews.length})</CardTitle>
               </CardHeader>
@@ -555,7 +564,7 @@ const CompanyProfile = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <Card>
+            <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
                 <CardTitle>О компании</CardTitle>
               </CardHeader>
@@ -600,7 +609,8 @@ const CompanyProfile = () => {
             </Card>
           </div>
         </div>
-      </div>
+        </div>
+      </PageContent>
     </div>
   );
 };

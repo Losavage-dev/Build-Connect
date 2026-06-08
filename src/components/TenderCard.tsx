@@ -83,6 +83,8 @@ export function TenderCard({
   const [sheetOpen, setSheetOpen] = useState(false);
   const { track } = useTrackUserEvent();
   const sheetTrackedRef = useRef(false);
+  const listViewTrackedRef = useRef(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [bidOpen, setBidOpen] = useState(false);
 
   useEffect(() => {
@@ -93,6 +95,39 @@ export function TenderCard({
       tender_type: tender.tender_type,
     });
   }, [sheetOpen, tender.id, tender.city, tender.tender_type, track]);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || listViewTrackedRef.current) return;
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) {
+          if (timer) clearTimeout(timer);
+          timer = null;
+          return;
+        }
+        if (listViewTrackedRef.current) return;
+        timer = setTimeout(() => {
+          if (listViewTrackedRef.current) return;
+          listViewTrackedRef.current = true;
+          track("view_tender", "tender", tender.id, {
+            city: tender.city,
+            tender_type: tender.tender_type,
+            source: "list_impression",
+          });
+        }, 1500);
+      },
+      { threshold: 0.55 },
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [tender.id, tender.city, tender.tender_type, track]);
   const [bidCompanyId, setBidCompanyId] = useState("");
   const [bidDescription, setBidDescription] = useState("");
 
@@ -156,6 +191,7 @@ export function TenderCard({
   return (
     <>
       <Card
+        ref={cardRef}
         id={`tender-listing-${tender.id}`}
         className="border hover:border-primary/25 hover:shadow-sm transition-all"
       >

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { MarketplaceFilterLayout } from "@/components/MarketplaceFilterLayout";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
+import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 import { KAZAKHSTAN_CITIES, MATERIAL_CATALOG, MATERIAL_GROUP_NAMES } from "@/lib/constants";
 
 const CUSTOM_MATERIAL_VALUE = "__custom__";
@@ -270,19 +271,18 @@ const Materials = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container px-4 py-8">
-        <StaffBrowsingBanner />
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Каталог материалов</h1>
-            <p className="text-lg text-muted-foreground">
-              {isLoading
-                ? "Загрузка..."
-                : `${filteredMaterials.length} из ${materials?.length || 0} товаров (с учётом фильтров)`}
-            </p>
-          </div>
-
-          {canCreate && (
+      <PageHero
+        eyebrow="Материалы"
+        eyebrowIcon={Package}
+        title="Каталог строительных материалов"
+        description={
+          isLoading
+            ? "Загрузка…"
+            : `${filteredMaterials.length} из ${materials?.length || 0} товаров (с учётом фильтров)`
+        }
+        compact
+        actions={
+          canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-xl btn-glow font-semibold gap-2">
@@ -290,7 +290,7 @@ const Materials = () => {
                   Выставить товар
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Новый товар</DialogTitle>
                 </DialogHeader>
@@ -398,14 +398,18 @@ const Materials = () => {
                 </form>
               </DialogContent>
             </Dialog>
-          )}
-        </div>
+          ) : null
+        }
+      />
+
+      <PageContent>
+        <StaffBrowsingBanner />
 
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6">
             <Input
               placeholder="Поиск по названию, описанию, компании..."
-              className="max-w-md"
+              className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -420,21 +424,22 @@ const Materials = () => {
               ))}
             </div>
           ) : materials?.length === 0 ? (
-            <div className="text-center py-16">
-              <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg mb-2">Товаров пока нет</p>
-              <p className="text-sm text-muted-foreground">
-                Поставщики ещё не выставили товары в эту категорию
-              </p>
-            </div>
+            <EmptyState
+              icon={Package}
+              title="Товаров пока нет"
+              description="Поставщики ещё не выставили товары в эту категорию"
+            />
           ) : materials && materials.length > 0 && filteredMaterials.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg mb-2">Ничего не найдено</p>
-              <p className="text-sm text-muted-foreground mb-4">Попробуйте изменить фильтры или поиск</p>
-              <Button variant="outline" onClick={handleResetFilters}>
-                Сбросить фильтры
-              </Button>
-            </div>
+            <EmptyState
+              icon={Package}
+              title="Ничего не найдено"
+              description="Попробуйте изменить фильтры или поиск"
+              action={
+                <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
+                  Сбросить фильтры
+                </Button>
+              }
+            />
           ) : filteredMaterials.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredMaterials.map((material) => (
@@ -494,7 +499,7 @@ const Materials = () => {
             </div>
           ) : null}
         </MarketplaceFilterLayout>
-      </div>
+      </PageContent>
     </div>
   );
 };

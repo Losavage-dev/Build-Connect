@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Filter } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import CompanyCard from "@/components/CompanyCard";
 import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import Navbar from "@/components/Navbar";
@@ -23,6 +22,8 @@ import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { useSortedCompanies } from "@/hooks/useRecommendations";
 import type { SortMode } from "@/lib/recommendations";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
+import { MarketplaceFilterLayout } from "@/components/MarketplaceFilterLayout";
 
 const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -116,100 +117,73 @@ const Catalog = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <div className="container px-4 py-8">
+
+      <PageHero
+        eyebrow="Каталог"
+        eyebrowIcon={Building2}
+        title="Компании строительной отрасли"
+        description={
+          isLoading
+            ? "Загрузка каталога…"
+            : `Найдено ${displayCompanies.length || companies?.length || 0} проверенных компаний`
+        }
+        compact
+      />
+
+      <PageContent>
         <StaffBrowsingBanner />
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Каталог компаний</h1>
-          <p className="text-lg text-muted-foreground">
-            {isLoading ? "Загрузка..." : `Найдено ${displayCompanies.length || companies?.length || 0} компаний`}
-          </p>
-        </div>
 
-        <div className="flex gap-6">
-          {/* Desktop Filters */}
-          <aside className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-20 bg-card rounded-lg border p-6">
-              <h2 className="font-semibold text-lg mb-4">Фильтры</h2>
-              <FilterContent />
+        <MarketplaceFilterLayout filterContent={<FilterContent />}>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+            <Input
+              placeholder="Поиск по названию..."
+              className="max-w-md rounded-xl bg-card/80 border-border/60"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Tabs
+              value={sortMode}
+              onValueChange={(v) => {
+                const mode = v as SortMode;
+                setSortMode(mode);
+                const next = new URLSearchParams(searchParams);
+                if (mode === "for_you") next.set("sort", "for_you");
+                else next.delete("sort");
+                setSearchParams(next, { replace: true });
+              }}
+            >
+              <TabsList className="rounded-xl">
+                <TabsTrigger value="rating">По рейтингу</TabsTrigger>
+                <TabsTrigger value="for_you">Для вас</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {isLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CompanyCardSkeleton key={i} />
+              ))}
             </div>
-          </aside>
+          )}
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Mobile Filter Button */}
-            <div className="lg:hidden mb-6">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Фильтры
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader>
-                    <SheetTitle>Фильтры</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <FilterContent />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+          {isError ? <QueryErrorBlock error={error} onRetry={() => refetch()} /> : null}
 
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
-              <Input
-                placeholder="Поиск по названию..."
-                className="max-w-md"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <Tabs
-                value={sortMode}
-                onValueChange={(v) => {
-                  const mode = v as SortMode;
-                  setSortMode(mode);
-                  const next = new URLSearchParams(searchParams);
-                  if (mode === "for_you") next.set("sort", "for_you");
-                  else next.delete("sort");
-                  setSearchParams(next, { replace: true });
-                }}
-              >
-                <TabsList>
-                  <TabsTrigger value="rating">По рейтингу</TabsTrigger>
-                  <TabsTrigger value="for_you">Для вас</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+          {!isLoading && !isError && companies?.length === 0 && (
+            <EmptyState
+              icon={Building2}
+              title="Компании не найдены"
+              description="Попробуйте изменить параметры поиска или фильтры"
+            />
+          )}
 
-            {isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <CompanyCardSkeleton key={i} />
-                ))}
-              </div>
-            )}
-
-            {isError ? (
-              <QueryErrorBlock error={error} onRetry={() => refetch()} />
-            ) : null}
-
-            {!isLoading && !isError && companies?.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground text-lg mb-4">Компании не найдены</p>
-                <p className="text-sm text-muted-foreground">
-                  Попробуйте изменить параметры поиска или фильтры
-                </p>
-              </div>
-            )}
-
-            {!isLoading && !isError && displayCompanies.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {displayCompanies.map((company) => {
-                  const cat = companyCardCategoryProps(
-                    company as { category: string; company_categories?: { category: string }[] },
-                  );
-                  return (
+          {!isLoading && !isError && displayCompanies.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {displayCompanies.map((company) => {
+                const cat = companyCardCategoryProps(
+                  company as { category: string; company_categories?: { category: string }[] },
+                );
+                return (
                   <CompanyCard
                     key={company.id}
                     id={company.id}
@@ -222,13 +196,12 @@ const Catalog = () => {
                     imageUrl={company.logo_url || undefined}
                     isVerified={!!company.is_verified}
                   />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </MarketplaceFilterLayout>
+      </PageContent>
     </div>
   );
 };

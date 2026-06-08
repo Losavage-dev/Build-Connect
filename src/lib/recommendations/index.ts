@@ -2,5 +2,11 @@ export type { RecommendationContext, SortMode, UserEventType, EntityType } from 
 export { buildRecommendationContext } from "./buildContext";
 export { scoreCompany, rankCompanies } from "./scoreCompany";
 export { scoreTender, rankTenders } from "./scoreTender";
+export {
+  getTenderRecommendationReasons,
+  isTenderRecommendable,
+  MIN_RECOMMENDATION_SCORE,
+  type TenderRecommendationReason,
+} from "./tenderReasons";
 export { appendGuestEvent, readGuestEvents } from "./localEvents";
 export { trackUserEvent } from "./trackEvent";

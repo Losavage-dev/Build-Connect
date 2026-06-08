@@ -1,66 +1,136 @@
 import { Link } from "react-router-dom";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight, Building2, Calendar, MapPin, Sparkles, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatTenderDateShort } from "@/lib/tenderDisplay";
 import { TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
-import type { Tender } from "@/hooks/useTenders";
 import { useAuth } from "@/contexts/AuthContext";
+import type { RecommendedTenderItem } from "@/hooks/useRecommendations";
+import { cn } from "@/lib/utils";
 
 type Props = {
-  tenders: Tender[];
+  items: RecommendedTenderItem[];
 };
 
-export function RecommendedTendersSection({ tenders }: Props) {
-  const { profile } = useAuth();
+function formatBudget(budget: number | null) {
+  if (!budget) return null;
+  return new Intl.NumberFormat("ru-KZ", {
+    style: "currency",
+    currency: "KZT",
+    maximumFractionDigits: 0,
+  }).format(budget);
+}
 
-  if (tenders.length === 0) return null;
+function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
+  const typeLabel =
+    TENDER_TYPE_LABELS[(tender.tender_type || "other") as TenderTypeValue] ?? tender.tender_type;
+  const budget = formatBudget(tender.budget);
 
   return (
-    <section className="mb-6 rounded-xl border bg-primary/5 p-4">
-      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-primary text-xs font-medium mb-0.5">
-            <Sparkles className="h-3.5 w-3.5" />
+    <Link
+      to={`/tenders?listing=${encodeURIComponent(tender.id)}`}
+      className={cn(
+        "group flex flex-col shrink-0 w-[min(100%,320px)] snap-start",
+        "rounded-2xl border border-border/60 bg-card/95 backdrop-blur p-5 shadow-sm",
+        "hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200",
+      )}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <Badge variant="secondary" className="text-[11px] rounded-lg font-normal shrink-0">
+          {typeLabel}
+        </Badge>
+        <Badge variant="outline" className="text-[11px] rounded-lg border-green-500/30 text-green-700 dark:text-green-300">
+          Открыт
+        </Badge>
+      </div>
+
+      <h3 className="font-semibold text-base leading-snug line-clamp-2 mb-3 group-hover:text-primary transition-colors">
+        {tender.title}
+      </h3>
+
+      {tender.poster_company ? (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-3 truncate">
+          <Building2 className="h-3.5 w-3.5 shrink-0" />
+          {tender.poster_company.name}
+        </p>
+      ) : null}
+
+      <div className="space-y-1.5 text-sm text-muted-foreground mb-4 flex-1">
+        {tender.city ? (
+          <p className="flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+            {tender.city}
+          </p>
+        ) : null}
+        {budget ? (
+          <p className="flex items-center gap-1.5">
+            <Wallet className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+            {budget}
+          </p>
+        ) : null}
+        {tender.deadline ? (
+          <p className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+            до {formatTenderDateShort(tender.deadline)}
+          </p>
+        ) : null}
+      </div>
+
+      {reasons.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/50">
+          {reasons.map((r) => (
+            <Badge
+              key={r.id}
+              variant="outline"
+              className="text-[10px] font-normal rounded-md px-2 py-0 h-5 border-primary/25 bg-primary/5 text-primary"
+            >
+              {r.label}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </Link>
+  );
+}
+
+export function RecommendedTendersSection({ items }: Props) {
+  const { profile } = useAuth();
+
+  if (items.length === 0) return null;
+
+  const subtitle = profile?.city
+    ? `Подбор для ${profile.city}${profile.role === "contractor" ? " · подрядчик" : profile.role === "supplier" ? " · поставщик" : ""}`
+    : "Подбор по городу, роли и вашей активности на платформе";
+
+  return (
+    <section className="mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+        <div>
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-widest text-primary mb-2">
+            <Sparkles className="h-4 w-4" />
             Для вас
           </p>
-          <h2 className="text-lg font-bold">Рекомендуемые тендеры</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {profile
-              ? "Подбор по городу, роли и вашим просмотрам"
-              : "Войдите и откройте тендеры — блок появится после активности"}
-          </p>
+          <h2 className="text-xl md:text-2xl font-bold">Рекомендуемые тендеры</h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xl">{subtitle}</p>
         </div>
-        <Button variant="outline" size="sm" asChild className="gap-1">
-          <Link to="/tenders">
-            Все тендеры
+        <Button variant="outline" size="sm" asChild className="gap-1 rounded-xl shrink-0 self-start sm:self-auto">
+          <Link to="/tenders?sort=for_you">
+            Все для вас
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
       </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {tenders.map((t) => (
-          <li key={t.id}>
-            <Link
-              to="/tenders"
-              className="block rounded-lg border bg-card px-3 py-2.5 hover:border-primary/40 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="font-semibold line-clamp-2">{t.title}</span>
-                <Badge variant="secondary" className="shrink-0 text-xs">
-                  {TENDER_TYPE_LABELS[(t.tender_type || "other") as TenderTypeValue] ?? t.tender_type}
-                </Badge>
-              </div>
-              {t.city && <p className="text-xs text-muted-foreground mb-1">{t.city}</p>}
-              {t.deadline && (
-                <p className="text-xs text-muted-foreground">
-                  Срок: {formatTenderDateShort(t.deadline)}
-                </p>
-              )}
-            </Link>
-          </li>
+
+      <div
+        className={cn(
+          "flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory",
+          "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
+        )}
+      >
+        {items.map((item) => (
+          <RecommendedTenderCard key={item.tender.id} {...item} />
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

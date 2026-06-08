@@ -43,8 +43,7 @@ import { getRequestDisplay, isRequestIncoming } from "@/lib/requestDisplay";
 import { getOnboardingIntent } from "@/lib/onboarding";
 import { USER_ROLE_HINTS, USER_ROLE_LABELS, isStaffRole } from "@/lib/userRoles";
 import { ModeratorWorkspace } from "@/components/moderator/ModeratorWorkspace";
-import { NotificationsPanel } from "@/components/NotificationsPanel";
-
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 const PROFILE_TABS = ["requests", "tenders", "companies", "reviews", "settings"] as const;
 
 const Profile = () => {
@@ -124,10 +123,15 @@ const Profile = () => {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && PROFILE_TABS.includes(tab as (typeof PROFILE_TABS)[number])) {
+    if (!tab) {
+      const defaultTab = isStaffRole(profile?.role) ? "reports" : "requests";
+      navigate(`/profile?tab=${defaultTab}`, { replace: true });
+      return;
+    }
+    if (PROFILE_TABS.includes(tab as (typeof PROFILE_TABS)[number])) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, navigate, profile?.role]);
 
   if (authLoading || !user) {
     return (
@@ -264,29 +268,31 @@ const Profile = () => {
     : null;
   const canChangeRole = !cooldownUntil || cooldownUntil.getTime() <= Date.now();
 
+  const displayName = profile?.first_name
+    ? `${profile.first_name} ${profile.last_name || ""}`
+    : user?.email?.split("@")[0];
+  const roleLabel =
+    profile?.role === "client" ? "Заказчик" : profile?.role === "contractor" ? "Подрядчик" : "Поставщик";
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <div className="container px-4 py-8">
-        <NotificationsPanel />
+
+      <PageHero eyebrow="Личный кабинет" title={displayName} description={roleLabel} compact />
+
+      <PageContent className="border-b-0">
         <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
-          
           {/* Sidebar */}
           <div className="w-full md:w-72 shrink-0 space-y-6">
-            <div className="bg-card rounded-2xl p-6 border text-center shadow-sm">
+            <div className="bg-card/90 backdrop-blur rounded-2xl p-6 border border-border/60 text-center shadow-sm">
               <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-background shadow-md">
                 <AvatarImage src={avatarUrl} />
                 <AvatarFallback className="text-3xl font-semibold bg-primary/10 text-primary">
                   {firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="font-bold text-xl mb-1 line-clamp-1">
-                {profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}` : user?.email?.split("@")[0]}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-6 font-medium">
-                {profile?.role === "client" ? "Заказчик" : profile?.role === "contractor" ? "Подрядчик" : "Поставщик"}
-              </p>
+              <h2 className="font-bold text-xl mb-1 line-clamp-1">{displayName}</h2>
+              <p className="text-sm text-muted-foreground mb-6 font-medium">{roleLabel}</p>
               <Button variant="outline" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Выйти из аккаунта
@@ -306,9 +312,9 @@ const Profile = () => {
                   <MessageSquare className="h-5 w-5 mr-3" />
                   Заявки и Чаты
                 </div>
-                {(inbox?.total ?? 0) > 0 && (
+                {(inbox?.messages ?? 0) > 0 && (
                   <Badge variant={activeTab === "requests" ? "secondary" : "destructive"} className="rounded-full px-2">
-                    {inbox!.total > 99 ? "99+" : inbox!.total}
+                    {inbox!.messages > 99 ? "99+" : inbox!.messages}
                   </Badge>
                 )}
               </button>
@@ -970,7 +976,7 @@ const Profile = () => {
             )}
           </div>
         </div>
-      </div>
+      </PageContent>
 
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">

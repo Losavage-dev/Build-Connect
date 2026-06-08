@@ -12,7 +12,7 @@ interface CategoryCardProps {
 const CategoryCard = ({ title, icon: Icon, href, description }: CategoryCardProps) => {
   return (
     <Link to={href}>
-      <Card className="group hover-lift cursor-pointer border-2 border-transparent hover:border-primary/20 transition-all duration-300">
+      <Card className="group hover-lift cursor-pointer border-2 border-border/50 hover:border-primary/25 transition-all duration-300 rounded-2xl bg-card/90 backdrop-blur">
         <CardContent className="flex flex-col items-center gap-4 p-8">
           <div className="rounded-2xl bg-primary/10 p-5 group-hover:bg-primary transition-colors duration-300">
             <Icon className="h-8 w-8 text-primary group-hover:text-primary-foreground transition-colors duration-300" />

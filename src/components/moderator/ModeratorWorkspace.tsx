@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { SearchableCitySelect } from "@/components/SearchableCitySelect";
 import { KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { STAFF_ROLE_LABELS } from "@/lib/userRoles";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 import {
   reportOpenTargetLabel,
   reportTargetTypeLabel,
@@ -177,11 +178,22 @@ export function ModeratorWorkspace() {
       ? STAFF_ROLE_LABELS[profile.role as keyof typeof STAFF_ROLE_LABELS]
       : "Модератор";
 
+  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Модератор";
+
   return (
-    <div className="container px-4 py-8">
+    <>
+      <PageHero
+        eyebrow="Кабинет модератора"
+        eyebrowIcon={Shield}
+        title={displayName}
+        description={roleLabel}
+        compact
+      />
+
+      <PageContent className="border-b-0">
       <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
         <aside className="w-full md:w-72 shrink-0 space-y-6">
-          <div className="bg-card rounded-2xl p-6 border text-center shadow-sm">
+          <div className="bg-card/90 backdrop-blur rounded-2xl p-6 border border-border/60 text-center shadow-sm">
             <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-background shadow-md">
               <AvatarImage src={profile?.avatar_url || undefined} />
               <AvatarFallback className="text-3xl font-semibold bg-primary/10 text-primary">
@@ -489,6 +501,7 @@ export function ModeratorWorkspace() {
           )}
         </main>
       </div>
-    </div>
+      </PageContent>
+    </>
   );
 }

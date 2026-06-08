@@ -7,8 +7,11 @@ import {
   rankCompanies,
   rankTenders,
   readGuestEvents,
+  getTenderRecommendationReasons,
+  isTenderRecommendable,
   type RecommendationContext,
   type SortMode,
+  type TenderRecommendationReason,
 } from "@/lib/recommendations";
 import type { Company } from "@/hooks/useCompanies";
 import type { Tender } from "@/hooks/useTenders";
@@ -114,18 +117,43 @@ export function useRecommendedCompanies(companies: Company[] | undefined, maxIte
   }, [companies, ctx, maxItems, hasSignals]);
 }
 
-export function useRecommendedTenders(tenders: Tender[] | undefined, maxItems = 6) {
-  const { ctx } = useRecommendationContext();
+/** Профиль или поведение — достаточно для персонального блока тендеров. */
+export function useCanShowRecommendations(): boolean {
+  const { profile } = useAuth();
   const hasSignals = useHasPersonalizationSignals();
 
   return useMemo(() => {
-    if (!tenders?.length || !hasSignals) return [];
+    if (hasSignals) return true;
+    if (profile?.city?.trim()) return true;
+    if (profile?.role === "client" || profile?.role === "contractor" || profile?.role === "supplier") {
+      return true;
+    }
+    return readGuestEvents().length > 0;
+  }, [hasSignals, profile?.city, profile?.role]);
+}
+
+export type RecommendedTenderItem = {
+  tender: Tender;
+  reasons: TenderRecommendationReason[];
+};
+
+/** Рекомендации: профиль + поведение; минимум 2 релевантных открытых тендера. */
+export function useRecommendedTenders(tenders: Tender[] | undefined, maxItems = 6): RecommendedTenderItem[] {
+  const { ctx } = useRecommendationContext();
+  const canShow = useCanShowRecommendations();
+
+  return useMemo(() => {
+    if (!tenders?.length || !canShow) return [];
     const open = tenders.filter((t) => t.status === "open");
     const pool = open.length > 0 ? open : tenders;
-    const ranked = rankTenders(pool, ctx);
+    const ranked = rankTenders(pool, ctx).filter((t) => isTenderRecommendable(t, ctx));
+    if (ranked.length < 2) return [];
     const cap = Math.min(maxItems, ranked.length);
-    return ranked.slice(0, cap);
-  }, [tenders, ctx, maxItems, hasSignals]);
+    return ranked.slice(0, cap).map((tender) => ({
+      tender,
+      reasons: getTenderRecommendationReasons(tender, ctx),
+    }));
+  }, [tenders, ctx, maxItems, canShow]);
 }
 
 export function useSortedTenders(tenders: Tender[] | undefined, sortMode: SortMode) {

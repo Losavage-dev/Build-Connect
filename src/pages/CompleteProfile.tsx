@@ -89,16 +89,18 @@ const CompleteProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 blueprint-grid opacity-40" aria-hidden />
+      <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} aria-hidden />
       <Navbar />
-      <div className="container max-w-lg mx-auto px-4 py-12">
+      <div className="container max-w-lg mx-auto px-4 py-12 relative flex-1">
         <div className="flex justify-center gap-2 mb-8">
           <Building2 className="h-8 w-8 text-primary" />
           <span className="text-2xl font-bold">BuildConnect</span>
         </div>
 
         {step === "profile" ? (
-          <Card>
+          <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
             <CardHeader>
               <CardTitle>Заполните профиль</CardTitle>
               <CardDescription>
@@ -132,7 +134,7 @@ const CompleteProfile = () => {
                   <Label>Город *</Label>
                   <SearchableCitySelect cities={KAZAKHSTAN_CITIES} value={city} onChange={setCity} placeholder="Выберите город" />
                 </div>
-                <Button type="submit" className="w-full" disabled={saving}>
+                <Button type="submit" className="w-full rounded-xl btn-glow" disabled={saving}>
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Продолжить"}
                 </Button>
               </form>
@@ -151,7 +153,7 @@ const CompleteProfile = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
             <CardHeader>
               <CardTitle>Что планируете на платформе?</CardTitle>
               <CardDescription>

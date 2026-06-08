@@ -23,6 +23,7 @@ import { SERVICE_VITRINE_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { MarketplaceFilterLayout } from "@/components/MarketplaceFilterLayout";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
+import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 
 const Services = () => {
   const navigate = useNavigate();
@@ -213,19 +214,18 @@ const Services = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container px-4 py-8">
-        <StaffBrowsingBanner />
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Каталог услуг</h1>
-            <p className="text-lg text-muted-foreground">
-              {isLoading
-                ? "Загрузка..."
-                : `${filteredServices.length} из ${services?.length || 0} услуг (без категории «Материалы», с учётом фильтров)`}
-            </p>
-          </div>
-
-          {canCreate && (
+      <PageHero
+        eyebrow="Услуги"
+        eyebrowIcon={Wrench}
+        title="Витрина работ подрядчиков"
+        description={
+          isLoading
+            ? "Загрузка…"
+            : `${filteredServices.length} из ${services?.length || 0} услуг (с учётом фильтров)`
+        }
+        compact
+        actions={
+          canCreate ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-xl btn-glow font-semibold gap-2">
@@ -233,7 +233,7 @@ const Services = () => {
                   Добавить услугу
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Новая услуга</DialogTitle>
                 </DialogHeader>
@@ -312,14 +312,18 @@ const Services = () => {
                 </form>
               </DialogContent>
             </Dialog>
-          )}
-        </div>
+          ) : null
+        }
+      />
+
+      <PageContent>
+        <StaffBrowsingBanner />
 
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6">
             <Input
               placeholder="Поиск по названию, описанию, компании, категории..."
-              className="max-w-md"
+              className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -334,21 +338,22 @@ const Services = () => {
               ))}
             </div>
           ) : services?.length === 0 ? (
-            <div className="text-center py-16">
-              <Wrench className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg mb-2">Услуг пока нет</p>
-              <p className="text-sm text-muted-foreground">
-                Подрядчики ещё не опубликовали свои услуги
-              </p>
-            </div>
+            <EmptyState
+              icon={Wrench}
+              title="Услуг пока нет"
+              description="Подрядчики ещё не опубликовали свои услуги"
+            />
           ) : services && services.length > 0 && filteredServices.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg mb-2">Ничего не найдено</p>
-              <p className="text-sm text-muted-foreground mb-4">Попробуйте изменить фильтры или поиск</p>
-              <Button variant="outline" onClick={handleResetFilters}>
-                Сбросить фильтры
-              </Button>
-            </div>
+            <EmptyState
+              icon={Wrench}
+              title="Ничего не найдено"
+              description="Попробуйте изменить фильтры или поиск"
+              action={
+                <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
+                  Сбросить фильтры
+                </Button>
+              }
+            />
           ) : filteredServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredServices.map((service) => (
@@ -409,7 +414,7 @@ const Services = () => {
             </div>
           ) : null}
         </MarketplaceFilterLayout>
-      </div>
+      </PageContent>
     </div>
   );
 };

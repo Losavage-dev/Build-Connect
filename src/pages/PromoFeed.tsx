@@ -48,6 +48,7 @@ import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
+import { PageHero, PageContent } from "@/components/layout/PageHero";
 
 const defaultQuoteText =
   "Прошу рассчитать потенциальный объём заказа и условия по этому предложению.";
@@ -401,45 +402,44 @@ const PromoFeed = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <section
-        className="relative overflow-hidden border-b border-border/40"
-        style={{ background: "var(--gradient-hero)" }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.25),transparent)] pointer-events-none" />
-        <div className="container relative px-4 py-12 md:py-16 text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-4 py-1.5 text-sm font-medium shadow-sm ring-1 ring-border/60">
-            <Clapperboard className="h-4 w-4 text-primary" />
-            Витрина роликов
-          </div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-balance">
+      <PageHero
+        align="center"
+        eyebrow="Витрина роликов"
+        eyebrowIcon={Clapperboard}
+        title={
+          <>
             Выбирайте партнёра по{" "}
             <span className="gradient-text">живой презентации</span>
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto leading-relaxed">
-            Ролики хостятся на YouTube — вы добавляете ссылку у нас, а зрители смотрят и реагируют прямо в ленте. Лайки и
-            комментарии заложены под будущие рекомендации по вовлечённости.
-          </p>
-          {!caps.isStaff && hasCompanies ? (
-            <p className="text-sm text-muted-foreground">
-              Управляйте роликами в{" "}
-              <Link to="/profile" className="text-primary font-semibold underline-offset-2 hover:underline">
-                профиле
-              </Link>{" "}
-              → «Мои компании» → управление → вкладка «Видео».
-            </p>
-          ) : user && !caps.isStaff ? (
-            <p className="text-sm text-muted-foreground">
-              Чтобы публиковать ролики,{" "}
-              <Link to="/create-company" className="text-primary font-semibold underline-offset-2 hover:underline">
-                создайте компанию
-              </Link>
-              .
-            </p>
-          ) : null}
-        </div>
-      </section>
+          </>
+        }
+        description={
+          <>
+            Ролики на YouTube — смотрите, лайкайте и оставляйте комментарии прямо в ленте.
+            {!caps.isStaff && hasCompanies ? (
+              <>
+                {" "}
+                Управление:{" "}
+                <Link to="/profile?tab=companies" className="text-primary font-semibold underline-offset-2 hover:underline">
+                  профиль → мои компании → видео
+                </Link>
+                .
+              </>
+            ) : user && !caps.isStaff ? (
+              <>
+                {" "}
+                Чтобы публиковать,{" "}
+                <Link to="/create-company" className="text-primary font-semibold underline-offset-2 hover:underline">
+                  создайте компанию
+                </Link>
+                .
+              </>
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="container px-4 py-10 max-w-lg mx-auto space-y-8 pb-20">
+      <PageContent className="border-b-0">
+      <div className="max-w-lg mx-auto space-y-8 pb-10">
         <StaffBrowsingBanner />
         <div className="rounded-2xl border bg-card/80 p-4 space-y-3 shadow-sm">
           <p className="text-sm font-medium text-foreground">Фильтры ленты</p>
@@ -601,6 +601,7 @@ const PromoFeed = () => {
           ))
         )}
       </div>
+      </PageContent>
 
       <Dialog
         open={contactOpen}

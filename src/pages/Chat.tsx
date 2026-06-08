@@ -19,7 +19,7 @@ import {
   parseOpeningMessageBody,
   splitRequestOpeningMessage,
 } from "@/lib/requestChatMessage";
-import { getRequestDisplay } from "@/lib/requestDisplay";
+import { getRequestDisplay, counterpartyHref } from "@/lib/requestDisplay";
 import type { Request } from "@/hooks/useRequests";
 import { useUpdateRequestStatus } from "@/hooks/useRequests";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import { uploadRequestChatFile } from "@/lib/requestChatUpload";
 import { PostDealReviewDialog } from "@/components/PostDealReviewDialog";
 import { usePendingCompanyReview } from "@/hooks/usePendingCompanyReview";
 import { canProfileCompleteRequest } from "@/lib/requestCompletion";
+import { fetchPendingCompanyReview } from "@/lib/pendingCompanyReview";
 
 function linkActionLabel(url: string): string {
   try {
@@ -160,6 +161,7 @@ const Chat = () => {
   const [content, setContent] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<{ companyId: string; companyName: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -301,13 +303,13 @@ const Chat = () => {
     requestInfo.status !== "completed" &&
     requestInfo.status !== "rejected";
 
-  const canLeaveReview = Boolean(pendingCompanyReview);
+  const canLeaveReview = Boolean(pendingCompanyReview ?? reviewTarget);
 
   const chatClosed =
     requestInfo?.status === "completed" || requestInfo?.status === "rejected";
 
   const handleCompleteRequest = async () => {
-    if (!requestId) return;
+    if (!requestId || !profile?.id) return;
     try {
       await updateRequest.mutateAsync({ id: requestId, status: "completed" });
       const linkedTender = requestInfo?.source_tender_id;
@@ -318,7 +320,19 @@ const Chat = () => {
       );
       reviewAutoOpenedRef.current = null;
       await queryClient.refetchQueries({ queryKey: ["request-info", requestId] });
-      await queryClient.refetchQueries({ queryKey: ["pending-company-review", requestId] });
+
+      const pending = await fetchPendingCompanyReview(requestId, profile.id);
+      if (pending) {
+        setReviewTarget(pending);
+        queryClient.setQueryData(
+          ["pending-company-review", requestId, profile.id, "completed"],
+          pending,
+        );
+        reviewAutoOpenedRef.current = `${requestId}:${pending.companyId}`;
+        setReviewDialogOpen(true);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["pending-company-review", requestId] });
+      }
     } catch {
       toast.error("Не удалось завершить заявку");
     }
@@ -331,33 +345,50 @@ const Chat = () => {
       <Navbar />
 
       <main className="flex-1 container max-w-4xl mx-auto p-4 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-        <div className="bg-card border rounded-t-xl p-4 flex items-center justify-between shrink-0 shadow-sm">
+        <div className="flex flex-col flex-1 rounded-2xl border border-border/60 bg-card/80 backdrop-blur shadow-sm overflow-hidden min-h-0">
+        <div className="p-4 flex items-center justify-between shrink-0 border-b border-border/60 bg-card/50">
           <div className="flex items-center gap-4 min-w-0">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
 
             <div className="flex items-center gap-3 min-w-0">
-              <Avatar className="h-10 w-10 border shrink-0">
-                <AvatarImage src={chatDisplay?.avatarUrl || ""} />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                  {chatDisplay?.avatarFallback || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words">
-                  {chatDisplay?.title || "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430\u2026"}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 break-words">
-                  {requestInfo?.title || ""}
-                </p>
-              </div>
+              {chatDisplay ? (
+                <Link
+                  to={counterpartyHref(chatDisplay.counterparty)}
+                  className="flex items-center gap-3 min-w-0 rounded-xl outline-offset-2 hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <Avatar className="h-10 w-10 border shrink-0">
+                    <AvatarImage src={chatDisplay.avatarUrl || ""} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+                      {chatDisplay.avatarFallback || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words hover:text-primary transition-colors">
+                      {chatDisplay.title || "Загрузка…"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 break-words">
+                      {requestInfo?.title || ""}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <>
+                  <Avatar className="h-10 w-10 border shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">?</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words">Загрузка…</h2>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {requestInfo ? (
-          <div className="border-x bg-muted/30 px-4 py-2.5 flex flex-wrap items-center gap-2 text-sm shrink-0">
+          <div className="border-b border-border/60 bg-muted/20 px-4 py-2.5 flex flex-wrap items-center gap-2 text-sm shrink-0">
             <Badge variant="outline" className="rounded-lg font-normal">
               {requestStatusLabel[requestInfo.status] || requestInfo.status}
             </Badge>
@@ -399,7 +430,7 @@ const Chat = () => {
           </div>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto bg-muted/20 border-x p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto bg-muted/15 p-4 space-y-4 min-h-0">
           {isLoading && (
             <div className="text-center py-8 text-muted-foreground">
               {"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439\u2026"}
@@ -416,21 +447,32 @@ const Chat = () => {
           {messages?.map((msg) => {
             const isMe = msg.sender_id === profile?.id;
             const initials = msg.sender?.first_name?.charAt(0) || "U";
+            const senderName = msg.sender?.first_name || (isMe ? "Вы" : "Собеседник");
+            const senderProfileHref = `/user/${msg.sender_id}`;
 
             return (
               <div
                 key={msg.id}
                 className={`flex gap-3 max-w-[85%] ${isMe ? "ml-auto flex-row-reverse" : "mr-auto"}`}
               >
-                <Avatar className="h-8 w-8 mt-1 shrink-0">
-                  <AvatarImage src={msg.sender?.avatar_url || ""} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">{initials}</AvatarFallback>
-                </Avatar>
+                <Link
+                  to={senderProfileHref}
+                  className="shrink-0 rounded-full outline-offset-2 hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  title="Открыть профиль"
+                >
+                  <Avatar className="h-8 w-8 mt-1">
+                    <AvatarImage src={msg.sender?.avatar_url || ""} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">{initials}</AvatarFallback>
+                  </Avatar>
+                </Link>
 
                 <div className={`flex flex-col min-w-0 ${isMe ? "items-end" : "items-start"}`}>
-                  <div className="text-xs text-muted-foreground mb-1 px-1">
-                    {msg.sender?.first_name || (isMe ? "\u0412\u044b" : "\u0421\u043e\u0431\u0435\u0441\u0435\u0434\u043d\u0438\u043a")}
-                  </div>
+                  <Link
+                    to={senderProfileHref}
+                    className="text-xs text-muted-foreground mb-1 px-1 hover:text-primary transition-colors"
+                  >
+                    {senderName}
+                  </Link>
                   <div
                     className={`px-4 py-2.5 rounded-2xl max-w-full ${
                       isMe ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border rounded-tl-sm"
@@ -451,7 +493,7 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="bg-card border rounded-b-xl p-4 shrink-0">
+        <div className="bg-card/50 border-t border-border/60 p-4 shrink-0">
           {chatClosed ? (
             <p className="text-sm text-muted-foreground text-center py-2">
               {requestInfo?.status === "rejected"
@@ -501,14 +543,18 @@ const Chat = () => {
             </div>
           )}
         </div>
+        </div>
       </main>
 
-      {requestId && pendingCompanyReview ? (
+      {requestId && (pendingCompanyReview ?? reviewTarget) ? (
         <PostDealReviewDialog
           open={reviewDialogOpen}
-          onOpenChange={setReviewDialogOpen}
-          companyId={pendingCompanyReview.companyId}
-          companyName={pendingCompanyReview.companyName}
+          onOpenChange={(open) => {
+            setReviewDialogOpen(open);
+            if (!open) setReviewTarget(null);
+          }}
+          companyId={(pendingCompanyReview ?? reviewTarget)!.companyId}
+          companyName={(pendingCompanyReview ?? reviewTarget)!.companyName}
         />
       ) : null}
         </>

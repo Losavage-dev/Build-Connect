@@ -29,6 +29,10 @@ export type RecommendationContext = {
   contactedCompanyIds: Set<string>;
   myCompanyIds: Set<string>;
   trendingCompanyScores: Map<string, number>;
+  /** Тендеры, на которые пользователь уже откликался */
+  bidTenderIds: Set<string>;
+  /** Типы тендеров из просмотров (view_tender metadata) */
+  preferredTenderTypes: Set<string>;
 };
 
 export type SortMode = "rating" | "for_you";
