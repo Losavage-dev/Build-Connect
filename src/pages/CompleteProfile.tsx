@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, Loader2, ShoppingBag, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { isProfileComplete } from "@/lib/profile";
+import { isIdentityNameEditable } from "@/lib/profileIdentity";
 import { hasCompletedOnboardingIntent, setOnboardingIntent } from "@/lib/onboarding";
+import { completeProfileSchema, firstZodError } from "@/lib/validation";
 import { toast } from "sonner";
 
 type Step = "profile" | "intent";
@@ -24,6 +26,9 @@ const CompleteProfile = () => {
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
+  const syncedProfileIdRef = useRef<string | null>(null);
+
+  const namesEditable = isIdentityNameEditable(profile);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -32,12 +37,16 @@ const CompleteProfile = () => {
   }, [isLoading, user, navigate]);
 
   useEffect(() => {
-    if (profile) {
-      setFirstName((profile.first_name ?? "").trim());
-      setLastName((profile.last_name ?? "").trim());
-      setPhone((profile.phone ?? "").trim());
-      setCity((profile.city ?? "").trim());
+    if (!profile) {
+      syncedProfileIdRef.current = null;
+      return;
     }
+    if (syncedProfileIdRef.current === profile.id) return;
+    syncedProfileIdRef.current = profile.id;
+    setFirstName((profile.first_name ?? "").trim());
+    setLastName((profile.last_name ?? "").trim());
+    setPhone((profile.phone ?? "").trim());
+    setCity((profile.city ?? "").trim());
   }, [profile]);
 
   useEffect(() => {

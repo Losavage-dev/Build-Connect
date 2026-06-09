@@ -230,7 +230,7 @@ const Help = () => (
       <h2 className="text-xl font-semibold text-foreground">Перед выкладкой в прод</h2>
       <p>
         Чеклист деплоя и команда <code className="text-xs bg-muted px-1 rounded">npm run smoke</code> описаны в файле{" "}
-        <code className="text-xs bg-muted px-1 rounded">DEPLOY_CHECKLIST.md</code> в репозитории. Минимум: все миграции
+        <code className="text-xs bg-muted px-1 rounded">DEPLOY_GUIDE.md</code> в репозитории. Минимум: все миграции
         Supabase, переменные <code className="text-xs bg-muted px-1 rounded">.env</code> на Vercel, smoke в браузере по
         тестовым аккаунтам из <code className="text-xs bg-muted px-1 rounded">seed_test_accounts.sql</code>.
       </p>

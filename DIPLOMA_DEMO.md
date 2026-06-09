@@ -12,7 +12,7 @@
 4. **Vercel**: env `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, деплой Preview/Production.
 5. Локально: `npm run smoke` и `npm run build` — оба должны пройти.
 
-Подробный чеклист: [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md).
+Подробный чеклист: [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
 
 ## Тестовые аккаунты (пароль везде `123456`)
 
@@ -107,7 +107,6 @@
 
 ## Ссылки в репозитории
 
-- [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) — полный деплой
-- [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md) — чеклист перед релизом
+- [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) — деплой и чеклист перед релизом
 - [PROJECT_AUDIT.md](PROJECT_AUDIT.md) — таблицы и API
 - [supabase/diploma_quick_setup.sql](supabase/diploma_quick_setup.sql) — порядок миграций и seed

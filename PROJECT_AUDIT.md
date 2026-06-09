@@ -1,168 +1,58 @@
-# BuildConnect — Полный аудит и план завершения проекта
+# BuildConnect — справочник проекта
 
-## 1. Что это за проект?
+Краткий обзор для диплома и сопровождения. Детали — в [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) и [docs/architecture/09-reference.md](docs/architecture/09-reference.md).
 
-**BuildConnect** — B2B-маркетплейс для строительной отрасли Казахстана.
+## Назначение
 
-| Роль | Описание | Что может делать |
-|:---|:---|:---|
-| **Заказчик** (`client`) | Частное лицо / застройщик | Создаёт тендеры, заказывает услуги/материалы, оставляет отзывы |
-| **Подрядчик** (`contractor`) | Строительная компания | Предлагает услуги, откликается на тендеры, заказывает у поставщиков и субподрядчиков |
-| **Поставщик** (`supplier`) | Магазин/завод материалов | Выставляет товары, принимает заказы. Не может сам заказывать |
+B2B-маркетплейс строительной отрасли Казахстана: каталог компаний, тендеры, услуги и материалы, заявки, чат, модерация и верификация.
 
----
-
-## 2. Стек технологий
-
-### Frontend
-| Технология | Версия | Назначение |
-|:---|:---|:---|
-| React | 18.3 | UI-фреймворк |
-| TypeScript | 5.8 | Типизация |
-| Vite | 5.4 | Сборщик |
-| Tailwind CSS | 3.4 | Стилизация |
-| Shadcn/UI (Radix) | latest | Компоненты |
-| TanStack React Query | 5.83 | Кэширование и состояние данных |
-| React Router DOM | 6.30 | Маршрутизация |
-| Lucide React | 0.462 | Иконки |
-| date-fns | 3.6 | Форматирование дат |
-| Sonner | 1.7 | Toast-уведомления |
-
-### Backend (Supabase)
-| Компонент | Назначение |
+| Роль | Описание |
 |:---|:---|
-| PostgreSQL | Основная БД (11 публичных таблиц + `auth`) |
-| Supabase Auth | Email/Password (`signInWithOAuth` для Google оставлен в `AuthContext`, UI скрыт до настройки провайдера) |
-| Supabase Storage | Бакеты: avatars, logos, projects (см. миграции) |
-| Supabase Realtime | Подписка на `messages` |
-| DB Triggers | Автосоздание профиля при регистрации; автопересчёт рейтинга компании после отзыва |
+| **client** | Заказчик: тендеры, заявки, отзывы |
+| **contractor** | Подрядчик: компания, отклики, услуги |
+| **supplier** | Поставщик: материалы, витрина |
+| **moderator / admin** | Модерация, верификация, жалобы |
 
-### Инфраструктура репозитория
-| Артефакт | Назначение |
+## Стек
+
+**Frontend:** React 18, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, React Router.  
+**Backend:** Supabase (PostgreSQL, Auth, Storage, Realtime, RLS).  
+**Deploy:** Vercel + Supabase Cloud.
+
+## База данных
+
+Схема и связи — в [docs/architecture/05-data-model.md](docs/architecture/05-data-model.md).  
+Миграции: `supabase/migrations/` (**41** файл).  
+Демо-данные: `seed_test_accounts.sql`, `seed_moderator_account.sql`.
+
+## Маршруты
+
+| Маршрут | Доступ |
 |:---|:---|
-| `vercel.json` | SPA: несуществующие пути отдаются через `index.html` |
-| `.env.example` | Шаблон `VITE_SUPABASE_*` для локальной разработки и Vercel |
-| `DEPLOY_GUIDE.md` | Пошаговый деплой Supabase Cloud + Vercel |
+| `/`, `/catalog`, `/company/:id`, `/feed`, `/help` | Публично |
+| `/auth`, `/complete-profile` | Авторизация / онбординг |
+| `/profile`, `/tenders`, `/services`, `/materials`, `/chat/:id`, `/contracts` | Авторизованные |
+| `/create-company`, `/company/:id/manage` | По роли |
+| `/moderation` | moderator, admin |
 
----
+## Реализованный функционал
 
-## 3. Таблицы базы данных
+- Регистрация, профиль, фиксация ФИО после заполнения
+- Каталог, тендеры, услуги, материалы, promo feed
+- Заявки, realtime-чат, статусы, отзывы
+- Верификация компаний, модерация, жалобы
+- Rule-based рекомендации (`user_events`)
+- Экспорт шаблонов договоров (DOCX/PDF)
 
-1. `profiles` — пользователи (`user_id`, имя, роль, город, аватарка)
-2. `companies` — компании (`owner_id`, название, категория, рейтинг)
-3. `company_members` — сотрудники компании (роль admin/member)
-4. `company_services` — внутренние услуги компании
-5. `projects` — портфолио проектов
-6. `project_images` — фото проектов
-7. `requests` — заявки (client → company, статус)
-8. `messages` — сообщения в чате
-9. `reviews` — отзывы (1–5 звёзд)
-10. `tenders` — тендеры
-11. `services` — витрина услуг/материалов
+**Production:** https://build-connect-market.vercel.app/
 
-**Миграции:** `supabase/migrations/` — схема, фичи, триггер рейтинга, storage, авто-профиль, RLS, затем **`20260514120000_api_grants.sql`** (права `anon`/`authenticated` для Data API, если при создании проекта отключали авто-expose таблиц).
+## Документация
 
-**Seed:** `supabase/seed.sql` — тестовые пользователи в `auth.users` с `role` в `raw_user_meta_data`; строки в `public.profiles` создаёт триггер `handle_new_user`, затем seed обновляет телефон и город.
-
----
-
-## 4. Страницы (маршруты)
-
-| Маршрут | Статус | Описание |
-|:---|:---|:---|
-| `/` | ✅ | Главная: герой, категории, динамическая статистика |
-| `/auth` | ✅ | Вход / регистрация по email и паролю (вход через Google в UI отключён) |
-| `/catalog` | ✅ | Каталог компаний с фильтрами |
-| `/company/:id` | ✅ | Профиль компании (публично) |
-| `/company/:id/manage` | ✅ | Управление компанией (только подрядчик/поставщик, `ProtectedRoute`) |
-| `/create-company` | ✅ | Создание компании (роли contractor/supplier) |
-| `/profile` | ✅ | Личный кабинет (только авторизованные) |
-| `/tenders` | ✅ | Витрина тендеров (только авторизованные) |
-| `/services` | ✅ | Витрина услуг (только авторизованные) |
-| `/materials` | ✅ | Витрина материалов (только авторизованные) |
-| `/chat/:requestId` | ✅ | Realtime-чат (только авторизованные) |
-| `*` | ✅ | 404 |
-
-Защита маршрутов: [`src/components/ProtectedRoute.tsx`](src/components/ProtectedRoute.tsx), маршруты в [`src/App.tsx`](src/App.tsx).
-
----
-
-## 5. Что уже реализовано ✅
-
-- [x] Регистрация с выбором роли + вход по email/пароль; триггер создаёт запись в `profiles`
-- [x] Строгие RLS-политики (миграция `00005`) вместо режима «allow all» для продакшена
-- [x] Каталог компаний с фильтрацией
-- [x] Профиль компании (контакты, YouTube, портфолио, отзывы)
-- [x] Создание и управление компанией (лого, проекты, фото)
-- [x] Ролевая модель (ограничения для поставщика, отзывы, заказы у себя)
-- [x] Тендеры, отклики, витрины услуг и материалов, заявки
-- [x] Realtime-чат, счётчик непрочитанных
-- [x] Отзывы и триггер пересчёта рейтинга
-- [x] Загрузка файлов в Storage
-- [x] Удалены зависимости и код Lovable; `README` и мета в `index.html` без ссылок на Lovable
-- [x] `vercel.json` для SPA на Vercel
-
----
-
-## 6. Статус MVP (май 2026)
-
-**Готовность:** ~85–90%. Production: https://build-connect-market.vercel.app/
-
-### Реализовано после первого аудита (13.05)
-
-- [x] Статусы заявок в чате (принять / отклонить / завершить) + RLS
-- [x] Модерация: `/moderation`, верификация, жалобы, бан, журнал
-- [x] Рекомендации (`user_events`), promo feed, шаблоны договоров DOCX/PDF
-- [x] **37** миграций, seed `seed_test_accounts.sql` + `seed_moderator_account.sql`
-- [x] Архитектурная документация (9 диаграмм + reference)
-
-### Остаётся (см. [docs/PROJECT_COMPLETION_PLAN.md](docs/PROJECT_COMPLETION_PLAN.md))
-
-| Фаза | Задачи |
+| Документ | Назначение |
 |:---|:---|
-| **1** | Auth URLs на prod, вход test-аккаунтов на Vercel |
-| **2** | Полный QA по [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md) |
-| **3** | Rich demo seed (доп. компании, pending verification) |
-| **4** | Security audit — [docs/SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md) |
-| **5** | БИН в UI, пагинация, Error Boundary, Zod, Playwright (опц.) |
-| **6** | PDF диплома = код (SPA-BaaS, не microservices) |
-
----
-
-## 7. План (актуализировано)
-
-**Дорожная карта:** [docs/PROJECT_COMPLETION_PLAN.md](docs/PROJECT_COMPLETION_PLAN.md)  
-**Сейчас:** Фаза 1 — Production & Auth.  
-**Демо:** [DIPLOMA_DEMO.md](DIPLOMA_DEMO.md) · **Деплой:** [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md)
-
----
-
-## 8. Архитектурная документация
-
-Архитектура: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 9 основных диаграмм (`docs/architecture/01`–`08`) + справочник `09-reference.md`.
-
----
-
-## 9. История работы над проектом
-
-| Дата | Что сделано |
-|:---|:---|
-| 28.03.2026 | Начало работы. Создан проект на Vite + React + Supabase |
-| 28.03.2026 | Написана начальная схема БД (10 таблиц), seed-данные (3 пользователя) |
-| 28.03.2026 | Реализована авторизация (Email/Password), Auth Context |
-| 28.03.2026 | Создан каталог компаний с фильтрацией |
-| 28.03.2026 | Создана страница создания и управления компанией |
-| 28.03.2026 | Реализованы витрины тендеров и услуг |
-| 28.03.2026 | Добавлена система заявок и realtime-чат |
-| 28.03.2026 | Запрет владельцу заказывать у себя и оставлять отзывы себе |
-| 28.03.2026 | Объединение заявок и чатов в единый раздел профиля |
-| 28.03.2026 | Расширен список категорий компаний |
-| 28.03.2026 | Реализован маркетплейс: отклик на тендеры, заказ услуг |
-| 28.03.2026 | Исправлен UI контактов (длинные ссылки) |
-| 28.03.2026 | Добавлена бизнес-логика ролей (матрица взаимодействий) |
-| 28.03.2026 | Разрешён субподряд (Contractor → Contractor) |
-| 28.03.2026 | Добавлена функция удаления заявок |
-| 28.03.2026 | Создана отдельная страница «Материалы» |
-| 28.03.2026 | Динамическая статистика на главной странице |
-| 13.05.2026 | Полный аудит проекта, создание плана завершения |
-| 20.05.2026 | Актуализация аудита; план завершения (7 фаз), QA/Security checklists, ROADMAP |
+| [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) | Деплой и чеклист |
+| [DIPLOMA_DEMO.md](DIPLOMA_DEMO.md) | Сценарий защиты |
+| [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md) | Функциональный QA |
+| [docs/QA_GUIDE.md](docs/QA_GUIDE.md) | Пошаговая инструкция QA |
+| [docs/SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md) | Безопасность |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Развитие после MVP |

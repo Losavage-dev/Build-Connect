@@ -79,7 +79,7 @@
    - `20240328000004_auto_profile.sql`
    - `20240328000005_rls_policies.sql`
    - `20260514120000_api_grants.sql`
-   - … все файлы из `supabase/migrations/` по порядку имени (полный список — [DEPLOY_CHECKLIST.md](DEPLOY_CHECKLIST.md))
+   - … все **41** файл из `supabase/migrations/` по порядку имени
 
 Перед деплоем: `npm run smoke` и `npm run build`.
 

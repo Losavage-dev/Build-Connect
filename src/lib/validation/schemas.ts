@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+/** Имя/фамилия: буквы (латиница, кириллица, казахские), пробел, дефис, апостроф */
+export const PERSON_NAME_PATTERN = /^[A-Za-zА-Яа-яЁёӘәҒғҚқҢңӨөҮүІі\s'-]+$/u;
+
+export const personNameSchema = z
+  .string()
+  .trim()
+  .min(2, "Минимум 2 символа")
+  .max(40, "Максимум 40 символов")
+  .regex(PERSON_NAME_PATTERN, "Только буквы, пробел, дефис или апостроф");
+
 const emailSchema = z
   .string()
   .trim()
@@ -17,16 +27,28 @@ export const loginSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Имя — минимум 2 символа")
-    .max(80, "Имя слишком длинное"),
+  firstName: personNameSchema,
+  lastName: personNameSchema,
   email: emailSchema,
   password: passwordSchema,
   role: z.enum(["client", "contractor", "supplier"], {
     errorMap: () => ({ message: "Выберите тип аккаунта" }),
   }),
+});
+
+export const completeProfileSchema = z.object({
+  firstName: personNameSchema,
+  lastName: personNameSchema,
+  phone: z.string().trim().min(6, "Укажите телефон").max(20, "Телефон слишком длинный"),
+  city: z.string().trim().min(1, "Выберите город"),
+});
+
+export const profileSettingsSchema = z.object({
+  firstName: personNameSchema,
+  lastName: personNameSchema,
+  phone: z.string().trim().min(6, "Укажите телефон").max(20, "Телефон слишком длинный"),
+  city: z.string().trim().min(1, "Выберите город"),
+  avatarUrl: z.string().optional(),
 });
 
 export const createCompanySchema = z.object({

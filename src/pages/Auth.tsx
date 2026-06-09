@@ -28,7 +28,8 @@ const Auth = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  const [regName, setRegName] = useState("");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regUserType, setRegUserType] = useState<UserRole>("client");
@@ -61,7 +62,8 @@ const Auth = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = registerSchema.safeParse({
-      name: regName,
+      firstName: regFirstName,
+      lastName: regLastName,
       email: regEmail,
       password: regPassword,
       role: regUserType,
@@ -73,7 +75,7 @@ const Auth = () => {
     }
     setIsLoading(true);
     try {
-      await signUp(regEmail.trim(), regPassword, regName.trim(), regUserType);
+      await signUp(regEmail.trim(), regPassword, regFirstName.trim(), regLastName.trim(), regUserType);
     } catch {
       // handled in context
     } finally {

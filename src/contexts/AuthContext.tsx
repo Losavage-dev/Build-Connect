@@ -15,7 +15,10 @@ interface Profile {
   avatar_url: string | null;
   role: UserRole;
   city: string | null;
+  created_at?: string;
   last_role_change_at?: string | null;
+  identity_locked_at?: string | null;
+  name_correction_used_at?: string | null;
   banned_until?: string | null;
   ban_reason?: string | null;
 }
@@ -25,7 +28,13 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    role: UserRole,
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -120,14 +129,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, role: UserRole) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    role: UserRole,
+  ) => {
+    const fn = firstName.trim();
+    const ln = lastName.trim();
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          full_name: name,
+          first_name: fn,
+          last_name: ln,
+          full_name: `${fn} ${ln}`.trim(),
           role: role,
         },
       },

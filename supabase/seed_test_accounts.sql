@@ -70,7 +70,7 @@ INSERT INTO auth.users (
   '{"provider": "email", "providers": ["email"]}',
   now(), now(), '', '', '', '', '', '', '', false
 ),
--- 6. Заказчик С компанией (фаза 1: «Мои компании» у client)
+-- 6. Заказчик с компанией (сценарий «Мои компании» у client)
 (
   'c8f33161-5ccf-4409-a1fc-224445582c06',
   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Building2, MessageSquare, Star, LogOut, Loader2, Plus, Upload, Settings as SettingsIcon, Trash2, FileText, MapPin, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,48 @@ import { getOnboardingIntent } from "@/lib/onboarding";
 import { USER_ROLE_HINTS, USER_ROLE_LABELS, isStaffRole } from "@/lib/userRoles";
 import { ModeratorWorkspace } from "@/components/moderator/ModeratorWorkspace";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
+import {
+  canCorrectIdentityName,
+  identityCorrectionExpiresAt,
+  isIdentityLocked,
+  isIdentityNameEditable,
+} from "@/lib/profileIdentity";
+import { profileSettingsSchema, firstZodError } from "@/lib/validation";
 const PROFILE_TABS = ["requests", "tenders", "companies", "reviews", "settings"] as const;
+
+type ProfileFormSnapshot = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  city: string;
+  avatarUrl: string;
+};
+
+function snapshotFromProfile(p: {
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  city: string | null;
+  avatar_url: string | null;
+}): ProfileFormSnapshot {
+  return {
+    firstName: (p.first_name ?? "").trim(),
+    lastName: (p.last_name ?? "").trim(),
+    phone: (p.phone ?? "").trim(),
+    city: (p.city ?? "").trim(),
+    avatarUrl: p.avatar_url ?? "",
+  };
+}
+
+function snapshotsEqual(a: ProfileFormSnapshot, b: ProfileFormSnapshot): boolean {
+  return (
+    a.firstName === b.firstName &&
+    a.lastName === b.lastName &&
+    a.phone === b.phone &&
+    a.city === b.city &&
+    a.avatarUrl === b.avatarUrl
+  );
+}
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -104,15 +145,41 @@ const Profile = () => {
     enabled: !!profile,
   });
 
-  // Sync form state when profile loads
+  const syncedProfileIdRef = useRef<string | null>(null);
+  const [savedBaseline, setSavedBaseline] = useState<ProfileFormSnapshot | null>(null);
+
+  const currentFormSnapshot = useMemo(
+    (): ProfileFormSnapshot => ({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      city: city.trim(),
+      avatarUrl,
+    }),
+    [firstName, lastName, phone, city, avatarUrl],
+  );
+
+  const isSettingsDirty = useMemo(() => {
+    if (!savedBaseline) return false;
+    return !snapshotsEqual(savedBaseline, currentFormSnapshot);
+  }, [savedBaseline, currentFormSnapshot]);
+
+  // Sync form once per profile тАФ ╨╜╨╡ ╨╖╨░╤В╨╕╤А╨░╨╡╨╝ ╤З╨╡╤А╨╜╨╛╨▓╨╕╨║ ╨┐╤А╨╕ TOKEN_REFRESHED (╤Б╨╝╨╡╨╜╨░ ╨▓╨║╨╗╨░╨┤╨║╨╕)
   useEffect(() => {
-    if (profile) {
-      setFirstName(profile.first_name || "");
-      setLastName(profile.last_name || "");
-      setPhone(profile.phone || "");
-      setCity(profile.city || "");
-      setAvatarUrl(profile.avatar_url || "");
+    if (!profile) {
+      syncedProfileIdRef.current = null;
+      setSavedBaseline(null);
+      return;
     }
+    if (syncedProfileIdRef.current === profile.id) return;
+    syncedProfileIdRef.current = profile.id;
+    const snap = snapshotFromProfile(profile);
+    setSavedBaseline(snap);
+    setFirstName(snap.firstName);
+    setLastName(snap.lastName);
+    setPhone(snap.phone);
+    setCity(snap.city);
+    setAvatarUrl(snap.avatarUrl);
   }, [profile]);
 
   useEffect(() => {
@@ -154,9 +221,55 @@ const Profile = () => {
   }
 
   const handleSaveProfile = async () => {
+    const namesEditable = isIdentityNameEditable(profile);
+
+    const parsed = profileSettingsSchema.safeParse({
+      firstName,
+      lastName,
+      phone,
+      city,
+      avatarUrl,
+    });
+    const err = firstZodError(parsed);
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    if (!parsed.success) return;
+
     setIsSaving(true);
     try {
-      await updateProfile({ first_name: firstName, last_name: lastName, phone, city, avatar_url: avatarUrl });
+      const payload: {
+        first_name?: string;
+        last_name?: string;
+        phone: string;
+        city: string;
+        avatar_url: string | null;
+      } = {
+        phone: parsed.data.phone,
+        city: parsed.data.city,
+        avatar_url: parsed.data.avatarUrl?.trim() || null,
+      };
+
+      if (namesEditable) {
+        payload.first_name = parsed.data.firstName;
+        payload.last_name = parsed.data.lastName;
+      }
+
+      await updateProfile(payload);
+
+      const savedSnap: ProfileFormSnapshot = {
+        firstName: namesEditable ? parsed.data.firstName : (profile?.first_name ?? "").trim(),
+        lastName: namesEditable ? parsed.data.lastName : (profile?.last_name ?? "").trim(),
+        phone: parsed.data.phone,
+        city: parsed.data.city,
+        avatarUrl: parsed.data.avatarUrl?.trim() || "",
+      };
+      setSavedBaseline(savedSnap);
+      if (namesEditable) {
+        setFirstName(savedSnap.firstName);
+        setLastName(savedSnap.lastName);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -165,12 +278,16 @@ const Profile = () => {
   const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const url = await uploadImage(file, "avatars");
     if (url) {
       setAvatarUrl(url);
     }
     e.target.value = "";
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl("");
   };
 
   const handleSignOut = async () => {
@@ -268,6 +385,11 @@ const Profile = () => {
     : null;
   const canChangeRole = !cooldownUntil || cooldownUntil.getTime() <= Date.now();
 
+  const identityLocked = isIdentityLocked(profile);
+  const namesEditable = isIdentityNameEditable(profile);
+  const nameCorrectionAllowed = canCorrectIdentityName(profile);
+  const correctionDeadline = identityCorrectionExpiresAt(profile);
+
   const displayName = profile?.first_name
     ? `${profile.first_name} ${profile.last_name || ""}`
     : user?.email?.split("@")[0];
@@ -286,7 +408,7 @@ const Profile = () => {
           <div className="w-full md:w-72 shrink-0 space-y-6">
             <div className="bg-card/90 backdrop-blur rounded-2xl p-6 border border-border/60 text-center shadow-sm">
               <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-background shadow-md">
-                <AvatarImage src={avatarUrl} />
+                <AvatarImage src={profile?.avatar_url ?? undefined} />
                 <AvatarFallback className="text-3xl font-semibold bg-primary/10 text-primary">
                   {firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
                 </AvatarFallback>

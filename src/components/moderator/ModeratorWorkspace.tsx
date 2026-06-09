@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Archive,
@@ -29,6 +29,7 @@ import {
   REPORT_ESCALATION_THRESHOLD,
 } from "@/lib/moderationLabels";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import { usePendingCompaniesForModeration } from "@/hooks/useCompanyVerification";
 import { useModerationReports, type ModerationReportRow } from "@/hooks/useModerationReports";
 import { ModerationCompanyCard } from "@/components/moderator/ModerationCompanyCard";
@@ -125,19 +126,47 @@ export function ModeratorWorkspace() {
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const syncedProfileIdRef = useRef<string | null>(null);
+  const [savedBaseline, setSavedBaseline] = useState({ firstName: "", lastName: "", phone: "", city: "" });
+
+  const isSettingsDirty = useMemo(() => {
+    const cur = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      city: city.trim(),
+    };
+    return (
+      cur.firstName !== savedBaseline.firstName ||
+      cur.lastName !== savedBaseline.lastName ||
+      cur.phone !== savedBaseline.phone ||
+      cur.city !== savedBaseline.city
+    );
+  }, [firstName, lastName, phone, city, savedBaseline]);
+
+  useEffect(() => {
+    if (!profile) {
+      syncedProfileIdRef.current = null;
+      return;
+    }
+    if (syncedProfileIdRef.current === profile.id) return;
+    syncedProfileIdRef.current = profile.id;
+    const snap = {
+      firstName: (profile.first_name ?? "").trim(),
+      lastName: (profile.last_name ?? "").trim(),
+      phone: (profile.phone ?? "").trim(),
+      city: (profile.city ?? "").trim(),
+    };
+    setSavedBaseline(snap);
+    setFirstName(snap.firstName);
+    setLastName(snap.lastName);
+    setPhone(snap.phone);
+    setCity(snap.city);
+  }, [profile]);
 
   const { data: pending = [], isLoading: pendingLoading } = usePendingCompaniesForModeration();
   const { data: newReports = [], isLoading: newReportsLoading } = useModerationReports("new");
   const { data: archiveReports = [], isLoading: archiveLoading } = useModerationReports("archive");
-
-  useEffect(() => {
-    if (profile) {
-      setFirstName(profile.first_name || "");
-      setLastName(profile.last_name || "");
-      setPhone(profile.phone || "");
-      setCity(profile.city || "");
-    }
-  }, [profile]);
 
   useEffect(() => {
     if (tabParam && MOD_TABS.includes(tabParam as ModTab)) {
@@ -159,14 +188,23 @@ export function ModeratorWorkspace() {
   };
 
   const handleSaveProfile = async () => {
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    const ph = phone.trim();
+    const ct = city.trim();
+    if (!fn || !ln || !ph || !ct) {
+      toast.error("╨Ч╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╨╕╨╝╤П, ╤Д╨░╨╝╨╕╨╗╨╕╤О, ╤В╨╡╨╗╨╡╤Д╨╛╨╜ ╨╕ ╨│╨╛╤А╨╛╨┤");
+      return;
+    }
     setIsSaving(true);
     try {
       await updateProfile({
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        city,
+        first_name: fn,
+        last_name: ln,
+        phone: ph,
+        city: ct,
       });
+      setSavedBaseline({ firstName: fn, lastName: ln, phone: ph, city: ct });
     } finally {
       setIsSaving(false);
     }

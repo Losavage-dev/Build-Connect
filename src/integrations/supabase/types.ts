@@ -225,14 +225,16 @@ export type Database = {
         ]
       }
       profiles: {
-        Row: {
+          Row: {
           avatar_url: string | null
           city: string | null
           created_at: string
           first_name: string | null
           id: string
+          identity_locked_at: string | null
           last_name: string | null
           last_role_change_at: string | null
+          name_correction_used_at: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -246,8 +248,10 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          identity_locked_at?: string | null
           last_name?: string | null
           last_role_change_at?: string | null
+          name_correction_used_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -259,8 +263,10 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          identity_locked_at?: string | null
           last_name?: string | null
           last_role_change_at?: string | null
+          name_correction_used_at?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
