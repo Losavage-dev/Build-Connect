@@ -6,7 +6,8 @@ export type ReviewBlockReason =
   | "guest"
   | "own_company"
   | "already_reviewed"
-  | "no_completed_request";
+  | "no_deal"
+  | "deal_in_progress";
 
 export function useReviewEligibility(companyId: string | undefined, companyOwnerId?: string) {
   const { profile, user } = useAuth();
@@ -46,11 +47,26 @@ export function useReviewEligibility(companyId: string | undefined, companyOwner
         .limit(1)
         .maybeSingle();
       if (errReq) throw errReq;
-      if (!completed) {
-        return { canReview: false, reason: "no_completed_request", completedRequestId: null };
+      if (completed) {
+        return { canReview: true, reason: null, completedRequestId: completed.id };
       }
 
-      return { canReview: true, reason: null, completedRequestId: completed.id };
+      const { data: openDeal, error: errOpen } = await supabase
+        .from("requests")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("client_id", profile.id)
+        .neq("status", "completed")
+        .neq("status", "rejected")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (errOpen) throw errOpen;
+      if (openDeal) {
+        return { canReview: false, reason: "deal_in_progress", completedRequestId: null };
+      }
+
+      return { canReview: false, reason: "no_deal", completedRequestId: null };
     },
     enabled: !!companyId && !!profile,
   });
@@ -64,8 +80,10 @@ export function reviewBlockMessage(reason: ReviewBlockReason | null | undefined)
       return "Нельзя оставить отзыв на свою компанию.";
     case "already_reviewed":
       return "Вы уже оставляли отзыв для этой компании.";
-    case "no_completed_request":
-      return "Отзыв доступен после завершения заявки с этой компанией — завершите диалог в чате.";
+    case "deal_in_progress":
+      return "Завершите текущую заявку в чате — после этого можно оставить отзыв.";
+    case "no_deal":
+      return "";
     default:
       return "";
   }

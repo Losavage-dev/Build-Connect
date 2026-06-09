@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { authPath } from "@/lib/authRedirect";
-import { MapPin, Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Image as ImageIcon, Settings, Clapperboard, Building2 } from "lucide-react";
+import { Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Settings, Clapperboard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,6 @@ import Navbar from "@/components/Navbar";
 import { useCompany } from "@/hooks/useCompanies";
 import { useCompanyPromoPosts } from "@/hooks/usePromoFeed";
 import { youtubeEmbedUrl } from "@/lib/youtube";
-import { companyCategoryLabel } from "@/lib/companyDisplay";
 import { useCreateRequest } from "@/hooks/useRequests";
 import { buildRequestSource } from "@/lib/requestSource";
 import { openRequestChat } from "@/lib/openRequestChat";
@@ -39,6 +38,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { PortfolioProjectCard } from "@/components/PortfolioProjectCard";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
 
@@ -166,17 +166,17 @@ const CompanyProfile = () => {
     );
   }
 
-  const categoryLabel = companyCategoryLabel(company);
   const categoryList =
     company.company_categories?.map((r: { category: string }) => r.category).filter(Boolean) ??
     (company.category ? [company.category] : []);
+
+  const heroDescription =
+    [company.description?.trim(), company.city].filter(Boolean).join(" · ") || undefined;
 
   const projects = company.projects || [];
   const services = company.company_services || [];
   const reviews = company.reviews || [];
   const reviewStats = statsFromCompanyRow(company);
-
-  const heroMeta = [categoryLabel, company.city].filter(Boolean).join(" · ");
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,13 +185,19 @@ const CompanyProfile = () => {
       <PageHero
         eyebrow="Компания"
         eyebrowIcon={Building2}
+        media={<CompanyLogo name={company.name} logoUrl={company.logo_url} size="md" />}
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             {company.name}
             {company.is_verified ? <VerifiedBadge size="md" /> : null}
           </span>
         }
-        description={heroMeta}
+        description={
+          <>
+            {heroDescription ? <p>{heroDescription}</p> : null}
+            <CompanyRatingBadge stats={reviewStats} size="sm" />
+          </>
+        }
         compact
         actions={
           <Button variant="ghost" asChild className="rounded-xl">
@@ -204,179 +210,7 @@ const CompanyProfile = () => {
       />
 
       <PageContent className="border-b-0">
-        <div className="max-w-6xl mx-auto space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur p-6 md:p-8 shadow-sm">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary shrink-0 overflow-hidden border border-border/60">
-                  {company.logo_url ? (
-                    <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
-                  ) : (
-                    company.name.charAt(0)
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    {categoryList.map((cat: string) => (
-                      <Badge key={cat} variant="secondary">
-                        {cat}
-                      </Badge>
-                    ))}
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{company.city}</span>
-                    </div>
-                  </div>
-                  <CompanyRatingBadge stats={reviewStats} size="md" />
-                </div>
-              </div>
-
-              {company.description ? (
-                <p className="text-muted-foreground leading-relaxed mb-4">{company.description}</p>
-              ) : null}
-
-              {profile && company.owner_id === profile.id && (
-                <div className="space-y-3">
-                  {(company as { verification_status?: CompanyVerificationStatus }).verification_status !==
-                  "verified" ? (
-                    <Alert>
-                      <AlertTitle>
-                        {VERIFICATION_STATUS_LABELS[
-                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
-                            "draft") as CompanyVerificationStatus
-                        ]}
-                      </AlertTitle>
-                      <AlertDescription>
-                        {VERIFICATION_STATUS_HINTS[
-                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
-                            "draft") as CompanyVerificationStatus
-                        ]}{" "}
-                        <Link to={`/company/${id}/manage?tab=verification`} className="text-primary font-medium underline">
-                          Перейти к верификации
-                        </Link>
-                      </AlertDescription>
-                    </Alert>
-                  ) : null}
-                  <Button asChild variant="outline" className="rounded-xl">
-                    <Link to={`/company/${id}/manage`}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Управление компанией
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur h-fit">
-              <CardHeader>
-                <CardTitle>Контакты</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {company.phone && (
-                  <div className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a href={`tel:${company.phone}`} className="hover:text-primary transition-colors break-all">
-                      {company.phone}
-                    </a>
-                  </div>
-                )}
-                {company.email && (
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a href={`mailto:${company.email}`} className="hover:text-primary transition-colors break-all">
-                      {company.email}
-                    </a>
-                  </div>
-                )}
-                {company.website && (
-                  <div className="flex items-start gap-3">
-                    <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a href={company.website.startsWith("http") ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors break-all">
-                      {company.website}
-                    </a>
-                  </div>
-                )}
-                {!user ? (
-                  <>
-                    <Separator />
-                    <Button asChild className="w-full" size="lg">
-                      <Link to={authPath(returnTo)}>
-                        <Send className="h-4 w-4 mr-2" />
-                        Войти, чтобы отправить заявку
-                      </Link>
-                    </Button>
-                  </>
-                ) : caps.canContactCompany(company.owner_id) ? (
-                  <>
-                    <Separator />
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" size="lg">
-                          <Send className="h-4 w-4 mr-2" />
-                          Отправить заявку
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader className="space-y-2 text-left">
-                          <DialogTitle className="text-2xl font-bold tracking-tight">Отправить заявку</DialogTitle>
-                          <DialogDescription className="text-base text-muted-foreground">
-                            Сообщение из поля ниже уйдёт в чат с компанией первым. Тема заявки будет видна в шапке диалога.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="title" className="text-base font-semibold">
-                              Тема заявки <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="title"
-                              placeholder="Например: Строительство дома"
-                              value={requestTitle}
-                              onChange={(e) => setRequestTitle(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="description" className="text-base font-semibold">
-                              Сообщение в чат
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Этот текст сразу появится у {company.name} в переписке (отдельно от служебной ссылки на
-                              карточку).
-                            </p>
-                            <Textarea
-                              id="description"
-                              placeholder="Опишите ваш проект или вопрос..."
-                              rows={4}
-                              value={requestDescription}
-                              onChange={(e) => setRequestDescription(e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                            Отмена
-                          </Button>
-                          <Button onClick={handleSubmitRequest} disabled={createRequest.isPending}>
-                            {createRequest.isPending ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Отправка...
-                              </>
-                            ) : (
-                              "Отправить"
-                            )}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </>
-                ) : null}
-              </CardContent>
-            </Card>
-        </div>
-
+        <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Видео компании (витрина) — сразу под шапкой, чтобы не терялись под услугами */}
@@ -536,16 +370,25 @@ const CompanyProfile = () => {
 
                 {user && profile?.id !== company.owner_id ? (
                   <>
-                    <Separator className="my-6" />
                     {reviewEligibilityLoading ? (
-                      <p className="text-sm text-muted-foreground">Проверка возможности оставить отзыв…</p>
-                    ) : (
-                      <ReviewForm
-                        companyId={id!}
-                        disabled={!reviewEligibility?.canReview}
-                        blockMessage={reviewBlockMessage(reviewEligibility?.reason)}
-                      />
-                    )}
+                      <>
+                        <Separator className="my-6" />
+                        <p className="text-sm text-muted-foreground">Проверка возможности оставить отзыв…</p>
+                      </>
+                    ) : reviewEligibility?.canReview ? (
+                      <>
+                        <Separator className="my-6" />
+                        <ReviewForm companyId={id!} />
+                      </>
+                    ) : reviewEligibility?.reason === "already_reviewed" ||
+                      reviewEligibility?.reason === "deal_in_progress" ? (
+                      <>
+                        <Separator className="my-6" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {reviewBlockMessage(reviewEligibility.reason)}
+                        </p>
+                      </>
+                    ) : null}
                   </>
                 ) : !user ? (
                   <>
@@ -564,16 +407,137 @@ const CompanyProfile = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur h-fit lg:sticky lg:top-24">
+              <CardHeader>
+                <CardTitle>Контакты</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {company.phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <a href={`tel:${company.phone}`} className="hover:text-primary transition-colors break-all">
+                      {company.phone}
+                    </a>
+                  </div>
+                )}
+                {company.email && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <a href={`mailto:${company.email}`} className="hover:text-primary transition-colors break-all">
+                      {company.email}
+                    </a>
+                  </div>
+                )}
+                {company.website && (
+                  <div className="flex items-start gap-3">
+                    <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <a
+                      href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors break-all"
+                    >
+                      {company.website}
+                    </a>
+                  </div>
+                )}
+                {!user ? (
+                  <>
+                    <Separator />
+                    <Button asChild className="w-full rounded-xl" size="lg">
+                      <Link to={authPath(returnTo)}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Войти, чтобы отправить заявку
+                      </Link>
+                    </Button>
+                  </>
+                ) : caps.canContactCompany(company.owner_id) ? (
+                  <>
+                    <Separator />
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="w-full rounded-xl" size="lg">
+                          <Send className="h-4 w-4 mr-2" />
+                          Отправить заявку
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader className="space-y-2 text-left">
+                          <DialogTitle className="text-2xl font-bold tracking-tight">Отправить заявку</DialogTitle>
+                          <DialogDescription className="text-base text-muted-foreground">
+                            Сообщение из поля ниже уйдёт в чат с компанией первым. Тема заявки будет видна в шапке
+                            диалога.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="title" className="text-base font-semibold">
+                              Тема заявки <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="title"
+                              placeholder="Например: Строительство дома"
+                              value={requestTitle}
+                              onChange={(e) => setRequestTitle(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="description" className="text-base font-semibold">
+                              Сообщение в чат
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Этот текст сразу появится у {company.name} в переписке (отдельно от служебной ссылки на
+                              карточку).
+                            </p>
+                            <Textarea
+                              id="description"
+                              placeholder="Опишите ваш проект или вопрос..."
+                              rows={4}
+                              value={requestDescription}
+                              onChange={(e) => setRequestDescription(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                            Отмена
+                          </Button>
+                          <Button onClick={handleSubmitRequest} disabled={createRequest.isPending}>
+                            {createRequest.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Отправка...
+                              </>
+                            ) : (
+                              "Отправить"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                ) : null}
+              </CardContent>
+            </Card>
+
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
                 <CardTitle>О компании</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <div>
-                  <p className="font-medium mb-1">Категория</p>
-                  <p className="text-muted-foreground">{categoryLabel}</p>
-                </div>
-                <Separator />
+                {categoryList.length > 0 ? (
+                  <div>
+                    <p className="font-medium mb-2">Направления работы</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {categoryList.map((cat: string) => (
+                        <Badge key={cat} variant="secondary" className="text-xs font-normal">
+                          {cat}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {categoryList.length > 0 ? <Separator /> : null}
                 <div>
                   <p className="font-medium mb-1">Город</p>
                   <p className="text-muted-foreground">{company.city}</p>
@@ -607,6 +571,42 @@ const CompanyProfile = () => {
                 ) : null}
               </CardContent>
             </Card>
+
+            {profile && company.owner_id === profile.id ? (
+              <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
+                <CardHeader>
+                  <CardTitle>Управление</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(company as { verification_status?: CompanyVerificationStatus }).verification_status !==
+                  "verified" ? (
+                    <Alert>
+                      <AlertTitle>
+                        {VERIFICATION_STATUS_LABELS[
+                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
+                            "draft") as CompanyVerificationStatus
+                        ]}
+                      </AlertTitle>
+                      <AlertDescription>
+                        {VERIFICATION_STATUS_HINTS[
+                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
+                            "draft") as CompanyVerificationStatus
+                        ]}{" "}
+                        <Link to={`/company/${id}/manage?tab=verification`} className="text-primary font-medium underline">
+                          Перейти к верификации
+                        </Link>
+                      </AlertDescription>
+                    </Alert>
+                  ) : null}
+                  <Button asChild variant="outline" className="w-full rounded-xl">
+                    <Link to={`/company/${id}/manage`}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Управление компанией
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         </div>
         </div>

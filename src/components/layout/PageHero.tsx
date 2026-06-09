@@ -6,6 +6,8 @@ type PageHeroProps = {
   eyebrowIcon?: LucideIcon;
   title: React.ReactNode;
   description?: React.ReactNode;
+  /** Логотип или иконка слева от заголовка (профиль компании и т.п.) */
+  media?: React.ReactNode;
   actions?: React.ReactNode;
   align?: "left" | "center";
   compact?: boolean;
@@ -18,6 +20,7 @@ export function PageHero({
   eyebrowIcon: EyebrowIcon,
   title,
   description,
+  media,
   actions,
   align = "left",
   compact = false,
@@ -45,7 +48,10 @@ export function PageHero({
             centered ? "flex-col items-center" : "flex-col md:flex-row md:items-end md:justify-between",
           )}
         >
-          <div className={cn("space-y-3", centered && "space-y-4")}>
+          <div className={cn("flex gap-5 md:gap-6 flex-1 min-w-0 items-start", centered && "flex-col items-center")}>
+            {media && !centered ? <div className="shrink-0 pt-1">{media}</div> : null}
+            <div className={cn("space-y-3 min-w-0", centered && "space-y-4")}>
+              {media && centered ? <div className="flex justify-center">{media}</div> : null}
             {eyebrow ? (
               <div
                 className={cn(
@@ -68,15 +74,16 @@ export function PageHero({
               {title}
             </h1>
             {description ? (
-              <p
+              <div
                 className={cn(
-                  "text-muted-foreground leading-relaxed",
+                  "text-muted-foreground leading-relaxed space-y-2",
                   centered ? "text-base md:text-lg max-w-xl mx-auto" : "text-base md:text-lg max-w-2xl",
                 )}
               >
                 {description}
-              </p>
+              </div>
             ) : null}
+            </div>
           </div>
           {actions ? (
             <div className={cn("shrink-0 flex flex-wrap gap-2", centered && "justify-center")}>{actions}</div>
