@@ -602,6 +602,72 @@ export type Database = {
           },
         ]
       }
+      listing_price_insights: {
+        Row: {
+          service_id: string
+          city: string
+          market_product_id: string
+          listing_price: number
+          median_price: number
+          delta_pct: number
+          listing_count: number
+          computed_at: string
+        }
+        Insert: {
+          service_id: string
+          city: string
+          market_product_id: string
+          listing_price: number
+          median_price: number
+          delta_pct: number
+          listing_count?: number
+          computed_at?: string
+        }
+        Update: {
+          service_id?: string
+          city?: string
+          market_product_id?: string
+          listing_price?: number
+          median_price?: number
+          delta_pct?: number
+          listing_count?: number
+          computed_at?: string
+        }
+        Relationships: []
+      }
+      market_products: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          material_group: string
+          price_unit: string
+          unit_label: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          material_group: string
+          price_unit: string
+          unit_label: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          material_group?: string
+          price_unit?: string
+          unit_label?: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           id: string
@@ -611,6 +677,8 @@ export type Database = {
           price: number
           category: string
           material_group: string | null
+          market_product_id: string | null
+          price_unit: string | null
           created_at: string
           updated_at: string
         }
@@ -622,6 +690,8 @@ export type Database = {
           price: number
           category: string
           material_group?: string | null
+          market_product_id?: string | null
+          price_unit?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -633,6 +703,8 @@ export type Database = {
           price?: number
           category?: string
           material_group?: string | null
+          market_product_id?: string | null
+          price_unit?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -841,6 +913,7 @@ export type Database = {
       get_current_profile_id: { Args: never; Returns: string }
       is_company_admin: { Args: { p_company_id: string }; Returns: boolean }
       is_company_member: { Args: { p_company_id: string }; Returns: boolean }
+      recompute_platform_price_aggregates: { Args: never; Returns: undefined }
     }
     Enums: {
       company_member_role: "admin" | "member"

@@ -24,6 +24,10 @@ import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
 import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 import { KAZAKHSTAN_CITIES, MATERIAL_CATALOG, MATERIAL_GROUP_NAMES } from "@/lib/constants";
+import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
+import { useMarketProducts, findMarketProductByName } from "@/hooks/useMarketProducts";
+import { useListingPriceInsights } from "@/hooks/useListingPriceInsights";
+import { PriceInsightBadge } from "@/components/PriceInsightBadge";
 
 const CUSTOM_MATERIAL_VALUE = "__custom__";
 
@@ -35,6 +39,9 @@ const Materials = () => {
   const { user, profile } = useAuth();
   const caps = useCapabilities();
   const { data: materials, isLoading, isError, error, refetch } = useServices("Материалы");
+  const { data: marketProducts } = useMarketProducts();
+  const materialIds = useMemo(() => (materials || []).map((m) => m.id), [materials]);
+  const { data: priceInsights = {} } = useListingPriceInsights(materialIds);
   const { data: myCompanies } = useMyCompanies(profile?.id);
   const createMaterial = useCreateService();
   const createRequest = useCreateRequest();
@@ -196,6 +203,10 @@ const Materials = () => {
       return;
     }
     try {
+      const matchedProduct =
+        materialName !== CUSTOM_MATERIAL_VALUE
+          ? findMarketProductByName(marketProducts, materialName)
+          : findMarketProductByName(marketProducts, customTitle.trim());
       await createMaterial.mutateAsync({
         company_id: companyId,
         title: resolvedTitle,
@@ -203,6 +214,8 @@ const Materials = () => {
         price: Number(price),
         category: "Материалы",
         material_group: materialGroup,
+        market_product_id: matchedProduct?.id ?? null,
+        price_unit: matchedProduct?.price_unit ?? null,
       });
       toast.success("Товар успешно добавлен!");
       setOpen(false);
@@ -245,12 +258,16 @@ const Materials = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("ru-KZ", {
+  const formatPrice = (price: number, unit?: string | null) => {
+    const base = new Intl.NumberFormat("ru-KZ", {
       style: "currency",
       currency: "KZT",
       maximumFractionDigits: 0,
     }).format(price);
+    if (unit && unit in PRICE_UNIT_LABELS) {
+      return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
+    }
+    return base;
   };
 
   const MaterialSkeleton = () => (
@@ -455,7 +472,7 @@ const Materials = () => {
                     </Badge>
                     <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
                       <span className="font-semibold text-sm text-primary">
-                        {formatPrice(material.price)}
+                        {formatPrice(material.price, material.price_unit)}
                       </span>
                     </div>
                   </div>
@@ -463,9 +480,11 @@ const Materials = () => {
                   <h3 className="font-bold text-lg mb-1.5 mt-3 group-hover:text-primary transition-colors line-clamp-1">
                     {material.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                     {material.description}
                   </p>
+
+                  <PriceInsightBadge insight={priceInsights[material.id]} className="mb-4" />
 
                   {material.company_name && (
                     <div className="flex items-center gap-3 pt-3 border-t text-sm text-muted-foreground mb-4">

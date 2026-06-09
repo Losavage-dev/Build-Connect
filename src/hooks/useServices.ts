@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { PriceUnit } from "@/lib/priceInsight";
 
 export interface Service {
   id: string;
@@ -9,6 +10,8 @@ export interface Service {
   price: number;
   category: string;
   material_group?: string | null;
+  market_product_id?: string | null;
+  price_unit?: PriceUnit | null;
   created_at: string;
   updated_at: string;
   // joined
@@ -72,6 +75,8 @@ export function useCreateService() {
       price: number;
       category: string;
       material_group?: string | null;
+      market_product_id?: string | null;
+      price_unit?: PriceUnit | null;
     }) => {
       const { data, error } = await supabase
         .from("services")
@@ -79,10 +84,14 @@ export function useCreateService() {
         .select()
         .single();
       if (error) throw error;
+      if (service.category === "Материалы" && service.market_product_id) {
+        await supabase.rpc("recompute_platform_price_aggregates");
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["listing-price-insights"] });
     },
   });
 }
