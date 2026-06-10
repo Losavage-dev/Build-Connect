@@ -42,6 +42,7 @@ import { PortfolioProjectCard } from "@/components/PortfolioProjectCard";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
+import { CompanyCompareToggleButton } from "@/components/CompanyCompareBar";
 
 const CompanyProfile = () => {
   const { id } = useParams();
@@ -204,12 +205,17 @@ const CompanyProfile = () => {
         }
         compact
         actions={
-          <Button variant="ghost" asChild className="rounded-xl">
-            <Link to="/catalog">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              К каталогу
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {company.verification_status === "verified" || company.is_verified ? (
+              <CompanyCompareToggleButton companyId={company.id} companyName={company.name} />
+            ) : null}
+            <Button variant="ghost" asChild className="rounded-xl">
+              <Link to="/catalog">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                К каталогу
+              </Link>
+            </Button>
+          </div>
         }
       />
 

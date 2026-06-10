@@ -250,6 +250,30 @@ BEGIN
     (p_cont1, c_clientco, 'Доработки по договору', 'Гарантийный осмотр пройден', 'completed'),
     (p_sup, c_clientco, 'Материалы для ремонта', 'Поставка закрыта', 'completed');
 
+  -- Первое сообщение в чате = текст заявки (как при создании через UI)
+  INSERT INTO public.messages (request_id, sender_id, content, is_read)
+  SELECT
+    r.id,
+    r.client_id,
+    CASE
+      WHEN coalesce(trim(r.description), '') <> '' THEN trim(r.title) || E'\n\n' || trim(r.description)
+      ELSE trim(r.title)
+    END,
+    true
+  FROM public.requests r
+  WHERE r.company_id IN (c_alatau, c_monolit, c_materials, c_clientco)
+    AND r.status = 'completed'
+    AND NOT EXISTS (SELECT 1 FROM public.messages m WHERE m.request_id = r.id);
+
+  -- Завершённые demo-заявки не должны светиться как «новые» в колокольчике
+  UPDATE public.notifications n
+  SET read_at = now()
+  FROM public.requests r
+  WHERE n.request_id = r.id
+    AND r.company_id IN (c_alatau, c_monolit, c_materials, c_clientco)
+    AND r.status = 'completed'
+    AND n.read_at IS NULL;
+
   -- Отзывы: разные авторы, рейтинги и тексты (для витрины каталога)
   INSERT INTO public.reviews (company_id, author_id, rating, comment) VALUES
     (c_alatau, p_client, 5, 'Сроки выдержали, бригада на связи была каждый день. Рекомендую для генподряда.'),
@@ -265,6 +289,33 @@ BEGIN
     (c_clientco, p_cont1, 5, 'Доработки сделали быстро, документы в порядке.'),
     (c_clientco, p_sup, 3, 'Небольшая путаница в количестве мешков, в итоге нашли компромисс.');
 END $$;
+
+-- -----------------------------------------------------------------------------
+-- Починка уже существующих завершённых demo-заявок (можно запускать отдельно на prod)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.messages (request_id, sender_id, content, is_read)
+SELECT
+  r.id,
+  r.client_id,
+  CASE
+    WHEN coalesce(trim(r.description), '') <> '' THEN trim(r.title) || E'\n\n' || trim(r.description)
+    ELSE trim(r.title)
+  END,
+  true
+FROM public.requests r
+INNER JOIN public.companies c ON c.id = r.company_id
+WHERE r.status = 'completed'
+  AND c.name IN ('Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
+  AND NOT EXISTS (SELECT 1 FROM public.messages m WHERE m.request_id = r.id);
+
+UPDATE public.notifications n
+SET read_at = now()
+FROM public.requests r
+INNER JOIN public.companies c ON c.id = r.company_id
+WHERE n.request_id = r.id
+  AND r.status = 'completed'
+  AND c.name IN ('Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
+  AND n.read_at IS NULL;
 
 -- Города у любых тендеров без city
 UPDATE public.tenders SET city = COALESCE(city, 'Алматы'), updated_at = now() WHERE city IS NULL;

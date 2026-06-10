@@ -24,6 +24,8 @@ import type { SortMode } from "@/lib/recommendations";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 import { MarketplaceFilterLayout } from "@/components/MarketplaceFilterLayout";
+import { CompanyCompareBar, CompanyCompareLink } from "@/components/CompanyCompareBar";
+import { useCompanyCompare } from "@/hooks/useCompanyCompare";
 
 const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,6 +54,7 @@ const Catalog = () => {
     search: search || undefined,
   });
   const displayCompanies = useSortedCompanies(companies, sortMode);
+  const { isSelected, toggle, isFull, count: compareCount } = useCompanyCompare();
 
   const cities = KAZAKHSTAN_CITIES;
   const categories = BUSINESS_CATEGORIES;
@@ -115,7 +118,7 @@ const Catalog = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${compareCount > 0 ? "pb-24" : ""}`}>
       <Navbar />
 
       <PageHero
@@ -157,6 +160,7 @@ const Catalog = () => {
                 <TabsTrigger value="for_you">Для вас</TabsTrigger>
               </TabsList>
             </Tabs>
+            <CompanyCompareLink />
           </div>
 
           {isLoading && (
@@ -195,6 +199,11 @@ const Catalog = () => {
                     categoriesLine={cat.categoriesLine}
                     imageUrl={company.logo_url || undefined}
                     isVerified={!!company.is_verified}
+                    compare={{
+                      selected: isSelected(company.id),
+                      disabled: isFull && !isSelected(company.id),
+                      onToggle: () => toggle({ id: company.id, name: company.name }),
+                    }}
                   />
                 );
               })}
@@ -202,6 +211,7 @@ const Catalog = () => {
           )}
         </MarketplaceFilterLayout>
       </PageContent>
+      <CompanyCompareBar />
     </div>
   );
 };

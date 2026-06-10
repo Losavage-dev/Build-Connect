@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import CompanyProfile from "./pages/CompanyProfile";
 import CompanyOfferings from "./pages/CompanyOfferings";
+import CompanyCompare from "./pages/CompanyCompare";
 import UserProfile from "./pages/UserProfile";
 import ManageCompany from "./pages/ManageCompany";
 import Auth from "./pages/Auth";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/feed" element={<PromoFeed />} />
             <Route path="/catalog" element={<Catalog />} />
+            <Route path="/catalog/compare" element={<CompanyCompare />} />
             <Route path="/company/:id" element={<CompanyProfile />} />
             <Route path="/company/:id/offerings" element={<CompanyOfferings />} />
             <Route path="/user/:id" element={<UserProfile />} />

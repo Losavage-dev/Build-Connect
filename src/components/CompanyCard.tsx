@@ -18,6 +18,11 @@ interface CompanyCardProps {
   categoriesLine: string;
   imageUrl?: string;
   isVerified?: boolean;
+  compare?: {
+    selected: boolean;
+    disabled: boolean;
+    onToggle: () => void;
+  };
 }
 
 const CompanyCard = ({
@@ -30,12 +35,32 @@ const CompanyCard = ({
   categoriesLine,
   imageUrl,
   isVerified,
+  compare,
 }: CompanyCardProps) => {
   return (
-    <Link to={`/company/${id}`}>
+    <Link to={`/company/${id}`} className={compare ? "block relative" : undefined}>
       <Card className="group hover-lift cursor-pointer h-full border-2 border-transparent hover:border-primary/20 transition-all duration-300 overflow-hidden">
         <CardHeader className="p-0">
           <div className="aspect-video relative overflow-hidden bg-muted">
+            {compare ? (
+              <button
+                type="button"
+                aria-label={compare.selected ? "Убрать из сравнения" : "Добавить в сравнение"}
+                disabled={compare.disabled}
+                className={`absolute top-3 left-3 z-10 rounded-lg border px-2.5 py-1 text-xs font-medium shadow-md transition-colors ${
+                  compare.selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background/95 border-border hover:bg-muted"
+                } ${compare.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!compare.disabled) compare.onToggle();
+                }}
+              >
+                {compare.selected ? "✓ В сравнении" : "+ Сравнить"}
+              </button>
+            ) : null}
             {imageUrl ? (
               <img
                 src={imageUrl}
