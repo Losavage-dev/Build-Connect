@@ -33,6 +33,7 @@ const CreateCompany = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
+  const [bin, setBin] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,6 +73,7 @@ const CreateCompany = () => {
       email,
       website,
       address,
+      bin,
     });
     const validationErr = firstZodError(parsed);
     if (validationErr) {
@@ -89,6 +91,7 @@ const CreateCompany = () => {
         phone: phone.trim() || null,
         email: email.trim() || null,
         website: website.trim() || null,
+        bin: bin.trim() || null,
         logo_url: null,
         owner_id: profile.id,
         categories: selectedCategories,
@@ -229,6 +232,18 @@ const CreateCompany = () => {
                         maxLength={255}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bin">БИН</Label>
+                    <Input
+                      id="bin"
+                      placeholder="12 цифр"
+                      value={bin}
+                      onChange={(e) => setBin(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                      inputMode="numeric"
+                      maxLength={12}
+                    />
                   </div>
 
                   <div className="space-y-2">

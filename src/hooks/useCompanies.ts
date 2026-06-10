@@ -20,6 +20,7 @@ export interface Company {
   verification_submitted_at?: string | null;
   verified_at?: string | null;
   rejection_reason?: string | null;
+  bin?: string | null;
   created_at: string;
   company_categories?: { category: string }[];
 }

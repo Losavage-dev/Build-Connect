@@ -22,6 +22,7 @@ export interface PendingCompanyRow {
   category: string;
   verification_status: CompanyVerificationStatus;
   verification_submitted_at: string | null;
+  bin?: string | null;
   owner_id: string;
   owner?: { first_name: string | null; last_name: string | null; phone: string | null };
 }
@@ -152,6 +153,7 @@ export function usePendingCompaniesForModeration() {
           category,
           verification_status,
           verification_submitted_at,
+          bin,
           owner_id,
           owner:profiles!companies_owner_id_fkey (first_name, last_name, phone)
         `,

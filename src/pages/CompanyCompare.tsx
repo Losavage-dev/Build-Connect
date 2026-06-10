@@ -10,13 +10,16 @@ import { useCompaniesCompareData, type CompanyCompareRow } from "@/hooks/useComp
 import { useCompanyCompare } from "@/hooks/useCompanyCompare";
 import { companyCompareIdsParam } from "@/lib/companyCompare";
 import { useEffect, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { canViewCompanyPrivateDetails } from "@/lib/companyContactAccess";
+import { CompanyPrivateDetailsGate } from "@/components/CompanyPrivateDetailsGate";
 
 type CompareField = {
   label: string;
   render: (row: CompanyCompareRow) => React.ReactNode;
 };
 
-const FIELDS: CompareField[] = [
+const PUBLIC_FIELDS: CompareField[] = [
   { label: "Город", render: (r) => r.city },
   { label: "Категории", render: (r) => r.categoriesLine || "—" },
   {
@@ -37,6 +40,10 @@ const FIELDS: CompareField[] = [
   { label: "Услуги на витрине", render: (r) => r.servicesCount },
   { label: "Материалы на витрине", render: (r) => r.materialsCount },
   { label: "Проектов в портфолио", render: (r) => r.portfolioCount },
+];
+
+const PRIVATE_FIELDS: CompareField[] = [
+  { label: "БИН", render: (r) => r.bin || "—" },
   { label: "Телефон", render: (r) => r.phone || "—" },
   {
     label: "Сайт",
@@ -49,16 +56,25 @@ const FIELDS: CompareField[] = [
         "—"
       ),
   },
-  {
-    label: "Описание",
-    render: (r) => <span className="text-sm leading-relaxed">{r.description}</span>,
-  },
 ];
+
+const DESCRIPTION_FIELD: CompareField = {
+  label: "Описание",
+  render: (r) => <span className="text-sm leading-relaxed">{r.description}</span>,
+};
 
 const CompanyCompare = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const { entries, clear } = useCompanyCompare();
+  const canViewPrivate = canViewCompanyPrivateDetails(!!user);
+  const returnTo = `/catalog/compare${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  const fields = useMemo(
+    () => [...PUBLIC_FIELDS, ...(canViewPrivate ? PRIVATE_FIELDS : []), DESCRIPTION_FIELD],
+    [canViewPrivate],
+  );
 
   const idsFromUrl = useMemo(() => {
     const raw = searchParams.get("ids");
@@ -125,6 +141,9 @@ const CompanyCompare = () => {
 
         {ids.length >= 2 && data && data.length > 0 ? (
           <div className="space-y-4">
+            {!canViewPrivate ? (
+              <CompanyPrivateDetailsGate isAuthenticated={false} returnTo={returnTo} compact={false} />
+            ) : null}
             <div className="overflow-x-auto rounded-xl border bg-card">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
@@ -140,7 +159,7 @@ const CompanyCompare = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {FIELDS.map((field) => (
+                  {fields.map((field) => (
                     <tr key={field.label} className="border-b last:border-b-0">
                       <td className="p-4 font-medium text-muted-foreground align-top">{field.label}</td>
                       {data.map((company) => (

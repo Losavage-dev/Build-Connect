@@ -461,6 +461,7 @@ export function ModeratorWorkspace() {
                         submittedAt={c.verification_submitted_at}
                         ownerName={ownerName}
                         ownerPhone={owner?.phone ?? null}
+                        companyBin={c.bin ?? null}
                         moderatorProfileId={profile!.id}
                       />
                     );

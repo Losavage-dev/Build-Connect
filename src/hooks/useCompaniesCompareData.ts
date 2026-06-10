@@ -17,6 +17,7 @@ export type CompanyCompareRow = {
   portfolioCount: number;
   phone: string | null;
   website: string | null;
+  bin: string | null;
 };
 
 export function useCompaniesCompareData(ids: string[]) {
@@ -37,6 +38,7 @@ export function useCompaniesCompareData(ids: string[]) {
           description,
           phone,
           website,
+          bin,
           is_verified,
           rating,
           review_count,
@@ -73,6 +75,7 @@ export function useCompaniesCompareData(ids: string[]) {
             portfolioCount: company.projects?.length ?? 0,
             phone: company.phone,
             website: company.website,
+            bin: company.bin ?? null,
           } satisfies CompanyCompareRow;
         })
         .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));

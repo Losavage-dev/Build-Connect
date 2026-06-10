@@ -65,6 +65,12 @@ export const createCompanySchema = z.object({
     }),
   website: z.string().max(200).optional(),
   address: z.string().max(200).optional(),
+  bin: z
+    .string()
+    .optional()
+    .refine((v) => !v || v.trim() === "" || /^\d{12}$/.test(v.trim()), {
+      message: "БИН должен содержать 12 цифр",
+    }),
 });
 
 export const reportSchema = z.object({

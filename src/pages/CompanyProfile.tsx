@@ -43,6 +43,8 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
 import { CompanyCompareToggleButton } from "@/components/CompanyCompareBar";
+import { CompanyPrivateDetailsGate } from "@/components/CompanyPrivateDetailsGate";
+import { canViewCompanyPrivateDetails } from "@/lib/companyContactAccess";
 
 const CompanyProfile = () => {
   const { id } = useParams();
@@ -51,6 +53,7 @@ const CompanyProfile = () => {
   const returnTo = `${location.pathname}${location.search}`;
   const { user, profile } = useAuth();
   const caps = useCapabilities();
+  const canViewPrivate = canViewCompanyPrivateDetails(!!user);
   const { data: company, isLoading, error, isError, refetch } = useCompany(id);
   const { data: vitrine } = useCompanyVitrineListings(id);
   const { data: promoPosts = [] } = useCompanyPromoPosts(id);
@@ -399,35 +402,42 @@ const CompanyProfile = () => {
                 <CardTitle>Контакты</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {company.phone && (
-                  <div className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a href={`tel:${company.phone}`} className="hover:text-primary transition-colors break-all">
-                      {company.phone}
-                    </a>
-                  </div>
-                )}
-                {company.email && (
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a href={`mailto:${company.email}`} className="hover:text-primary transition-colors break-all">
-                      {company.email}
-                    </a>
-                  </div>
-                )}
-                {company.website && (
-                  <div className="flex items-start gap-3">
-                    <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <a
-                      href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-primary transition-colors break-all"
-                    >
-                      {company.website}
-                    </a>
-                  </div>
-                )}
+                <CompanyPrivateDetailsGate isAuthenticated={canViewPrivate} returnTo={returnTo}>
+                  <>
+                    {company.phone && (
+                      <div className="flex items-start gap-3">
+                        <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <a href={`tel:${company.phone}`} className="hover:text-primary transition-colors break-all">
+                          {company.phone}
+                        </a>
+                      </div>
+                    )}
+                    {company.email && (
+                      <div className="flex items-start gap-3">
+                        <Mail className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <a href={`mailto:${company.email}`} className="hover:text-primary transition-colors break-all">
+                          {company.email}
+                        </a>
+                      </div>
+                    )}
+                    {company.website && (
+                      <div className="flex items-start gap-3">
+                        <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <a
+                          href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary transition-colors break-all"
+                        >
+                          {company.website}
+                        </a>
+                      </div>
+                    )}
+                    {!company.phone && !company.email && !company.website ? (
+                      <p className="text-sm text-muted-foreground">Контакты не указаны</p>
+                    ) : null}
+                  </>
+                </CompanyPrivateDetailsGate>
                 {!user ? (
                   <>
                     <Separator />
@@ -550,15 +560,31 @@ const CompanyProfile = () => {
                   <p className="font-medium mb-1">Город</p>
                   <p className="text-muted-foreground">{company.city}</p>
                 </div>
-                {company.address && (
+                <CompanyPrivateDetailsGate isAuthenticated={canViewPrivate} returnTo={returnTo}>
                   <>
-                    <Separator />
-                    <div>
-                      <p className="font-medium mb-1">Адрес</p>
-                      <p className="text-muted-foreground">{company.address}</p>
-                    </div>
+                    {company.bin ? (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="font-medium mb-1">БИН</p>
+                          <p className="text-muted-foreground font-mono">{company.bin}</p>
+                        </div>
+                      </>
+                    ) : null}
+                    {company.address ? (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="font-medium mb-1">Адрес</p>
+                          <p className="text-muted-foreground">{company.address}</p>
+                        </div>
+                      </>
+                    ) : null}
+                    {!company.bin && !company.address ? (
+                      <p className="text-sm text-muted-foreground">Реквизиты и адрес не указаны</p>
+                    ) : null}
                   </>
-                )}
+                </CompanyPrivateDetailsGate>
                 <Separator />
                 <div>
                   <p className="font-medium mb-1">Проектов в портфолио</p>

@@ -67,6 +67,7 @@ const ManageCompany = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
+  const [bin, setBin] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
 
   // Service dialog
@@ -109,6 +110,7 @@ const ManageCompany = () => {
       setPhone(company.phone || "");
       setEmail(company.email || "");
       setWebsite(company.website || "");
+      setBin((company as { bin?: string | null }).bin || "");
       setLogoUrl(company.logo_url || "");
     }
   }, [company]);
@@ -177,6 +179,11 @@ const ManageCompany = () => {
       toast.error("Выберите хотя бы одну категорию");
       return;
     }
+    const binTrimmed = bin.trim();
+    if (binTrimmed && !/^\d{12}$/.test(binTrimmed)) {
+      toast.error("БИН должен содержать 12 цифр");
+      return;
+    }
     try {
       await replaceCompanyCategories.mutateAsync({
         companyId: id!,
@@ -192,6 +199,7 @@ const ManageCompany = () => {
         phone: phone.trim() || null,
         email: email.trim() || null,
         website: website.trim() || null,
+        bin: binTrimmed || null,
         logo_url: logoUrl || null,
       });
       toast.success("Компания обновлена");
@@ -530,6 +538,18 @@ const ManageCompany = () => {
                       <Label>Email (необязательно)</Label>
                       <Input value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>БИН (необязательно)</Label>
+                    <Input
+                      value={bin}
+                      onChange={(e) => setBin(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                      inputMode="numeric"
+                      placeholder="12 цифр"
+                      maxLength={12}
+                    />
+                    <p className="text-xs text-muted-foreground">Виден авторизованным пользователям после публикации профиля</p>
                   </div>
 
                   <div className="space-y-2">

@@ -21,6 +21,7 @@ type Props = {
   submittedAt: string | null;
   ownerName: string;
   ownerPhone: string | null;
+  companyBin?: string | null;
   moderatorProfileId: string;
 };
 
@@ -32,6 +33,7 @@ export function ModerationCompanyCard({
   submittedAt,
   ownerName,
   ownerPhone,
+  companyBin,
   moderatorProfileId,
 }: Props) {
   const [comment, setComment] = useState("");
@@ -76,6 +78,7 @@ export function ModerationCompanyCard({
         <p className="text-sm text-muted-foreground">
           Владелец: {ownerName}
           {ownerPhone ? ` · ${ownerPhone}` : ""}
+          {companyBin ? ` · БИН ${companyBin}` : ""}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
