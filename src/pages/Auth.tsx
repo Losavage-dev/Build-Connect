@@ -135,9 +135,29 @@ const Auth = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Имя</Label>
-                    <Input id="name" type="text" placeholder="Ваше имя" value={regName} onChange={(e) => setRegName(e.target.value)} required />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">Имя</Label>
+                      <Input
+                        id="first-name"
+                        type="text"
+                        placeholder="Имя"
+                        value={regFirstName}
+                        onChange={(e) => setRegFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Фамилия</Label>
+                      <Input
+                        id="last-name"
+                        type="text"
+                        placeholder="Фамилия"
+                        value={regLastName}
+                        onChange={(e) => setRegLastName(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="reg-email">Email</Label>
