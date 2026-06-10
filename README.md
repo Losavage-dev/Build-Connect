@@ -1,64 +1,121 @@
 # BuildConnect
 
-B2B-маркетплейс для строительной отрасли Казахстана: каталог компаний, тендеры, витрина услуг и материалов, заявки и realtime-чат. Фронтенд — **React 18 + Vite + TypeScript + Tailwind + shadcn/ui**, бэкенд — **Supabase** (PostgreSQL, Auth, Storage, Realtime).
+B2B marketplace for Kazakhstan's construction industry: verified company catalog, tenders, services and materials listings, lead requests, and real-time chat.
 
-## Основной вариант: Supabase Cloud (без Docker)
+**Live demo:** [build-connect-market.vercel.app](https://build-connect-market.vercel.app/)
 
-Для разработки и демо **не нужен** Docker: фронт крутится на вашем ПК, а база и авторизация — в облаке [supabase.com](https://supabase.com).
+## Overview
 
-1. Создайте проект в Supabase (регион, например, **Frankfurt** или **Mumbai**).
-2. Примените миграции из `supabase/migrations/` по порядку (все файлы по дате в имени, включая `20260514120000_api_grants.sql`) — через **SQL Editor** или CLI `supabase link` + `supabase db push` (Docker для этого **не** требуется).
-3. Скопируйте **Project URL** и **anon key** (Settings → API).
-4. В корне проекта:
+BuildConnect connects construction clients, contractors, and suppliers on a single platform. Companies publish profiles, portfolio projects, and marketplace listings; users browse without signing in and authenticate only when placing a request or order.
+
+### Core features
+
+| Area | Description |
+|------|-------------|
+| **Company catalog** | Search and filter verified companies by city and category |
+| **Tenders** | Clients publish tenders; contractors submit bids and open chats |
+| **Marketplace** | Public listings for services and building materials |
+| **Company storefront** | Per-company offerings page with materials/services tabs and filters |
+| **Price insights** | Platform median price comparison for material SKUs (phase 1) |
+| **Promo feed** | YouTube-style company video showcase |
+| **Requests & chat** | Real-time messaging, attachments, status workflow |
+| **Reviews** | Company reviews after completed deals |
+| **Moderation** | Verification queue, reports, staff actions |
+| **Recommendations** | Rule-based personalization from `user_events` |
+| **Contracts** | Client-side DOCX/PDF export from templates |
+
+### User roles
+
+`client` · `contractor` · `supplier` · `moderator` · `admin`
+
+## Tech stack
+
+| Layer | Technologies |
+|-------|--------------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (Radix), TanStack Query, React Router, Zod |
+| Backend | Supabase — PostgreSQL, Auth, Storage, Realtime, Edge Functions |
+| Deployment | Vercel (SPA) + Supabase Cloud |
+
+Architecture is a **single-page application (SPA) with Backend-as-a-Service (BaaS)** — not a microservices setup.
+
+## Quick start (Supabase Cloud)
+
+Docker is **not required** for development. The frontend runs locally; database and auth live in [Supabase Cloud](https://supabase.com).
+
+1. Create a Supabase project (e.g. region **Frankfurt** or **Mumbai**).
+2. Apply migrations from `supabase/migrations/` in chronological order — via **SQL Editor** or CLI:
+   ```bash
+   npx supabase link --project-ref YOUR_REF
+   npx supabase db push
+   ```
+3. Copy **Project URL** and **anon key** from Settings → API.
+4. Configure environment:
    ```bash
    cd buildconnectmarket
    cp .env.example .env
    ```
-   Впишите в `.env`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
-5. Установите зависимости и запустите фронт:
+   Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env`.
+5. Install and run:
    ```bash
    npm install
    npm run dev
    ```
-   Если в консоли слишком много лишних **Network** URL (старые Ethernet, виртуальные адаптеры), в `.env` добавьте строку `DEV_SERVER_HOST=10.202.27.47` (ваш IPv4 из Wi‑Fi, см. `ipconfig`) и снова `npm run dev` — Vite будет слушать только этот адрес; открывайте сайт как `http://10.202.27.47:8080` (и у друга тот же URL). При смене сети обновите IP.
-6. В Supabase: **Authentication → URL Configuration** — укажите `http://localhost:8080` (или ваш порт Vite) в **Site URL** и в **Redirect URLs** (`http://localhost:8080/**`), чтобы вход и сброс пароля работали локально.
-7. Для демо-данных см. раздел «Seed» в [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
+   Default URL: `http://localhost:8080` (Vite picks the next free port if 8080 is busy).
+6. In Supabase **Authentication → URL Configuration**, add your local URL to **Site URL** and **Redirect URLs** (e.g. `http://localhost:8080/**`).
+7. Load demo data (SQL Editor, in order):
+   - `supabase/seed_test_accounts.sql` — test users (password `123456`)
+   - `supabase/seed_market_materials.sql` — demo suppliers and price-comparison data
 
-Полная пошаговая инструкция (облако + Vercel + Auth + seed): **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)**.  
-Сценарий защиты диплома (10–15 мин, тестовые аккаунты): **[DIPLOMA_DEMO.md](DIPLOMA_DEMO.md)**.
+Full deployment guide: **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)**  
+Diploma demo script (10–15 min): **[DIPLOMA_DEMO.md](DIPLOMA_DEMO.md)**
 
-## Требования
+### Optional: local Supabase + Docker
+
+For a fully offline database on your machine:
+
+```bash
+npx supabase start
+npx supabase db reset
+```
+
+Requires [Docker Desktop](https://docs.docker.com/desktop/).
+
+## Requirements
 
 - Node.js 18+
 - npm
-- Аккаунт Supabase (бесплатный тариф достаточно)
+- Supabase account (free tier is sufficient)
 
-Опционально: [Supabase CLI](https://supabase.com/docs/guides/cli) (`npx supabase …`) для `link` / `db push` без ручной вставки SQL.
+Optional: [Supabase CLI](https://supabase.com/docs/guides/cli) for `link` / `db push`.
 
-## Локальный Supabase + Docker (опционально)
+## Scripts
 
-Нужен только если хотите **полностью офлайн-БД** на своём ПК:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build → `dist/` |
+| `npm run preview` | Preview production build |
+| `npm run lint` | ESLint |
+| `npm run smoke` | Pre-deploy connectivity check |
 
-- [Docker Desktop](https://docs.docker.com/desktop/)
-- Команды: `npx supabase start`, затем `npx supabase db reset` (поднимет контейнеры и применит миграции + `seed.sql`).
+## Documentation
 
-Без Docker эти команды работать не будут — используйте облако, как выше.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — system architecture (diagrams + reference)
+- **[docs/architecture/README.md](docs/architecture/README.md)** — architecture sections 01–09
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — post-MVP roadmap
+- **[PROJECT_AUDIT.md](PROJECT_AUDIT.md)** — features, tables, constraints
 
-## Сборка
+## Test accounts
 
-```bash
-npm run build
-npm run preview
-```
+After running `seed_test_accounts.sql`, password for all `@test.com` users is **`123456`**:
 
-Результат в каталоге `dist/`. Деплой фронта на **Vercel** — см. [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
+| Email | Role |
+|-------|------|
+| `client@test.com` | Client |
+| `contractor1@test.com` | Contractor |
+| `supplier@test.com` | Supplier |
+| `moderator@test.com` | Moderator |
 
-## Документация по коду
+## License
 
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — архитектура (9 диаграмм + справочник)
-- [docs/architecture/README.md](docs/architecture/README.md) — оглавление 01–09
-- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) — функции, таблицы, ограничения
-
-## Лицензия
-
-Приватный учебный / дипломный проект.
+Private academic / diploma project.

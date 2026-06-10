@@ -515,7 +515,7 @@ const CompanyProfile = () => {
               </CardHeader>
               <CardContent>
                 <Button asChild variant="outline" className="w-full rounded-xl">
-                  <Link to={`/company/${id}/offerings`}>
+                  <Link to={`/company/${id}/offerings`} state={{ from: `${location.pathname}${location.search}` }}>
                     {vitrineTotal > 0 ? "Открыть витрину" : "Посмотреть витрину"}
                   </Link>
                 </Button>

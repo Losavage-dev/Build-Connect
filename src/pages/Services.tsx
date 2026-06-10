@@ -415,6 +415,7 @@ const Services = () => {
                       <Wrench className="h-4 w-4" />
                       <Link
                         to={`/company/${service.company_id}/offerings`}
+                        state={{ from: `${location.pathname}${location.search}` }}
                         className="font-medium hover:text-primary transition-colors"
                       >
                         {service.company_name}
