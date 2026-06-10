@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { authPath } from "@/lib/authRedirect";
-import { Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Settings, Clapperboard, Building2 } from "lucide-react";
+import { Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Settings, Clapperboard, Building2, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import { useCompany } from "@/hooks/useCompanies";
+import { useCompanyVitrineListings } from "@/hooks/useServices";
 import { useCompanyPromoPosts } from "@/hooks/usePromoFeed";
 import { youtubeEmbedUrl } from "@/lib/youtube";
 import { useCreateRequest } from "@/hooks/useRequests";
@@ -50,6 +51,7 @@ const CompanyProfile = () => {
   const { user, profile } = useAuth();
   const caps = useCapabilities();
   const { data: company, isLoading, error, isError, refetch } = useCompany(id);
+  const { data: vitrine } = useCompanyVitrineListings(id);
   const { data: promoPosts = [] } = useCompanyPromoPosts(id);
   const createRequest = useCreateRequest();
   const { data: reviewEligibility, isLoading: reviewEligibilityLoading } = useReviewEligibility(
@@ -174,9 +176,11 @@ const CompanyProfile = () => {
     [company.description?.trim(), company.city].filter(Boolean).join(" · ") || undefined;
 
   const projects = company.projects || [];
-  const services = company.company_services || [];
   const reviews = company.reviews || [];
   const reviewStats = statsFromCompanyRow(company);
+  const vitrineMaterials = vitrine?.materials.length ?? 0;
+  const vitrineServices = vitrine?.services.length ?? 0;
+  const vitrineTotal = vitrineMaterials + vitrineServices;
 
   return (
     <div className="min-h-screen bg-background">
@@ -282,29 +286,6 @@ const CompanyProfile = () => {
                       </Button>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Services */}
-            {services.length > 0 && (
-              <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
-                <CardHeader>
-                  <CardTitle>Услуги</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {services.map((service: any) => (
-                      <Badge key={service.id} variant="secondary">
-                        {service.name}
-                        {service.price_from && (
-                          <span className="ml-1 text-xs">
-                            от {service.price_from.toLocaleString()} ₸
-                          </span>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             )}
@@ -517,6 +498,27 @@ const CompanyProfile = () => {
                     </Dialog>
                   </>
                 ) : null}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-muted-foreground" />
+                  Витрина
+                </CardTitle>
+                <CardDescription>
+                  {vitrineTotal > 0
+                    ? `${vitrineMaterials} материалов · ${vitrineServices} услуг на маркетплейсе`
+                    : "Материалы и услуги, опубликованные на маркетплейсе"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full rounded-xl">
+                  <Link to={`/company/${id}/offerings`}>
+                    {vitrineTotal > 0 ? "Открыть витрину" : "Посмотреть витрину"}
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

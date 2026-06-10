@@ -57,14 +57,24 @@ const Materials = () => {
   const [city, setCity] = useState<string>(searchParams.get("city") || "all");
   const [groupFilter, setGroupFilter] = useState<string>(searchParams.get("group") || "all");
   const [nameFilter, setNameFilter] = useState<string>(searchParams.get("name") || "all");
+  const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get("company") || "all");
   const [search, setSearch] = useState<string>(searchParams.get("search") || "");
 
   useEffect(() => {
     setCity(searchParams.get("city") || "all");
     setGroupFilter(searchParams.get("group") || "all");
     setNameFilter(searchParams.get("name") || "all");
+    setCompanyFilter(searchParams.get("company") || "all");
     setSearch(searchParams.get("search") ?? "");
   }, [searchParams]);
+
+  const companyOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of materials || []) {
+      if (m.company_id && m.company_name) map.set(m.company_id, m.company_name);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ru"));
+  }, [materials]);
 
   const nameOptionsForFilter = useMemo(() => {
     const fromCatalog =
@@ -100,11 +110,12 @@ const Materials = () => {
       const group = m.material_group || "Прочее";
       if (groupFilter !== "all" && group !== groupFilter) return false;
       if (nameFilter !== "all" && m.title !== nameFilter) return false;
+      if (companyFilter !== "all" && m.company_id !== companyFilter) return false;
       if (!q) return true;
       const blob = `${m.title} ${m.material_group || ""} ${m.description} ${m.company_name || ""}`.toLowerCase();
       return blob.includes(q);
     });
-  }, [materials, city, groupFilter, nameFilter, search]);
+  }, [materials, city, groupFilter, nameFilter, companyFilter, search]);
 
   const canCreate = caps.canPublishListing();
 
@@ -112,12 +123,14 @@ const Materials = () => {
     setCity("all");
     setGroupFilter("all");
     setNameFilter("all");
+    setCompanyFilter("all");
     setSearch("");
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("city");
       next.delete("group");
       next.delete("name");
+      next.delete("company");
       next.delete("search");
       return next;
     });
@@ -159,6 +172,22 @@ const Materials = () => {
             {nameOptionsForFilter.map((n) => (
               <SelectItem key={n} value={n}>
                 {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Компания</label>
+        <Select value={companyFilter} onValueChange={setCompanyFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Компания" />
+          </SelectTrigger>
+          <SelectContent className="max-h-64">
+            <SelectItem value="all">Все компании</SelectItem>
+            {companyOptions.map(([cid, name]) => (
+              <SelectItem key={cid} value={cid}>
+                {name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -489,7 +518,12 @@ const Materials = () => {
                   {material.company_name && (
                     <div className="flex items-center gap-3 pt-3 border-t text-sm text-muted-foreground mb-4">
                       <Package className="h-4 w-4" />
-                      <span className="font-medium">{material.company_name}</span>
+                      <Link
+                        to={`/company/${material.company_id}/offerings`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
+                        {material.company_name}
+                      </Link>
                       {material.company_city && (
                         <div className="flex items-center gap-1 ml-auto">
                           <MapPin className="h-3.5 w-3.5" />

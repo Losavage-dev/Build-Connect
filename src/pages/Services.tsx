@@ -46,13 +46,23 @@ const Services = () => {
 
   const [city, setCity] = useState<string>(searchParams.get("city") || "all");
   const [catFilter, setCatFilter] = useState<string>(searchParams.get("category") || "all");
+  const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get("company") || "all");
   const [search, setSearch] = useState<string>(searchParams.get("search") || "");
 
   useEffect(() => {
     setCity(searchParams.get("city") || "all");
     setCatFilter(searchParams.get("category") || "all");
+    setCompanyFilter(searchParams.get("company") || "all");
     setSearch(searchParams.get("search") ?? "");
   }, [searchParams]);
+
+  const companyOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of services || []) {
+      if (s.company_id && s.company_name) map.set(s.company_id, s.company_name);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ru"));
+  }, [services]);
 
   useEffect(() => {
     const listingId = searchParams.get("listing");
@@ -73,22 +83,25 @@ const Services = () => {
     return services.filter((s) => {
       if (city !== "all" && (s.company_city || "") !== city) return false;
       if (catFilter !== "all" && s.category !== catFilter) return false;
+      if (companyFilter !== "all" && s.company_id !== companyFilter) return false;
       if (!q) return true;
       const blob = `${s.title} ${s.description} ${s.company_name || ""} ${s.category}`.toLowerCase();
       return blob.includes(q);
     });
-  }, [services, city, catFilter, search]);
+  }, [services, city, catFilter, companyFilter, search]);
 
   const canCreate = caps.canPublishListing();
 
   const handleResetFilters = () => {
     setCity("all");
     setCatFilter("all");
+    setCompanyFilter("all");
     setSearch("");
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("city");
       next.delete("category");
+      next.delete("company");
       next.delete("search");
       return next;
     });
@@ -123,6 +136,22 @@ const Services = () => {
             {SERVICE_VITRINE_CATEGORIES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Компания</label>
+        <Select value={companyFilter} onValueChange={setCompanyFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Компания" />
+          </SelectTrigger>
+          <SelectContent className="max-h-64">
+            <SelectItem value="all">Все компании</SelectItem>
+            {companyOptions.map(([cid, name]) => (
+              <SelectItem key={cid} value={cid}>
+                {name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -384,7 +413,12 @@ const Services = () => {
                   {service.company_name && (
                     <div className="flex items-center gap-3 pt-3 border-t text-sm text-muted-foreground mb-4">
                       <Wrench className="h-4 w-4" />
-                      <span className="font-medium">{service.company_name}</span>
+                      <Link
+                        to={`/company/${service.company_id}/offerings`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
+                        {service.company_name}
+                      </Link>
                       {service.company_city && (
                         <div className="flex items-center gap-1 ml-auto">
                           <MapPin className="h-3.5 w-3.5" />

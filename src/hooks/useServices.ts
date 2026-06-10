@@ -64,6 +64,28 @@ export function useMyCompanies(profileId: string | undefined) {
   });
 }
 
+/** Публичные позиции витрины компании (услуги и материалы из `services`). */
+export function useCompanyVitrineListings(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ["company-vitrine", companyId],
+    queryFn: async () => {
+      if (!companyId) return { materials: [] as Service[], services: [] as Service[] };
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data || []) as Service[];
+      return {
+        materials: rows.filter((r) => r.category === "Материалы"),
+        services: rows.filter((r) => r.category !== "Материалы"),
+      };
+    },
+    enabled: !!companyId,
+  });
+}
+
 export function useCreateService() {
   const queryClient = useQueryClient();
 
@@ -91,6 +113,7 @@ export function useCreateService() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["company-vitrine"] });
       queryClient.invalidateQueries({ queryKey: ["listing-price-insights"] });
     },
   });
