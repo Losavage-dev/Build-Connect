@@ -17,6 +17,7 @@ import {
   buildContractBody,
   CONTRACT_BRAND_LINE,
   CONTRACT_LEGAL_DISCLAIMER,
+  type ContractDocumentFields,
   type ContractTemplateId,
 } from "./contractTemplates";
 
@@ -39,7 +40,7 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
 /** Базовое имя файла без расширения (DOCX/PDF скачиваются в браузере с этим именем). */
 export function contractDownloadBaseName(
   templateId: ContractTemplateId,
-  fields: { city: string; docDate: string },
+  fields: ContractDocumentFields,
 ): string {
   const templatePart =
     templateId === "services"
@@ -61,6 +62,7 @@ export function contractDownloadBaseName(
 
   const citySlug = sanitize(fields.city || "", 42) || "gorod";
   const dateSlug = sanitize(fields.docDate || "", 44) || "bez-daty-v-shapke";
+  return `${templatePart}_${citySlug}_${dateSlug}`;
 }
 
 function noCellBorders() {
@@ -372,7 +374,7 @@ function buildDocxFooter(): Footer {
 
 export async function downloadContractDocx(
   templateId: ContractTemplateId,
-  fields: { city: string; docDate: string },
+  fields: ContractDocumentFields,
 ): Promise<void> {
   const body = buildContractBody(templateId, fields);
   const parts = contractBodyToDocxParts(body);
@@ -402,6 +404,15 @@ export async function downloadContractDocx(
 
 type PdfMakerInstance = {
   vfs: Record<string, string>;
+  fonts?: Record<
+    string,
+    {
+      normal: string;
+      bold: string;
+      italics: string;
+      bolditalics: string;
+    }
+  >;
   createPdf: (docDefinition: Record<string, unknown>) => {
     download: (filename?: string) => Promise<void>;
   };
@@ -481,14 +492,14 @@ function pdfBlockForLine(line: string, i: number, lines: string[]): Record<strin
     return { text: trimmed, fontSize: 10, alignment: "justify", margin: [14, 0, 0, 4] };
 
   if (boxDrawingLine(trimmed))
-    return { text: trimmed, font: "Courier", fontSize: 8.5, color: "#57534e", margin: [0, 0, 0, 2] };
+    return { text: trimmed, fontSize: 7.5, color: "#57534e", margin: [0, 0, 0, 2] };
 
   return { text: trimmed, fontSize: 10, alignment: "justify", margin: [0, 0, 0, 4] };
 }
 
 export async function downloadContractPdf(
   templateId: ContractTemplateId,
-  fields: { city: string; docDate: string },
+  fields: ContractDocumentFields,
 ): Promise<void> {
   const pdfMakeMod = await import("pdfmake/build/pdfmake");
   const vfsMod = await import("pdfmake/build/vfs_fonts");
@@ -509,6 +520,14 @@ export async function downloadContractPdf(
   }
 
   pdfMake.vfs = vfs;
+  pdfMake.fonts = {
+    Roboto: {
+      normal: "Roboto-Regular.ttf",
+      bold: "Roboto-Medium.ttf",
+      italics: "Roboto-Italic.ttf",
+      bolditalics: "Roboto-MediumItalic.ttf",
+    },
+  };
 
   const body = buildContractBody(templateId, fields);
   const rawLines = body.split("\n");

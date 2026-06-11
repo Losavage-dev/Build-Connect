@@ -1,4 +1,8 @@
+import { buildPartiesBlock, buildSignatureFooter, type ContractDocumentFields } from "./contractFields";
+
 export type ContractTemplateId = "services" | "supply" | "act";
+
+export type { ContractDocumentFields, ContractPartyData, ContractPartySide } from "./contractFields";
 
 export const CONTRACT_TEMPLATE_LABELS: Record<ContractTemplateId, string> = {
   services: "Договор оказания услуг (подряд / работы)",
@@ -11,32 +15,11 @@ export const CONTRACT_LEGAL_DISCLAIMER =
   "Шаблон носит ознакомительный характер. Перед подписанием согласуйте формулировки с юристом.";
 export const CONTRACT_BRAND_LINE = "Сгенерировано в BuildConnect.";
 
-const PLACEHOLDERS = `
-[ГОРОД]
-[ДАТА_ДОГОВОРА]
-
-ЗАКАЗЧИК:
-  Наименование / ФИО: _________________________
-  БИН/ИИН (при наличии): _______________________
-  Адрес: ______________________________________
-  Телефон, email: _____________________________
-  Представитель: _____________________________
-  Основание (доверенность / устав): ___________
-
-ИСПОЛНИТЕЛЬ / ПОСТАВЩИК:
-  Наименование / ФИО: _________________________
-  БИН/ИИН (при наличии): _______________________
-  Адрес: ______________________________________
-  Телефон, email: _____________________________
-  Представитель: _____________________________
-  Основание: _________________________________
-`;
-
-function bodyServices(): string {
+function bodyServices(parties: string, signatures: string): string {
   return `ДОГОВОР ОКАЗАНИЯ УСЛУГ № _____
 г. [ГОРОД]                                                                 [ДАТА_ДОГОВОРА]
 
-${PLACEHOLDERS}
+${parties}
 
 1. ПРЕДМЕТ ДОГОВОРА
    1.1. Исполнитель обязуется оказать Заказчику услуги, а Заказчик обязуется принять и оплатить их
@@ -65,15 +48,14 @@ ${PLACEHOLDERS}
 
 Реквизиты и подписи Сторон (при необходимости указываются на отдельном листе).
 
-ЗАКАЗЧИК: _________________ / _________________     ИСПОЛНИТЕЛЬ: _________________ / _________________
-          М.П.                                       М.П.`;
+${signatures}`;
 }
 
-function bodySupply(): string {
+function bodySupply(parties: string, signatures: string): string {
   return `ДОГОВОР ПОСТАВКИ № _____
 г. [ГОРОД]                                                                 [ДАТА_ДОГОВОРА]
 
-${PLACEHOLDERS}
+${parties}
 
 1. ПРЕДМЕТ ДОГОВОРА
    1.1. Поставщик обязуется передать товар в собственность Покупателя, а Покупатель — принять и оплатить его в соответствии со Спецификацией (приложение № 1).
@@ -100,18 +82,17 @@ ${PLACEHOLDERS}
 7. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ
    7.1. Договор вступает в силу с даты подписания. Приложения являются его неотъемлемой частью.
 
-ПОКУПАТЕЛЬ: _________________ / _________________     ПОСТАВЩИК: _________________ / _________________
-            М.П.                                         М.П.`;
+${signatures}`;
 }
 
-function bodyAct(): string {
+function bodyAct(parties: string, signatures: string): string {
   return `АКТ
 сдачи-приёмки выполненных работ (оказанных услуг)
 к Договору № _____ от «___» __________ ____ г.
 
 г. [ГОРОД]                                                        [ДАТА_ДОГОВОРА]
 
-${PLACEHOLDERS}
+${parties}
 
 Настоящий акт составлен о том, что в соответствии с договором Исполнителем выполнены (оказаны) следующие работы (услуги):
 
@@ -128,32 +109,46 @@ ${PLACEHOLDERS}
 
 Работы (услуги) сданы, претензии по объёму, качеству и срокам со стороны Заказчика: ______________________.
 
-ЗАКАЗЧИК: _________________ / _________________     ИСПОЛНИТЕЛЬ: _________________ / _________________
-          М.П.                                       М.П.`;
+${signatures}`;
 }
 
 /** Текст договора без юридического подвала (для типографского оформления) */
-export function buildContractBody(id: ContractTemplateId, fields: { city: string; docDate: string }): string {
+export function buildContractBody(id: ContractTemplateId, fields: ContractDocumentFields): string {
   const city = fields.city.trim() || "[ГОРОД]";
   const docDate = fields.docDate.trim() || "[ДАТА_ДОГОВОРА]";
+  const parties = buildPartiesBlock(id, fields);
+  const signatures = buildSignatureFooter(id, fields);
   let body: string;
   switch (id) {
     case "services":
-      body = bodyServices();
+      body = bodyServices(parties, signatures);
       break;
     case "supply":
-      body = bodySupply();
+      body = bodySupply(parties, signatures);
       break;
     case "act":
-      body = bodyAct();
+      body = bodyAct(parties, signatures);
       break;
     default:
-      body = bodyServices();
+      body = bodyServices(parties, signatures);
   }
-  return body.replaceAll("[ГОРОД]", city).replaceAll("[ДАТА_ДОГОВОРА]", docDate);
+  let result = body.replaceAll("[ГОРОД]", city).replaceAll("[ДАТА_ДОГОВОРА]", docDate);
+  const price = fields.servicePrice?.trim();
+  if (price) {
+    result = result.replace(
+      "3.1. Цена услуг: ___________________________ ₸",
+      `3.1. Цена услуг: ${price} ₸`,
+    );
+    result = result.replace(
+      "3.1. Общая сумма договора: _________________ ₸",
+      `3.1. Общая сумма договора: ${price} ₸`,
+    );
+    result = result.replace("ИТОГО: _______________________ ₸", `ИТОГО: ${price} ₸`);
+  }
+  return result;
 }
 
 /** Полный текст (как раньше): тело + разделитель + оговорка + бренд */
-export function buildContractDocument(id: ContractTemplateId, fields: { city: string; docDate: string }): string {
+export function buildContractDocument(id: ContractTemplateId, fields: ContractDocumentFields): string {
   return `${buildContractBody(id, fields)}\n\n---\n${CONTRACT_LEGAL_DISCLAIMER}\n${CONTRACT_BRAND_LINE}`;
 }
