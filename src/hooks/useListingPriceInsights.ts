@@ -2,6 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ListingPriceInsight } from "@/lib/priceInsight";
 
+const CHUNK_SIZE = 80;
+
+async function fetchInsightsChunk(ids: string[]) {
+  const { data, error } = await supabase
+    .from("listing_price_insights")
+    .select("*")
+    .in("service_id", ids);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export function useListingPriceInsights(serviceIds: string[]) {
   const sorted = [...serviceIds].sort().join(",");
 
@@ -9,14 +20,13 @@ export function useListingPriceInsights(serviceIds: string[]) {
     queryKey: ["listing-price-insights", sorted],
     queryFn: async () => {
       if (!serviceIds.length) return {} as Record<string, ListingPriceInsight>;
-      const { data, error } = await supabase
-        .from("listing_price_insights")
-        .select("*")
-        .in("service_id", serviceIds);
-      if (error) throw error;
       const map: Record<string, ListingPriceInsight> = {};
-      for (const row of data || []) {
-        map[row.service_id] = row as ListingPriceInsight;
+      for (let i = 0; i < serviceIds.length; i += CHUNK_SIZE) {
+        const chunk = serviceIds.slice(i, i + CHUNK_SIZE);
+        const rows = await fetchInsightsChunk(chunk);
+        for (const row of rows) {
+          map[row.service_id] = row as ListingPriceInsight;
+        }
       }
       return map;
     },
