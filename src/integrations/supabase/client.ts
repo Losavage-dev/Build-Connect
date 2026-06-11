@@ -35,6 +35,19 @@ export const supabase = createClient<Database>(
   },
 );
 
+/** Полная очистка JWT в браузере (после seed SQL или битой сессии). */
+export function clearSupabaseAuthStorage() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("sb-") && key.includes("-auth-token")) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Быстрая проверка доступа к API (для диагностики на старте). */
 export async function pingSupabase(): Promise<{ ok: boolean; message?: string }> {
   if (supabaseConfigError) {

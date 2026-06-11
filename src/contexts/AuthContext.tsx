@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase, pingSupabase } from "@/integrations/supabase/client";
+import { supabase, pingSupabase, clearSupabaseAuthStorage } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
+
+const SIGNED_OUT_FLAG = "bc_signed_out";
 
 type UserRole = "client" | "contractor" | "supplier" | "moderator" | "admin";
 
@@ -62,12 +64,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  /** Блокирует autoRefresh / onAuthStateChange после явного выхода */
+  const signedOutLocallyRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
 
     const finishLoading = async (nextSession: Session | null) => {
       if (!mounted) return;
+
+      if (signedOutLocallyRef.current && nextSession) {
+        clearSupabaseAuthStorage();
+        await supabase.auth.signOut({ scope: "local" });
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (sessionStorage.getItem(SIGNED_OUT_FLAG) && nextSession) {
+        clearSupabaseAuthStorage();
+        await supabase.auth.signOut({ scope: "local" });
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -110,7 +135,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session: initialSession }, error } = await supabase.auth.getSession();
       if (error) {
         console.warn("[Auth] getSession:", error.message);
-        await supabase.auth.signOut();
+        clearSupabaseAuthStorage();
+        await supabase.auth.signOut({ scope: "local" });
         if (mounted) {
           setSession(null);
           setUser(null);
@@ -161,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    signedOutLocallyRef.current = false;
+    sessionStorage.removeItem(SIGNED_OUT_FLAG);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -179,6 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    signedOutLocallyRef.current = false;
+    sessionStorage.removeItem(SIGNED_OUT_FLAG);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -193,11 +223,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error(error.message);
-      throw error;
+    signedOutLocallyRef.current = true;
+    sessionStorage.setItem(SIGNED_OUT_FLAG, "1");
+
+    try {
+      await supabase.auth.signOut({ scope: "global" });
+    } catch {
+      /* серверная сессия могла уже исчезнуть после seed SQL */
     }
+
+    clearSupabaseAuthStorage();
+    await supabase.auth.signOut({ scope: "local" });
+
+    setSession(null);
+    setUser(null);
+    setProfile(null);
     toast.success("Вы вышли из аккаунта");
   };
 
@@ -214,7 +254,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    setProfile((prev) => (prev ? { ...prev, ...updates } : null));
+    const refreshed = await loadProfile(user.id);
+    setProfile(refreshed);
     toast.success("Профиль обновлен");
   };
 
