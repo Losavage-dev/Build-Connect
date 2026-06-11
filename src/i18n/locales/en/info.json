@@ -1,0 +1,207 @@
+{
+  "backHome": "Back to home",
+  "eyebrow": "BuildConnect",
+  "aboutPage": {
+    "title": "About the project",
+    "subtitle": "BuildConnect — marketplace for Kazakhstan's construction industry",
+    "intro": "BuildConnect brings customers, contractors, and suppliers together on one platform: companies publish profiles and portfolios, list services and materials, and customers find contractors through the catalog, tenders, and direct chat requests.",
+    "audience": {
+      "title": "Who the platform is for",
+      "customers": {
+        "label": "Customers",
+        "text": "— find contractors, submit requests, publish tenders, and manage conversations in one place."
+      },
+      "contractors": {
+        "label": "Contractors",
+        "text": "— represent their company, showcase projects, respond to tenders, and receive orders."
+      },
+      "suppliers": {
+        "label": "Suppliers",
+        "text": "— list construction materials and communicate with buyers through built-in chat."
+      }
+    },
+    "features": {
+      "title": "What's on the platform",
+      "catalog": "<catalogLink>Company catalog</catalogLink> with filters by city and category;",
+      "servicesMaterials": "<servicesLink>Services</servicesLink> and <materialsLink>Materials</materialsLink> sections;",
+      "tenders": "<tendersLink>Tenders</tendersLink> with the city where work will be performed;",
+      "feed": "<feedLink>Video showcase</feedLink> — company videos from YouTube."
+    },
+    "goal": {
+      "title": "Our goal",
+      "text": "Make finding reliable construction partners transparent and convenient: less chaos in messenger threads, more structure — requests, deal context, and conversation history in your account."
+    },
+    "feedback": {
+      "title": "Feedback",
+      "text": "The platform is evolving. If you have ideas or questions — reach us on the <contactsLink>contacts page</contactsLink>."
+    }
+  },
+  "contactsPage": {
+    "title": "Contacts",
+    "subtitle": "Get in touch with the BuildConnect team",
+    "intro": "We respond to inquiries about the platform, partnerships, and technical issues. Average response time is within 1–2 business days.",
+    "email": {
+      "title": "Email",
+      "hint": "For user and partner support"
+    },
+    "region": {
+      "title": "Platform region",
+      "value": "Kazakhstan",
+      "hint": "The company and services catalog is focused on the Republic of Kazakhstan market"
+    },
+    "hours": {
+      "title": "Support hours",
+      "value": "Mon–Fri, 10:00–18:00 (Almaty time)",
+      "hint": "Responses on weekends may take longer"
+    },
+    "topics": {
+      "title": "What to write about",
+      "items": [
+        "technical issues or errors on the site;",
+        "questions about requests, chat, and company profile;",
+        "suggestions for platform development;",
+        "inquiries from media and partners."
+      ]
+    }
+  },
+  "termsPage": {
+    "title": "Terms of use",
+    "subtitle": "Rules for using the BuildConnect platform",
+    "published": "Published: May 15, 2026. By using the BuildConnect website, you agree to these terms. If you do not agree — please do not use the service.",
+    "sections": {
+      "general": {
+        "title": "1. General provisions",
+        "text": "BuildConnect is an information platform for publishing company profiles, services, materials, tenders, and messaging between users. The administration provides the technical means for publishing and communication but is not a party to transactions between users."
+      },
+      "registration": {
+        "title": "2. Registration and account",
+        "text": "You agree to provide accurate information when registering and to keep your profile up to date. You are responsible for safeguarding access to your account and for all actions performed under your login."
+      },
+      "content": {
+        "title": "3. User content",
+        "text": "By publishing information about your company, services, materials, tenders, reviews, and chat messages, you confirm that you have the right to publish such content and that you do not violate the laws of the Republic of Kazakhstan, third-party rights, or platform rules. Prohibited: false information, spam, insults, fraud, publishing others' personal data without consent."
+      },
+      "deals": {
+        "title": "4. Transactions between users",
+        "text": "Payment terms, deadlines, scope of work, and liability are determined directly between the customer and the contractor. BuildConnect does not guarantee the quality of services, deliveries, or fulfillment of participants' obligations and does not act as an intermediary in payments unless explicitly agreed otherwise."
+      },
+      "reviews": {
+        "title": "5. Reviews and ratings",
+        "text": "Reviews must reflect real interaction experience. The administration may hide or remove reviews and materials that violate the rules or the law."
+      },
+      "liability": {
+        "title": "6. Limitation of liability",
+        "text": "The service is provided \"as is\". We strive to keep the platform running reliably but are not liable for access interruptions, data loss caused by third parties, or losses arising from agreements between users."
+      },
+      "changes": {
+        "title": "7. Changes to terms",
+        "text": "We may update these terms. The current version is always available on this page. Continued use of the service after changes are published means you agree to the updated terms."
+      },
+      "contacts": {
+        "title": "8. Contacts",
+        "text": "For questions about these terms and platform operation, contact us via <contactsLink>Contacts</contactsLink> or at <emailLink>support@buildconnect.kz</emailLink>."
+      }
+    }
+  },
+  "helpPage": {
+    "title": "Help",
+    "subtitle": "Frequently asked questions about using BuildConnect",
+    "gettingStarted": {
+      "title": "Getting started",
+      "text": "Register, complete your profile (name, phone, city), choose your <strong>primary scenario</strong> during registration, and on the next step — \"create a company\" or \"just ordering for now\". Role and onboarding choices are hints, not hard restrictions: anyone can create tenders, and any user can add a company to the catalog via <createCompanyLink>company creation</createCompanyLink> or the <profileLink>My companies</profileLink> section in your account."
+    },
+    "roles": {
+      "title": "Roles and capabilities",
+      "intro": "The main rules are the same for everyone: you cannot send a request to yourself and you cannot buy your own product or service. To respond to a tender you need at least one company of your own.",
+      "footnote": "¹ Without a company in your profile. ² Only if the tender is \"Open\", not yours, and your company is selected. ³ Including responses to your tenders — if you have no company, requests go directly to your profile."
+    },
+    "table": {
+      "headers": {
+        "action": "Action",
+        "guest": "Guest",
+        "loggedIn": "Signed in",
+        "hasCompany": "Has own company"
+      },
+      "rows": [
+        {
+          "action": "Browse catalog, services, materials, tenders",
+          "guest": "Yes",
+          "loggedIn": "Yes",
+          "hasCompany": "Yes"
+        },
+        {
+          "action": "Request to a company from the catalog",
+          "guest": "No",
+          "loggedIn": "Yes",
+          "hasCompany": "Yes"
+        },
+        {
+          "action": "Order a service / buy a material",
+          "guest": "No",
+          "loggedIn": "Yes (not own listing)",
+          "hasCompany": "Yes (not own listing)"
+        },
+        {
+          "action": "Create a tender",
+          "guest": "No",
+          "loggedIn": "Yes",
+          "hasCompany": "Yes"
+        },
+        {
+          "action": "Respond to a tender",
+          "guest": "No",
+          "loggedIn": "No¹",
+          "hasCompany": "Yes²"
+        },
+        {
+          "action": "Publish services and materials",
+          "guest": "No",
+          "loggedIn": "No¹",
+          "hasCompany": "Yes"
+        },
+        {
+          "action": "Receive incoming chat requests",
+          "guest": "No",
+          "loggedIn": "Yes³",
+          "hasCompany": "Yes"
+        }
+      ]
+    },
+    "search": {
+      "title": "Search and catalog",
+      "text": "On the home page and in the site header you can search companies, services, materials, and tenders — the system will redirect you to the right section. The <catalogLink>company catalog</catalogLink> has filters by city and category. Suppliers, contractors, and customers can message companies from the catalog on equal terms."
+    },
+    "requests": {
+      "title": "Requests and chat",
+      "main": "Buttons \"Send request\", \"Order service\", \"Buy product\", or \"Respond to tender\" create a dialog and open chat immediately. Conversations and statuses are in your <profileLink>account</profileLink>, \"Requests and chats\" tab. The first message includes a unified \"Source\" block (catalog, services, materials, tender, or video showcase) with a link to the listing.",
+      "outgoing": "Outgoing requests show the company or recipient user. Incoming ones show the customer; responses to your tender without a company from the author go to their profile personally (not the company page).",
+      "templates": "<strong>Contract templates</strong> (signed-in only): in your profile — \"Contract templates\"; documents can be downloaded as .docx and .pdf. Send the signed file to your counterparty via the paperclip button in the request chat (up to 20 MB)."
+    },
+    "tenders": {
+      "title": "Tenders",
+      "text": "Any signed-in user can create a tender — specify task type, city, budget, and deadline. All statuses are visible on the showcase (open, in progress, closed); responses are only possible on open ones. <strong>Company verification is not required</strong> to publish a tender — it is required for the catalog, services/materials showcase, and responding to others' tenders on behalf of a company. The author sees the <strong>\"Responses\"</strong> block on the tender page and in profile → \"My tenders\": participant list, \"Chat\", \"Accept\" (tender moves to \"In progress\"), and \"Close tender\" buttons. You can manually move an open tender to \"In progress\" only after at least one response; without responses the option is unavailable. After \"Accept\", \"Open\" status is not available manually — use the <strong>\"Accept responses again\"</strong> button to clear the selected contractor and accept responses again. List — in the <tendersLink>Tenders</tendersLink> section."
+    },
+    "reviews": {
+      "title": "Ratings and reviews",
+      "rating": "Stars in the catalog and on the company page are calculated <strong>only from real user reviews</strong> after completed deals. If there are no reviews yet — \"No reviews\" is shown.",
+      "leave": "Only a customer can leave a review after a <strong>completed request</strong> with the company: in chat click \"Complete request\", then \"Leave review\", or open the company page. One review per company per user."
+    },
+    "verification": {
+      "title": "Company verification",
+      "process": "After creating a company, the owner uploads documents (registration certificate, representative ID, and power of attorney if needed) in the <strong>\"Verification\"</strong> section in company management and clicks <strong>\"Submit for review\"</strong>. Only verified companies with the <strong>\"Verified\"</strong> badge appear in the catalog. The same rule applies to services, materials, and showcase videos; <strong>authors' tenders</strong> do not depend on verification.",
+      "timing": "Document review is performed by platform moderators. It usually takes one to several business days. You can track application status in the \"Verification\" section."
+    },
+    "reports": {
+      "title": "Reports",
+      "text": "The \"Report\" button is on the company page and on others' tenders. The report is sent to the moderation team for review — select a reason and add a comment if needed."
+    },
+    "companyManagement": {
+      "title": "Company management",
+      "text": "The company owner edits the profile, portfolio, services, materials, showcase videos, and responds to requests. Management section — from the company page after sign-in. You can create a company with any role in profile settings."
+    },
+    "troubleshooting": {
+      "title": "Can't sign in or load data",
+      "text": "Check your internet connection and refresh the page. If the error persists, contact us via the <contactsLink>Contacts</contactsLink> page — include your account email and a brief description of the problem."
+    }
+  }
+}

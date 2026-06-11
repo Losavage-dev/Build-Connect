@@ -29,6 +29,7 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Moderation from "./pages/Moderation";
 import ContractTemplates from "./pages/ContractTemplates";
+import DocumentTitle from "./components/DocumentTitle";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ const App = () => (
         <SupabaseConfigGuard>
         <Sonner position="bottom-right" />
         <BrowserRouter>
+          <DocumentTitle />
           <RequireCompleteProfile>
             <Routes>
             {/* Public routes */}

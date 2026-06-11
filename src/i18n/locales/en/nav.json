@@ -1,0 +1,21 @@
+{
+  "companies": "Companies",
+  "promoFeed": "Video showcase",
+  "tenders": "Tenders",
+  "services": "Services",
+  "materials": "Materials",
+  "searchPlaceholder": "Companies, services, materials, tenders…",
+  "language": {
+    "switch": "Change language"
+  },
+  "account": {
+    "moderator": "Moderator desk",
+    "requests": "Requests & chats",
+    "myTenders": "My tenders",
+    "createCompany": "Create company",
+    "myCompany": "My company",
+    "myCompanies": "My companies",
+    "settings": "Settings",
+    "help": "Help"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "badge": "Verified construction companies in Kazakhstan",
+    "titleLine1": "Build deals",
+    "titleHighlight": "with verified",
+    "titleLine2": "partners",
+    "subtitle": "B2B marketplace: contractor catalog, tenders, services, materials, and request chats — all in one place.",
+    "searchPlaceholder": "Company, service, material, or tender…",
+    "searchButton": "Search",
+    "citiesNote": "Almaty, Astana, Shymkent, and other cities in KZ"
+  },
+  "quickLinks": {
+    "catalog": "Company catalog",
+    "tenders": "Tenders",
+    "services": "Services",
+    "materials": "Materials"
+  },
+  "stats": {
+    "companies": "companies in catalog",
+    "cities": "cities",
+    "categories": "categories"
+  },
+  "bento": {
+    "tendersTitle": "Tenders",
+    "tendersDesc": "Client posts — contractor responds",
+    "servicesTitle": "Services",
+    "servicesDesc": "Work showcase",
+    "materialsTitle": "Materials",
+    "materialsDesc": "KZ suppliers",
+    "feedTitle": "Video showcase",
+    "feedDesc": "Project videos"
+  },
+  "trust": {
+    "verification": "Document verification by moderators",
+    "reviews": "Reviews only after completed deals",
+    "tendersChat": "Tenders and request chats",
+    "catalog": "B2B company catalog"
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "From search to deal — on one platform",
+    "step1Title": "Find a partner",
+    "step1Desc": "Company catalog with verification, ratings, and reviews from real deals.",
+    "step2Title": "Post a tender or request",
+    "step2Desc": "Clients create tenders — contractors and suppliers respond. Or contact a company directly.",
+    "step3Title": "Discuss in chat",
+    "step3Desc": "Messaging per request, files, and statuses — without leaving for other messengers.",
+    "step4Title": "Close the deal",
+    "step4Desc": "After completion — review and rating. Data helps others choose a reliable partner."
+  },
+  "categories": {
+    "eyebrow": "Areas",
+    "title": "What's on the platform",
+    "catalogTitle": "Company catalog",
+    "catalogDesc": "Contractors, suppliers, design offices",
+    "tendersTitle": "Tenders",
+    "tendersDesc": "Procurement of works and materials",
+    "servicesTitle": "Services",
+    "servicesDesc": "Company work showcase",
+    "materialsTitle": "Materials",
+    "materialsDesc": "Construction materials catalog"
+  },
+  "featured": {
+    "eyebrow": "Top rated",
+    "title": "Popular companies",
+    "subtitle": "Verified contractors and suppliers with reviews from real deals.",
+    "allCompanies": "All companies",
+    "empty": "No companies registered yet",
+    "addCompany": "Add your company"
+  },
+  "cta": {
+    "title": "Ready to find a partner?",
+    "subtitle": "Register for free — catalog, tenders, and request chats.",
+    "register": "Create account",
+    "catalog": "Browse catalog"
+  },
+  "footer": {
+    "tagline": "B2B marketplace for Kazakhstan's construction industry: companies, tenders, services, and materials.",
+    "forBusiness": "For business",
+    "listCompany": "List your company",
+    "catalog": "Catalog",
+    "support": "Support",
+    "help": "Help",
+    "contacts": "Contacts",
+    "aboutSection": "About",
+    "about": "About BuildConnect",
+    "terms": "Terms of use",
+    "footnote": "Marketplace for construction companies · Kazakhstan"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The requested address does not exist or has been moved."
+  }
+}

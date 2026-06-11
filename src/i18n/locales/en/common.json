@@ -1,0 +1,365 @@
+{
+  "documentTitle": "BuildConnect - Construction marketplace in Kazakhstan",
+  "loading": "Loading…",
+  "loadingCatalog": "Loading catalog…",
+  "retry": "Retry",
+  "save": "Save",
+  "cancel": "Cancel",
+  "close": "Close",
+  "back": "Back",
+  "backHome": "Back to home",
+  "search": "Search",
+  "resetFilters": "Reset filters",
+  "allCities": "All cities",
+  "selectCity": "Select city",
+  "city": "City",
+  "category": "Category",
+  "allCategories": "All categories",
+  "selectCategory": "Select category",
+  "notFound": "Nothing found",
+  "unknownError": "Unknown error",
+  "dbError": "Could not complete the operation. Please try again later or contact support.",
+  "dbErrorPermission": "You don't have permission for this action. Check that you're signed in to the correct account.",
+  "loadErrorTitle": "Failed to load data",
+  "loadErrorJwtHint": "Try signing out and back in, or clear site data in your browser.",
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "profile": "Profile",
+  "account": "Account",
+  "open": "Open",
+  "verified": "Verified",
+  "new": "New",
+  "other": "Other",
+  "all": "All",
+  "sortByRating": "By rating",
+  "sortByDate": "By date",
+  "forYou": "For you",
+  "allForYou": "See all for you",
+  "publish": "Publish",
+  "creating": "Creating…",
+  "publishing": "Publishing…",
+  "adding": "Adding…",
+  "sending": "Sending…",
+  "loginToContinue": "Sign in to continue",
+  "loginToBuy": "Sign in to purchase",
+  "loginToOrder": "Sign in to place an order",
+  "changeFiltersHint": "Try changing search or filters",
+  "changeFiltersOrSearch": "Try changing filters or search",
+  "staffBrowsing": "You are browsing the site as platform staff.",
+  "copyright": "© 2026 BuildConnect. All rights reserved.",
+  "currencyKzt": "₸",
+  "filters": "Filters",
+  "noReviews": "No reviews",
+  "verifiedBadge": "Verified",
+  "verifiedTitle": "Company verified by moderators",
+  "reviewCount_one": "{{count}} review",
+  "reviewCount_other": "{{count}} reviews",
+  "notVerified": "Not verified",
+  "openWebsite": "Open",
+  "emDash": "—",
+  "add": "Add",
+  "saveBtn": "Save",
+  "delete": "Delete",
+  "download": "Download",
+  "read": "Read",
+  "details": "Details",
+  "participant": "Member",
+  "chat": "Chat",
+  "accept": "Accept",
+  "notifications": {
+    "title": "Notifications",
+    "ariaLabel": "Notifications",
+    "newCount": "{{count}} new",
+    "empty": "No notifications yet",
+    "open": "Open",
+    "read": "Read",
+    "panelDesc": "New requests and messages, report decisions, and moderator actions"
+  },
+  "reports": {
+    "userTrigger": "Report",
+    "moderatorTrigger": "Staff report",
+    "titleUser": "Report",
+    "titleModerator": "Staff report",
+    "descUser": "Report a problem:",
+    "descModerator": "Record a violation on behalf of moderation:",
+    "moderatorHint": "The entry goes to the queue marked «from moderator», distinct from a regular user report.",
+    "reasonUser": "Reason",
+    "reasonModerator": "Category (staff)",
+    "detailsUser": "Details (optional)",
+    "detailsModerator": "Justification",
+    "detailsPlaceholderUser": "Describe the situation…",
+    "detailsPlaceholderModerator": "Facts, what to check, links…",
+    "submitUser": "Submit",
+    "submitModerator": "Record",
+    "successUser": "Report submitted. Moderators will review it manually.",
+    "successModerator": "Staff report registered in the queue.",
+    "error": "Failed to submit report",
+    "reasons": {
+      "spam": "Spam or advertising",
+      "fraud": "Fraud / deception",
+      "misleading": "Misleading information",
+      "inappropriate": "Inappropriate content",
+      "other": "Other",
+      "policy": "Platform rules violation",
+      "verification": "Contradicts data / verification",
+      "misleadingMod": "Misleading information",
+      "inappropriateMod": "Inappropriate content",
+      "otherMod": "Other (staff record)"
+    }
+  },
+  "supabaseGuard": {
+    "title": "No database connection",
+    "hint": "Copy <code>.env.example</code> to <code>.env</code> and set URL and key from the Supabase panel (Settings → API). After changes, restart <code>npm run dev</code>."
+  },
+  "privateDetails": {
+    "guestHint": "Sign in to view company contacts, address, and BIN.",
+    "afterLogin": "After sign-in",
+    "loginOrRegister": "Sign in or register"
+  },
+  "categoryPicker": {
+    "label": "Business categories",
+    "description": "You can select several. Use search — the list is long.",
+    "searchPlaceholder": "Search category…",
+    "selected": "Selected:"
+  },
+  "citySelect": {
+    "searchPlaceholder": "Search city…"
+  },
+  "chatFile": {
+    "noLink": "No link",
+    "downloadError": "Failed to get file link",
+    "label": "File: {{name}}",
+    "accessHint": "Available only to participants of this request"
+  },
+  "priceInsight": {
+    "average": "BuildConnect average ({{city}}):",
+    "listings": "{{count}} listings",
+    "belowAverage": "{{pct}}% below average",
+    "aboveAverage": "{{pct}}% above average",
+    "nearAverage": "near average"
+  },
+  "portfolio": {
+    "periodFrom": "from {{date}}",
+    "periodTo": "completed {{date}}",
+    "periodRange": "{{start}} — {{end}}",
+    "phaseInProgress": "In progress",
+    "phaseCompleted": "Completed",
+    "imageRoleGallery": "Gallery",
+    "imageRoleSiteStart": "Site start",
+    "imageRoleSiteEnd": "Site ready",
+    "imageRoleWork": "Work in progress"
+  },
+  "moderator": {
+    "journal": {
+      "title": "Moderation journal",
+      "desc": "All moderator actions on reports, companies, tenders, and accounts",
+      "empty": "No entries yet",
+      "target": "Target:",
+      "moderator": "Moderator:",
+      "toReport": "To report",
+      "targetCompany": "company",
+      "targetTender": "tender"
+    },
+    "companyCard": {
+      "submitted": " · submitted {{date}}",
+      "owner": "Owner:",
+      "bin": " · BIN {{bin}}",
+      "profile": "Profile",
+      "hideDocs": "Hide documents",
+      "showDocs": "Show documents",
+      "noDocs": "No documents found.",
+      "openError": "Failed to open file",
+      "open": "Open",
+      "commentLabel": "Comment (required when rejecting)",
+      "commentPlaceholder": "Moderator notes for the company owner",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectReasonRequired": "Enter rejection reason",
+      "approved": "Company approved",
+      "rejected": "Application rejected",
+      "error": "Error"
+    },
+    "report": {
+      "targetCompany": "Company",
+      "targetTender": "Tender",
+      "openCompanyPage": "Open company page",
+      "openTender": "Open this tender",
+      "escalationBadge": "Escalation · {{count}}+ reports",
+      "escalationOnObject": "{{count}}+ reports on target",
+      "fromModerator": "From moderator",
+      "statusNew": "New",
+      "statusReviewed": "Action taken",
+      "statusDismissed": "Unfounded",
+      "reason": "Reason:",
+      "fromReporter": " · from {{name}}",
+      "openReport": "Open report",
+      "defaultTarget": "Target",
+      "totalOnTarget": " · total reports on target: {{count}}"
+    },
+    "workspace": {
+      "eyebrow": "Moderator workspace",
+      "defaultName": "Moderator",
+      "roles": {
+        "moderator": "Moderator",
+        "admin": "Administrator"
+      },
+      "nav": {
+        "reports": "Reports",
+        "reportsArchive": "Report archive",
+        "journal": "Journal",
+        "verification": "Verification",
+        "contractTemplates": "Contract templates",
+        "settings": "Settings"
+      },
+      "reports": {
+        "title": "New reports",
+        "desc": "Unprocessed only — resolved reports move to the archive",
+        "empty": "No new reports",
+        "actionsTitle": "Moderator actions",
+        "actionsGuide": {
+          "closeWithoutSanctions": "<strong>Close without sanctions</strong> — the report goes to the archive as \"Action taken\"; the target (company/tender) is unchanged. Use when you have already contacted the parties or sanctions are not needed.",
+          "warning": "<strong>Warning to owner</strong> — in-app notification to fix description, tender, etc. No hiding and no ban.",
+          "dismiss": "<strong>Unfounded report</strong> — signal rejected; target unchanged.",
+          "ban": "<strong>Ban / lift ban</strong> — temporary login block; use \"Lift ban\" to cancel if needed.",
+          "escalation": "With <strong>{{count}}+ reports</strong> on one target — escalation badge."
+        }
+      },
+      "archive": {
+        "title": "Report archive",
+        "desc": "Processed and dismissed — not shown in the new queue",
+        "empty": "Archive is empty"
+      },
+      "verification": {
+        "title": "Company verification",
+        "desc": "Document review before catalog publication",
+        "empty": "No company applications pending review"
+      },
+      "settings": {
+        "title": "Settings",
+        "desc": "Moderator contact details for internal communication",
+        "personalData": "Personal details",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "roleNote": "Account role: <strong>{{role}}</strong>. Role change is not available for moderators."
+      }
+    },
+    "reportDetail": {
+      "missingId": "Report ID not specified",
+      "notFound": "Report not found",
+      "backToNew": "Back to new reports",
+      "backToArchive": "Back to archive",
+      "timelineTitle": "Report history",
+      "timelineDesc": "Events, moderator actions, and verification decisions",
+      "timelineEmpty": "Only report creation so far"
+    },
+    "promoContact": {
+      "title": "Staff contact about showcase",
+      "desc": "Company \"{{company}}\". Not the same as a regular client request — text is marked as from moderation.",
+      "tabRequest": "Chat request",
+      "tabReport": "Report company",
+      "requestHint": "Opens a dialog with the company owner like a user request, but the subject and first message are marked <tag>[Moderation]</tag>.",
+      "reportHint": "Report is linked to the <strong>company</strong> (showcase content). It will be queued as staff-initiated.",
+      "subject": "Subject",
+      "messageForOwner": "Message for owner",
+      "messagePlaceholder": "Purpose of the staff request…",
+      "staffCategory": "Staff category",
+      "justification": "Justification",
+      "justificationPlaceholder": "Facts, links to the post, what to check…",
+      "submitReport": "Record report",
+      "submitRequest": "Send request",
+      "titleRequired": "Enter request subject",
+      "requestSuccess": "Staff request sent — open the chat.",
+      "requestError": "Failed to send request",
+      "reportSuccess": "Staff report registered in the moderation queue.",
+      "error": "Error",
+      "reasons": {
+        "policy": "Showcase / platform rules violation",
+        "misleading": "Misleading presentation / advertising",
+        "inappropriate": "Inappropriate content",
+        "other": "Other (staff record)"
+      }
+    },
+    "targetActions": {
+      "sectionTitle": "Moderator actions",
+      "ownerBannedUntil": "Owner banned until {{date}}",
+      "historyNote": " Event will appear in report history.",
+      "buttons": {
+        "revokeVerified": "Remove \"Verified\"",
+        "hideCompany": "Hide company",
+        "restoreDraft": "Restore to draft",
+        "closeTender": "Close tender",
+        "warning": "Warning to owner",
+        "unban": "Lift ban",
+        "ban": "Ban owner",
+        "closeWithoutSanctions": "Close without sanctions",
+        "dismiss": "Unfounded report"
+      },
+      "dialogs": {
+        "suspend": {
+          "title": "Hide company",
+          "desc": " Company will disappear from the catalog."
+        },
+        "restore": {
+          "title": "Restore company",
+          "desc": ""
+        },
+        "revoke": {
+          "title": "Remove \"Verified\"",
+          "desc": " Company stays in the catalog without the \"Verified\" badge."
+        },
+        "closeTender": {
+          "title": "Close tender",
+          "desc": " Tender will be closed."
+        },
+        "ban": {
+          "title": "Temporary owner ban",
+          "desc": " Owner cannot log in until the period ends."
+        },
+        "warning": {
+          "title": "Warning to owner",
+          "desc": " Owner gets an in-app notification. Target is not hidden."
+        },
+        "unban": {
+          "title": "Lift ban",
+          "desc": " Owner can log in again."
+        }
+      },
+      "labels": {
+        "banDuration": "Ban duration",
+        "banDay1": "1 day",
+        "banDay7": "7 days",
+        "banDay30": "30 days",
+        "warningText": "Warning text *",
+        "commentOptional": "Comment (optional)",
+        "reasonRequired": "Reason *",
+        "reasonOptional": "Reason (optional)"
+      },
+      "placeholders": {
+        "warning": "Describe what needs to be fixed or clarified",
+        "reason": "For owner, reporter, and journal"
+      },
+      "confirm": "Confirm",
+      "toast": {
+        "companyHidden": "Company hidden from catalog",
+        "companyRestored": "Company restored to draft",
+        "verifiedRevoked": "\"Verified\" status removed",
+        "tenderClosed": "Tender closed",
+        "banSuccess": "Account banned for {{days}} days",
+        "warningSent": "Warning sent to owner",
+        "unbanSuccess": "Ban lifted",
+        "dismissSuccess": "Report closed as unfounded",
+        "reviewedSuccess": "Report closed without sanctions on target"
+      },
+      "errors": {
+        "warningRequired": "Enter warning text",
+        "reasonRequired": "Enter action reason",
+        "ownerNotFound": "Target owner not found",
+        "ownerMissing": "Owner not found",
+        "actionFailed": "Failed to perform action",
+        "generic": "Error"
+      }
+    }
+  }
+}

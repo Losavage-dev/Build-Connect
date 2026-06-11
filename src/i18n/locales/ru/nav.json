@@ -1,0 +1,21 @@
+{
+  "companies": "Компании",
+  "promoFeed": "Витрина роликов",
+  "tenders": "Тендеры",
+  "services": "Услуги",
+  "materials": "Материалы",
+  "searchPlaceholder": "Компании, услуги, материалы, тендеры...",
+  "language": {
+    "switch": "Сменить язык"
+  },
+  "account": {
+    "moderator": "Кабинет модератора",
+    "requests": "Заявки и чаты",
+    "myTenders": "Мои тендеры",
+    "createCompany": "Создать компанию",
+    "myCompany": "Моя компания",
+    "myCompanies": "Мои компании",
+    "settings": "Настройки",
+    "help": "Помощь"
+  }
+}
