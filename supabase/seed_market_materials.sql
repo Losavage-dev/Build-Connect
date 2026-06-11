@@ -118,6 +118,7 @@ DECLARE
   p_aktobe uuid;
   p_sup uuid;
   c_id uuid;
+  proj_id uuid;
   pid uuid;
   base numeric;
   i integer;
@@ -138,6 +139,20 @@ DECLARE
     'warehouse-aktobe@demo-supply.kz'
   ];
   demo_bins text[] := ARRAY['990002020001', '990002010001', '990002030001', '990002040001', '990002050001'];
+  demo_logos text[] := ARRAY[
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=256&h=256&fit=crop',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=256&h=256&fit=crop',
+    'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=256&h=256&fit=crop',
+    'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=256&h=256&fit=crop',
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=256&h=256&fit=crop'
+  ];
+  demo_project_photos text[] := ARRAY[
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1590496793907-607806659bee?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop'
+  ];
   profiles uuid[] := ARRAY[
     NULL::uuid, NULL::uuid, NULL::uuid, NULL::uuid, NULL::uuid
   ];
@@ -153,7 +168,7 @@ BEGIN
   profiles := ARRAY[p_almaty, p_astana, p_shymkent, p_karaganda, p_aktobe];
 
   FOR i IN 1..5 LOOP
-    INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+    INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, logo_url, is_verified, verification_status, rating, review_count, bin)
     VALUES (
       profiles[i],
       'Demo Supply ' || cities[i],
@@ -163,6 +178,7 @@ BEGIN
       demo_phones[i],
       demo_emails[i],
       demo_addresses[i],
+      demo_logos[i],
       true,
       'verified',
       0,
@@ -174,17 +190,52 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'company_categories') THEN
       INSERT INTO public.company_categories (company_id, category) VALUES (c_id, 'Материалы');
     END IF;
+
+    INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+    VALUES (
+      c_id,
+      'Поставка на объект, ' || cities[i],
+      'Комплектация и доставка стройматериалов',
+      '2024',
+      'completed',
+      '2024-01-15'::date + (i * 30)
+    )
+    RETURNING id INTO proj_id;
+    INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+      (proj_id, demo_project_photos[i], 'Склад и отгрузка', 'gallery', 0);
+
+    IF i <= 3 THEN
+      INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+      VALUES (
+        c_id,
+        'Логистика на стройплощадку',
+        'Самосвалы, разгрузка манипулятором',
+        '2025',
+        'completed',
+        '2025-02-01'::date + (i * 20)
+      )
+      RETURNING id INTO proj_id;
+      INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+        (proj_id, demo_project_photos[1 + (i % 5)], 'Разгрузка', 'site_end', 0);
+    END IF;
   END LOOP;
 
   -- Вторая компания в Алматы (больше объявлений в одном городе)
-  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, logo_url, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_almaty, 'Demo Supply Almaty 2', 'Материалы', 'Алматы',
     'Второй демо-склад в Алматы. Расширенный ассортимент для сравнения цен.',
     '+77022000006', 'warehouse-almaty2@demo-supply.kz', 'ул. Жандосова 45, ангар 2',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=256&h=256&fit=crop',
     true, 'verified', 0, 0, '990002020002'
   )
   RETURNING id INTO c_id;
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_id, 'Ночная отгрузка цемента', '120 т, 6 рейсов', '2025', 'completed', '2025-03-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop', 'Склад', 'gallery', 0);
 
   -- Steppe Materials — доп. позиции в Астане
   SELECT id INTO c_id FROM public.companies WHERE name = 'Steppe Materials' LIMIT 1;

@@ -251,6 +251,7 @@ DECLARE
   c_monolit uuid;
   c_materials uuid;
   c_clientco uuid;
+  proj_id uuid;
 BEGIN
   SELECT id INTO p_client FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c01';
   SELECT id INTO p_cont1 FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c02';
@@ -260,35 +261,43 @@ BEGIN
   SELECT id INTO p_clientco FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c06';
   SELECT id INTO p_cont_noco FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c07';
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, logo_url, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_cont1, 'ТОО «Alatau Build»', 'Генеральный подряд', 'Алматы',
     'Генеральный подряд, коттеджное и коммерческое строительство. Работаем по Алматы и области с 2014 года. Собственная техника и проектный отдел.',
-    '+77272700101', 'office@alatau-build.kz', 'пр. Абая 150/230, офис 412', true, 'verified', 0, 0, '101240012345'
+    '+77272700101', 'office@alatau-build.kz', 'пр. Абая 150/230, офис 412',
+    'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=256&h=256&fit=crop',
+    true, 'verified', 0, 0, '101240012345'
   )
   RETURNING id INTO c_alatau;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, logo_url, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_cont2, 'ТОО «Astana Monolit»', 'Бетонные работы', 'Астана',
     'Монолитные работы, бетонные смеси, фундаменты и перекрытия. Собственный БМЗ, сертификаты качества на каждую поставку.',
-    '+77172700202', 'info@astana-monolit.kz', 'ул. Кенесары 45, база', true, 'verified', 0, 0, '101240023456'
+    '+77172700202', 'info@astana-monolit.kz', 'ул. Кенесары 45, база',
+    'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=256&h=256&fit=crop',
+    true, 'verified', 0, 0, '101240023456'
   )
   RETURNING id INTO c_monolit;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, website, is_verified, verification_status, rating, review_count, bin)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, website, logo_url, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_sup, 'ТОО «Steppe Materials»', 'Материалы', 'Астана',
     'Оптовый склад стройматериалов: металл, бетон, блоки, кровля, изоляция. Доставка по Астане и области, резка и комплектация объектов.',
-    '+77172700303', 'sales@steppe-materials.kz', 'пр. Туран 55, склад №2', 'https://steppe-materials.kz', true, 'verified', 0, 0, '101240034567'
+    '+77172700303', 'sales@steppe-materials.kz', 'пр. Туран 55, склад №2', 'https://steppe-materials.kz',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=256&h=256&fit=crop',
+    true, 'verified', 0, 0, '101240034567'
   )
   RETURNING id INTO c_materials;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, logo_url, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_clientco, 'ТОО «ZakazTech»', 'Ремонт', 'Астана',
     'Ремонт офисов и коммерческих помещений под ключ. Работаем с корпоративными заказчиками, фиксированная смета.',
-    '+77172700404', 'hello@zakaztech.kz', 'ул. Сыганак 25, офис 8', true, 'verified', 0, 0, '101240045678'
+    '+77172700404', 'hello@zakaztech.kz', 'ул. Сыганак 25, офис 8',
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?w=256&h=256&fit=crop',
+    true, 'verified', 0, 0, '101240045678'
   )
   RETURNING id INTO c_clientco;
 
@@ -333,6 +342,80 @@ BEGIN
     (c_materials, 'Арматура A500C', '10–18 мм, сертификат, резка в размер', 425000, 'Материалы', 'Металлопрокат'),
     (c_materials, 'Бетон М300', 'Доставка миксером по Астане, мин. 7 м³', 28500, 'Материалы', 'Бетон и растворы'),
     (c_materials, 'Газобетонный блок D500', 'Поддон 1.8 м³, разгрузка', 188000, 'Материалы', 'Кирпич и блоки');
+
+  -- Портфолио тестовых компаний (1–5 проектов + фото Unsplash)
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_alatau, 'Коттедж 220 м², Медeu', 'Генподряд: фундамент, коробка, кровля, фасад', '2024', 'completed', '2023-04-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', 'Фасад после сдачи', 'site_end', 0),
+    (proj_id, 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=600&fit=crop', 'Монтаж конструкций', 'work_in_progress', 1);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_alatau, 'ЖК «Alatau Residence» — коробка', 'Монолит, кладка, кровля на 2 секции', '2023', 'completed', '2022-06-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop', 'Общий вид секций', 'gallery', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_alatau, 'Офисный блок 1200 м²', 'Реконструкция и отделка open space', '2025', 'completed', '2024-09-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&h=600&fit=crop', 'Интерьер после сдачи', 'site_end', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_alatau, 'Кровля ТЦ «Алма»', 'Металлочерепица, утепление 150 мм', '2026', 'in_progress', '2025-11-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=600&fit=crop', 'Монтаж стропил', 'work_in_progress', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_monolit, 'Фундамент логистического центра', 'Ленточный фундамент, 240 м³ бетона М350', '2024', 'completed', '2024-03-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1590496793907-607806659bee?w=800&h=600&fit=crop', 'Заливка бетона', 'gallery', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_monolit, 'Монолитное перекрытие БЦ Esil', 'Плита 1800 м², двухслойное армирование', '2025', 'completed', '2024-11-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&h=600&fit=crop', 'Армирование плиты', 'work_in_progress', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_monolit, 'БМЗ — поставка М300 на ЖК', '1200 м³ за 45 дней, насос 42 м', '2023', 'completed', '2023-07-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&h=600&fit=crop', 'Подача бетона', 'gallery', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_materials, 'Комплектация ЖК Esil', 'Арматура, блок, кровля — 18 рейсов', '2025', 'completed', '2025-01-15')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=600&fit=crop', 'Отгрузка со склада', 'gallery', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_materials, 'Поставка кровли на ангар 1480 м²', 'Профнастил, утеплитель, доставка манипулятором', '2024', 'completed', '2024-05-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=600&fit=crop', 'Разгрузка на объекте', 'site_end', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_clientco, 'Ремонт офиса IT-компании 420 м²', 'Open space, переговорные, акустика', '2024', 'completed', '2024-02-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop', 'Готовый офис', 'site_end', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_clientco, 'Отделка ресторана 180 м²', 'Чистовая отделка, освещение, вентиляция', '2025', 'completed', '2024-10-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1600607687939-ce8a6a251eca?w=800&h=600&fit=crop', 'Зал после сдачи', 'gallery', 0);
+
+  INSERT INTO public.projects (company_id, title, description, completion_date, project_phase, start_date)
+  VALUES (c_clientco, 'Косметический ремонт банковского отделения', 'Покраска, замена пола, ресепшн', '2023', 'completed', '2023-08-01')
+  RETURNING id INTO proj_id;
+  INSERT INTO public.project_images (project_id, image_url, caption, image_role, sort_order) VALUES
+    (proj_id, 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop', 'Клиентская зона', 'gallery', 0);
 
   -- Завершённые заявки (в проде отзыв возможен только при status = completed и client_id = автор отзыва)
   INSERT INTO public.requests (client_id, company_id, title, description, status) VALUES
