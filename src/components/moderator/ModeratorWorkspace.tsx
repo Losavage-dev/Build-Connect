@@ -30,6 +30,8 @@ import {
 } from "@/lib/moderationLabels";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { profileSettingsSchema, firstZodError } from "@/lib/validation";
+import { normalizeKzPhone } from "@/lib/phone";
 import { usePendingCompaniesForModeration } from "@/hooks/useCompanyVerification";
 import { useModerationReports, type ModerationReportRow } from "@/hooks/useModerationReports";
 import { ModerationCompanyCard } from "@/components/moderator/ModerationCompanyCard";
@@ -154,7 +156,7 @@ export function ModeratorWorkspace() {
     const snap = {
       firstName: (profile.first_name ?? "").trim(),
       lastName: (profile.last_name ?? "").trim(),
-      phone: (profile.phone ?? "").trim(),
+      phone: normalizeKzPhone((profile.phone ?? "").trim()) ?? (profile.phone ?? "").trim(),
       city: (profile.city ?? "").trim(),
     };
     setSavedBaseline(snap);
@@ -188,23 +190,34 @@ export function ModeratorWorkspace() {
   };
 
   const handleSaveProfile = async () => {
-    const fn = firstName.trim();
-    const ln = lastName.trim();
-    const ph = phone.trim();
-    const ct = city.trim();
-    if (!fn || !ln || !ph || !ct) {
-      toast.error("╨Ч╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╨╕╨╝╤П, ╤Д╨░╨╝╨╕╨╗╨╕╤О, ╤В╨╡╨╗╨╡╤Д╨╛╨╜ ╨╕ ╨│╨╛╤А╨╛╨┤");
+    const parsed = profileSettingsSchema.safeParse({
+      firstName,
+      lastName,
+      phone,
+      city,
+      avatarUrl: "",
+    });
+    const err = firstZodError(parsed);
+    if (err) {
+      toast.error(err);
       return;
     }
+    if (!parsed.success) return;
+
     setIsSaving(true);
     try {
       await updateProfile({
-        first_name: fn,
-        last_name: ln,
-        phone: ph,
-        city: ct,
+        first_name: parsed.data.firstName,
+        last_name: parsed.data.lastName,
+        phone: parsed.data.phone,
+        city: parsed.data.city,
       });
-      setSavedBaseline({ firstName: fn, lastName: ln, phone: ph, city: ct });
+      setSavedBaseline({
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        phone: parsed.data.phone,
+        city: parsed.data.city,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -530,7 +543,7 @@ export function ModeratorWorkspace() {
                   <p className="text-sm text-muted-foreground">
                     Роль аккаунта: <strong>{roleLabel}</strong>. Смена роли недоступна для модераторов.
                   </p>
-                  <Button className="rounded-xl" disabled={isSaving} onClick={() => void handleSaveProfile()}>
+                  <Button className="rounded-xl" disabled={isSaving || !isSettingsDirty} onClick={() => void handleSaveProfile()}>
                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Сохранить
                   </Button>
