@@ -1,18 +1,22 @@
+import i18n from "@/i18n";
+
 /** Человекочитаемое сообщение из ошибки Supabase/PostgREST */
-export function formatSupabaseError(error: unknown, fallback = "Ошибка базы данных"): string {
-  if (!error || typeof error !== "object") return fallback;
+export function formatSupabaseError(error: unknown, fallback?: string): string {
+  const fb = fallback ?? i18n.t("common:dbError");
+  if (!error || typeof error !== "object") return fb;
   const e = error as { message?: string; code?: string; details?: string; hint?: string };
   const msg = e.message?.trim();
-  if (!msg) return fallback;
+  if (!msg) return fb;
 
-  if (e.code === "PGRST204" || /source_tender_id/i.test(msg)) {
-    return "Не применена миграция БД (source_tender_id). Выполните 20260521120000_request_source_tender.sql в Supabase.";
-  }
-  if (/recipient_profile_id/i.test(msg) && /column/i.test(msg)) {
-    return "Не применена миграция БД (recipient_profile_id). Выполните 20260520150000_tender_type_and_request_recipient.sql в Supabase.";
+  if (
+    e.code === "PGRST204" ||
+    /source_tender_id/i.test(msg) ||
+    (/recipient_profile_id/i.test(msg) && /column/i.test(msg))
+  ) {
+    return i18n.t("common:dbError");
   }
   if (e.code === "42501" || /row-level security/i.test(msg)) {
-    return "Нет прав на это действие. Проверьте вход и политики RLS в Supabase.";
+    return i18n.t("common:dbErrorPermission");
   }
 
   return msg.length > 200 ? `${msg.slice(0, 200)}…` : msg;
