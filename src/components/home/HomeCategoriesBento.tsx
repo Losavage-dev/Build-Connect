@@ -1,65 +1,65 @@
 import { Link } from "react-router-dom";
-import { Building, Hammer, Truck, Package, ArrowUpRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Building2, FileText, Package, Wrench, ArrowUpRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type Category = {
-  title: string;
+  titleKey: string;
+  descKey: string;
   icon: LucideIcon;
   href: string;
-  description: string;
   span: string;
 };
 
 const categories: Category[] = [
   {
-    title: "Строительство",
-    icon: Building,
-    href: "/catalog?category=Строительство",
-    description: "Генподряд, новое строительство и крупные объекты",
+    titleKey: "categories.catalogTitle",
+    descKey: "categories.catalogDesc",
+    icon: Building2,
+    href: "/catalog",
     span: "md:col-span-2 md:row-span-2",
   },
   {
-    title: "Ремонт",
-    icon: Hammer,
-    href: "/catalog?category=Ремонт",
-    description: "Отделка и ремонт",
+    titleKey: "categories.tendersTitle",
+    descKey: "categories.tendersDesc",
+    icon: FileText,
+    href: "/tenders",
     span: "md:col-span-1",
   },
   {
-    title: "Аренда техники",
-    icon: Truck,
-    href: "/catalog?category=Аренда спецтехники",
-    description: "Спецтехника",
+    titleKey: "categories.servicesTitle",
+    descKey: "categories.servicesDesc",
+    icon: Wrench,
+    href: "/services",
     span: "md:col-span-1",
   },
   {
-    title: "Материалы",
+    titleKey: "categories.materialsTitle",
+    descKey: "categories.materialsDesc",
     icon: Package,
-    href: "/catalog?category=Материалы",
-    description: "Поставщики и опт",
+    href: "/materials",
     span: "md:col-span-2",
   },
 ];
 
 export function HomeCategoriesBento() {
+  const { t } = useTranslation("home");
+
   return (
     <section className="py-20 md:py-24 bg-muted/20 border-y">
       <div className="container px-4">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-              Направления
+              {t("categories.eyebrow")}
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">Категории отрасли</h2>
-            <p className="text-muted-foreground text-lg max-w-lg">
-              Перейдите в каталог с фильтром по типу работ и специализации компаний.
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">{t("categories.title")}</h2>
           </div>
           <Link
             to="/catalog"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline underline-offset-4 shrink-0"
           >
-            Весь каталог
+            {t("featured.allCompanies")}
             <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
@@ -70,7 +70,7 @@ export function HomeCategoriesBento() {
             const isLarge = cat.span.includes("row-span-2");
             return (
               <Link
-                key={cat.title}
+                key={cat.titleKey}
                 to={cat.href}
                 className={`group relative overflow-hidden rounded-2xl border-2 border-border/50 bg-card hover:border-primary/30 hover-lift ${cat.span}`}
               >
@@ -96,10 +96,10 @@ export function HomeCategoriesBento() {
                   </div>
                   <div className="mt-auto pt-6">
                     <h3 className={`font-bold mb-1 ${isLarge ? "text-2xl md:text-3xl" : "text-lg"}`}>
-                      {cat.title}
+                      {t(cat.titleKey)}
                     </h3>
                     <p className={`text-muted-foreground ${isLarge ? "text-base" : "text-sm"}`}>
-                      {cat.description}
+                      {t(cat.descKey)}
                     </p>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
@@ -7,7 +8,7 @@ type Props = {
   onRetry?: () => void;
 };
 
-function formatError(error: unknown): string {
+function formatError(error: unknown, fallback: string): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
@@ -17,15 +18,17 @@ function formatError(error: unknown): string {
       return extra ? `${e.message} (${extra})` : e.message;
     }
   }
-  return "Неизвестная ошибка";
+  return fallback;
 }
 
 export default function QueryErrorBlock({
-  title = "Не удалось загрузить данные",
+  title,
   error,
   onRetry,
 }: Props) {
-  const message = formatError(error);
+  const { t } = useTranslation("common");
+  const resolvedTitle = title ?? t("loadErrorTitle");
+  const message = formatError(error, t("unknownError"));
   const isJwt =
     /jwt|session|token|expired|invalid.*key|apikey/i.test(message) ||
     message.includes("401");
@@ -33,16 +36,16 @@ export default function QueryErrorBlock({
   return (
     <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center space-y-3 max-w-lg mx-auto">
       <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
-      <p className="font-semibold text-destructive">{title}</p>
+      <p className="font-semibold text-destructive">{resolvedTitle}</p>
       <p className="text-sm text-muted-foreground break-words">{message}</p>
       {isJwt ? (
         <p className="text-xs text-muted-foreground">
-          Попробуйте выйти из аккаунта и войти снова, либо очистить данные сайта в браузере.
+          {t("loadErrorJwtHint")}
         </p>
       ) : null}
       {onRetry ? (
         <Button type="button" variant="outline" className="rounded-xl" onClick={onRetry}>
-          Повторить
+          {t("retry")}
         </Button>
       ) : null}
     </div>

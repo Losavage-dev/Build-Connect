@@ -1,4 +1,5 @@
 import { Building, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import CompanyCard from "@/components/CompanyCard";
 import { BuildConnectLogo } from "@/components/BuildConnectLogo";
@@ -18,6 +19,7 @@ import { HomeCategoriesBento } from "@/components/home/HomeCategoriesBento";
 import { HomeCta } from "@/components/home/HomeCta";
 
 const Index = () => {
+  const { t } = useTranslation(["home", "common"]);
   const { user } = useAuth();
   const { data: companies, isLoading, isError, error, refetch } = useCompanies();
 
@@ -25,13 +27,13 @@ const Index = () => {
   const recommended = useRecommendedCompanies(companies, 6);
 
   const stats = [
-    { label: "компаний в каталоге", value: isLoading ? "…" : companies?.length || 0 },
+    { labelKey: "stats.companies", value: isLoading ? "…" : companies?.length || 0 },
     {
-      label: "городов",
+      labelKey: "stats.cities",
       value: isLoading ? "…" : companies ? new Set(companies.map((c) => c.city)).size : 0,
     },
     {
-      label: "категорий",
+      labelKey: "stats.categories",
       value: isLoading
         ? "…"
         : companies
@@ -65,16 +67,16 @@ const Index = () => {
           <div className="flex items-end justify-between mb-12 gap-4 flex-wrap">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-                Топ рейтинга
+                {t("featured.eyebrow")}
               </p>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">Популярные компании</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2">{t("featured.title")}</h2>
               <p className="text-muted-foreground text-lg max-w-lg">
-                Проверенные подрядчики и поставщики с отзывами после реальных сделок.
+                {t("featured.subtitle")}
               </p>
             </div>
             <Button variant="outline" asChild className="hidden md:inline-flex gap-2 group rounded-xl">
               <Link to="/catalog">
-                Все компании
+                {t("featured.allCompanies")}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -120,16 +122,16 @@ const Index = () => {
               <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <Building className="h-10 w-10 text-primary" />
               </div>
-              <p className="text-muted-foreground mb-6 text-lg">Компании пока не зарегистрированы</p>
+              <p className="text-muted-foreground mb-6 text-lg">{t("featured.empty")}</p>
               <Button asChild size="lg" className="btn-glow rounded-xl">
-                <Link to="/auth">Добавить свою компанию</Link>
+                <Link to="/auth">{t("featured.addCompany")}</Link>
               </Button>
             </div>
           )}
 
           <div className="mt-8 text-center md:hidden">
             <Button variant="outline" asChild className="rounded-xl">
-              <Link to="/catalog">Все компании</Link>
+              <Link to="/catalog">{t("featured.allCompanies")}</Link>
             </Button>
           </div>
         </div>
@@ -148,63 +150,63 @@ const Index = () => {
                 <BuildConnectLogo size="sm" />
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                B2B-маркетплейс для строительной отрасли Казахстана: компании, тендеры, услуги и материалы.
+                {t("footer.tagline")}
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Компаниям</h3>
+              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">{t("footer.forBusiness")}</h3>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 <li>
                   <Link to="/auth" className="hover:text-primary transition-colors">
-                    Разместить компанию
+                    {t("footer.listCompany")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/catalog" className="hover:text-primary transition-colors">
-                    Каталог
+                    {t("footer.catalog")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/tenders" className="hover:text-primary transition-colors">
-                    Тендеры
+                    {t("nav:tenders")}
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Поддержка</h3>
+              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">{t("footer.support")}</h3>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 <li>
                   <Link to="/help" className="hover:text-primary transition-colors">
-                    Помощь
+                    {t("footer.help")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/contacts" className="hover:text-primary transition-colors">
-                    Контакты
+                    {t("footer.contacts")}
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">О проекте</h3>
+              <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">{t("footer.aboutSection")}</h3>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 <li>
                   <Link to="/about" className="hover:text-primary transition-colors">
-                    О BuildConnect
+                    {t("footer.about")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/terms" className="hover:text-primary transition-colors">
-                    Условия использования
+                    {t("footer.terms")}
                   </Link>
                 </li>
               </ul>
             </div>
           </div>
           <div className="border-t mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-            <p>© 2026 BuildConnect. Все права защищены.</p>
-            <p className="text-xs">Маркетплейс для строительных компаний · Казахстан</p>
+            <p>{t("copyright", { ns: "common" })}</p>
+            <p className="text-xs">{t("footer.footnote")}</p>
           </div>
         </div>
       </footer>

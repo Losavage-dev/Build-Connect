@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   CheckCircle2,
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { resolveUniversalSearchPath } from "@/lib/universalSearchRoute";
 
-type Stat = { label: string; value: string | number };
+type Stat = { labelKey: string; value: string | number };
 
 type Props = {
   stats: Stat[];
@@ -24,32 +25,32 @@ type Props = {
 
 const bentoTiles = [
   {
-    title: "Тендеры",
-    desc: "Заказчик публикует — подрядчик откликается",
+    titleKey: "bento.tendersTitle",
+    descKey: "bento.tendersDesc",
     href: "/tenders",
     icon: FileText,
     accent: "primary" as const,
     span: "col-span-2 row-span-1",
   },
   {
-    title: "Услуги",
-    desc: "Витрина работ",
+    titleKey: "bento.servicesTitle",
+    descKey: "bento.servicesDesc",
     href: "/services",
     icon: Wrench,
     accent: "secondary" as const,
     span: "col-span-1 row-span-1",
   },
   {
-    title: "Материалы",
-    desc: "Поставщики KZ",
+    titleKey: "bento.materialsTitle",
+    descKey: "bento.materialsDesc",
     href: "/materials",
     icon: Package,
     accent: "primary" as const,
     span: "col-span-1 row-span-1",
   },
   {
-    title: "Витрина роликов",
-    desc: "Видео о проектах",
+    titleKey: "bento.feedTitle",
+    descKey: "bento.feedDesc",
     href: "/feed",
     icon: Clapperboard,
     accent: "secondary" as const,
@@ -58,13 +59,14 @@ const bentoTiles = [
 ];
 
 const quickLinks = [
-  { label: "Каталог компаний", href: "/catalog", icon: Building2 },
-  { label: "Тендеры", href: "/tenders", icon: FileText },
-  { label: "Услуги", href: "/services", icon: Wrench },
-  { label: "Материалы", href: "/materials", icon: Package },
+  { labelKey: "quickLinks.catalog", href: "/catalog", icon: Building2 },
+  { labelKey: "quickLinks.tenders", href: "/tenders", icon: FileText },
+  { labelKey: "quickLinks.services", href: "/services", icon: Wrench },
+  { labelKey: "quickLinks.materials", href: "/materials", icon: Package },
 ];
 
 export function HomeHero({ stats }: Props) {
+  const { t } = useTranslation("home");
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
@@ -96,17 +98,17 @@ export function HomeHero({ stats }: Props) {
           <div className="space-y-8 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/80 backdrop-blur border border-border/60 text-sm font-medium shadow-sm animate-fade-in">
               <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-              <span>Проверенные строительные компании Казахстана</span>
+              <span>{t("hero.badge")}</span>
             </div>
 
             <div className="space-y-5 animate-fade-in" style={{ animationDelay: "0.08s" }}>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[3.5rem] font-black leading-[1.08] text-balance">
-                Стройте сделки{" "}
-                <span className="gradient-text">с проверенными</span>{" "}
-                партнёрами
+                {t("hero.titleLine1")}{" "}
+                <span className="gradient-text">{t("hero.titleHighlight")}</span>{" "}
+                {t("hero.titleLine2")}
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                B2B-маркетплейс: каталог подрядчиков, тендеры, услуги, материалы и чаты по заявкам — в одном месте.
+                {t("hero.subtitle")}
               </p>
             </div>
 
@@ -118,7 +120,7 @@ export function HomeHero({ stats }: Props) {
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Компания, услуга, материал или тендер..."
+                  placeholder={t("hero.searchPlaceholder")}
                   className="pl-12 h-14 text-base rounded-2xl border-2 border-border/60 bg-card/90 backdrop-blur focus-visible:border-primary/40 shadow-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -129,7 +131,7 @@ export function HomeHero({ stats }: Props) {
                 size="lg"
                 className="h-14 px-8 rounded-2xl btn-glow text-base font-semibold shrink-0"
               >
-                Найти
+                {t("hero.searchButton")}
               </Button>
             </form>
 
@@ -146,7 +148,7 @@ export function HomeHero({ stats }: Props) {
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium bg-card/70 backdrop-blur border border-border/60 hover:border-primary/30 hover:bg-card transition-colors"
                   >
                     <Icon className="h-3.5 w-3.5 text-primary" />
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 );
               })}
@@ -158,12 +160,12 @@ export function HomeHero({ stats }: Props) {
             >
               {stats.map((stat) => (
                 <div
-                  key={stat.label}
+                  key={stat.labelKey}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/80 backdrop-blur border border-border/50 shadow-sm min-w-[7rem]"
                 >
                   <p className="text-2xl font-bold tabular-nums leading-none">{stat.value}</p>
                   <p className="text-xs text-muted-foreground font-medium leading-tight max-w-[4.5rem]">
-                    {stat.label}
+                    {t(stat.labelKey)}
                   </p>
                 </div>
               ))}
@@ -199,9 +201,9 @@ export function HomeHero({ stats }: Props) {
                         </div>
                         <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                       </div>
-                      <p className="font-bold text-base sm:text-lg leading-tight">{tile.title}</p>
+                      <p className="font-bold text-base sm:text-lg leading-tight">{t(tile.titleKey)}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {tile.desc}
+                        {t(tile.descKey)}
                       </p>
                     </div>
                   </Link>
@@ -211,7 +213,7 @@ export function HomeHero({ stats }: Props) {
 
             <div className="mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl bg-muted/50 border border-border/40 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary shrink-0" />
-              <span>Алматы, Астана, Шымкент и другие города KZ</span>
+              <span>{t("hero.citiesNote")}</span>
             </div>
           </div>
         </div>
@@ -221,11 +223,13 @@ export function HomeHero({ stats }: Props) {
 }
 
 export function HomeTrustStrip() {
+  const { t } = useTranslation("home");
+
   const items = [
-    { icon: Shield, label: "Верификация документов модератором" },
-    { icon: CheckCircle2, label: "Отзывы только после сделки" },
-    { icon: FileText, label: "Тендеры и чаты по заявкам" },
-    { icon: Building2, label: "Каталог B2B-компаний" },
+    { icon: Shield, labelKey: "trust.verification" },
+    { icon: CheckCircle2, labelKey: "trust.reviews" },
+    { icon: FileText, labelKey: "trust.tendersChat" },
+    { icon: Building2, labelKey: "trust.catalog" },
   ];
 
   return (
@@ -236,13 +240,13 @@ export function HomeTrustStrip() {
             const Icon = item.icon;
             return (
               <div
-                key={item.label}
+                key={item.labelKey}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/60 border border-border/40"
               >
                 <div className="rounded-lg bg-primary/10 p-2 shrink-0">
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
-                <p className="text-sm font-medium leading-snug">{item.label}</p>
+                <p className="text-sm font-medium leading-snug">{t(item.labelKey)}</p>
               </div>
             );
           })}

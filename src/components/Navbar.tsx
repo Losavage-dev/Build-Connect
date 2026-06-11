@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, User, Menu, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { useInboxCounts } from "@/hooks/useInboxCounts";
 import { useInboxRealtime } from "@/hooks/useInboxRealtime";
 import { useMyCompanies } from "@/hooks/useServices";
 import { BuildConnectLogo } from "@/components/BuildConnectLogo";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { resolveUniversalSearchPath } from "@/lib/universalSearchRoute";
 import { isStaffRole } from "@/lib/userRoles";
@@ -27,6 +29,7 @@ import { buildAccountMenuMainLinks, buildAccountMenuSecondaryLinks } from "@/lib
 import { cn } from "@/lib/utils";
 
 const Navbar = () => {
+  const { t } = useTranslation(["nav", "common"]);
   const { user, profile, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,7 +69,7 @@ const Navbar = () => {
 
   const profileLabel =
     profile?.first_name?.trim() ||
-    (user?.email ? user.email.split("@")[0] : "Профиль");
+    (user?.email ? user.email.split("@")[0] : t("profile", { ns: "common" }));
 
   const renderMenuLink = (
     item: (typeof mainMenuLinks)[number],
@@ -83,7 +86,7 @@ const Navbar = () => {
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        <span className="flex-1">{item.label}</span>
+        <span className="flex-1">{t(item.labelKey)}</span>
         {item.badge != null && item.badge > 0 ? (
           <span className="min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
             {item.badge > 99 ? "99+" : item.badge}
@@ -103,19 +106,19 @@ const Navbar = () => {
           
           <nav className="hidden md:flex items-center gap-1">
             <Link to="/catalog" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Компании
+              {t("companies")}
             </Link>
             <Link to="/feed" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Витрина роликов
+              {t("promoFeed")}
             </Link>
             <Link to="/tenders" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Тендеры
+              {t("tenders")}
             </Link>
             <Link to="/services" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Услуги
+              {t("services")}
             </Link>
             <Link to="/materials" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted hover:text-primary transition-all">
-              Материалы
+              {t("materials")}
             </Link>
           </nav>
         </div>
@@ -124,7 +127,7 @@ const Navbar = () => {
           <form onSubmit={handleSearch} className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Компании, услуги, материалы, тендеры..."
+              placeholder={t("searchPlaceholder")}
               className="pl-10 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30 focus-visible:bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -135,6 +138,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
           {!isLoading && user ? (
             <>
+            <LanguageSwitcher />
             <NotificationsDropdown />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -163,7 +167,7 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.to} asChild>
                       <Link to={item.to} className="flex items-center cursor-pointer">
                         <Icon className="mr-2 h-4 w-4 shrink-0" />
-                        <span className="flex-1">{item.label}</span>
+                        <span className="flex-1">{t(item.labelKey)}</span>
                         {item.badge != null && item.badge > 0 ? (
                           <span className="ml-2 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
                             {item.badge > 99 ? "99+" : item.badge}
@@ -180,7 +184,7 @@ const Navbar = () => {
                     <DropdownMenuItem key={item.to} asChild>
                       <Link to={item.to} className="cursor-pointer">
                         <Icon className="mr-2 h-4 w-4" />
-                        {item.label}
+                        {t(item.labelKey)}
                       </Link>
                     </DropdownMenuItem>
                   );
@@ -188,15 +192,16 @@ const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Выйти
+                  {t("signOut", { ns: "common" })}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             </>
           ) : (
             <>
+              <LanguageSwitcher className="hidden md:flex" />
               <Button asChild className="hidden md:flex rounded-xl btn-glow font-semibold">
-                <Link to="/auth">Войти</Link>
+                <Link to="/auth">{t("signIn", { ns: "common" })}</Link>
               </Button>
             </>
           )}
@@ -210,25 +215,28 @@ const Navbar = () => {
             <SheetContent>
               <nav className="flex flex-col gap-4 mt-8">
                 <Link to="/catalog" className="text-lg font-medium hover:text-primary transition-colors">
-                  Компании
+                  {t("companies")}
                 </Link>
                 <Link to="/feed" className="text-lg font-medium hover:text-primary transition-colors">
-                  Витрина роликов
+                  {t("promoFeed")}
                 </Link>
                 <Link to="/tenders" className="text-lg font-medium hover:text-primary transition-colors">
-                  Тендеры
+                  {t("tenders")}
                 </Link>
                 <Link to="/services" className="text-lg font-medium hover:text-primary transition-colors">
-                  Услуги
+                  {t("services")}
                 </Link>
                 <Link to="/materials" className="text-lg font-medium hover:text-primary transition-colors">
-                  Материалы
+                  {t("materials")}
                 </Link>
+                <div className="border-t pt-4">
+                  <LanguageSwitcher variant="compact" />
+                </div>
                 {user ? (
                   <>
                     <div className="border-t pt-4 mt-2 space-y-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground px-1">
-                        Аккаунт
+                        {t("account", { ns: "common" })}
                       </p>
                       {mainMenuLinks.map((item) => renderMenuLink(item, "px-1 py-1"))}
                     </div>
@@ -237,12 +245,12 @@ const Navbar = () => {
                     </div>
                     <Button variant="outline" onClick={handleSignOut} className="mt-2 rounded-xl">
                       <LogOut className="h-4 w-4 mr-2" />
-                      Выйти
+                      {t("signOut", { ns: "common" })}
                     </Button>
                   </>
                 ) : (
                   <Button asChild className="mt-4 rounded-xl btn-glow">
-                    <Link to="/auth">Войти</Link>
+                    <Link to="/auth">{t("signIn", { ns: "common" })}</Link>
                   </Button>
                 )}
               </nav>

@@ -1,32 +1,36 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, MessageSquare, Search, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { MessageSquare, Search, Star, Handshake } from "lucide-react";
 
 const steps = [
   {
     step: "01",
     icon: Search,
-    title: "Найдите или опубликуйте",
-    description:
-      "Ищите компанию в каталоге, услугу или материал — либо создайте тендер как заказчик без обязательной компании.",
+    titleKey: "howItWorks.step1Title",
+    descKey: "howItWorks.step1Desc",
   },
   {
     step: "02",
-    icon: MessageSquare,
-    title: "Обсудите в чате",
-    description:
-      "Отклик, заявка или заказ открывают диалог: переписка, файлы и статус заявки — всё в личном кабинете.",
+    icon: Handshake,
+    titleKey: "howItWorks.step2Title",
+    descKey: "howItWorks.step2Desc",
   },
   {
     step: "03",
+    icon: MessageSquare,
+    titleKey: "howItWorks.step3Title",
+    descKey: "howItWorks.step3Desc",
+  },
+  {
+    step: "04",
     icon: Star,
-    title: "Завершите и оцените",
-    description:
-      "Заказчик завершает сделку и оставляет отзыв о компании — рейтинг помогает следующим заказчикам.",
+    titleKey: "howItWorks.step4Title",
+    descKey: "howItWorks.step4Desc",
   },
 ];
 
 export function HomeHowItWorks() {
+  const { t } = useTranslation("home");
+
   return (
     <section className="py-20 md:py-24 relative overflow-hidden">
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-primary/5 blur-3xl pointer-events-none" />
@@ -35,24 +39,15 @@ export function HomeHowItWorks() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div className="max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-              Как это работает
+              {t("howItWorks.eyebrow")}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold mb-3 text-balance">
-              От поиска до отзыва — три шага
+              {t("howItWorks.title")}
             </h2>
-            <p className="text-muted-foreground text-lg">
-              Прозрачный цикл для заказчиков и строительных компаний на одной платформе.
-            </p>
           </div>
-          <Button variant="outline" asChild className="rounded-xl gap-2 group shrink-0 self-start md:self-auto">
-            <Link to="/help">
-              Подробнее в справке
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </Button>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {steps.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -62,7 +57,7 @@ export function HomeHowItWorks() {
               >
                 {i < steps.length - 1 ? (
                   <div
-                    className="hidden md:block absolute top-1/2 -right-4 lg:-right-5 w-8 lg:w-10 h-px bg-gradient-to-r from-border to-transparent z-10"
+                    className="hidden lg:block absolute top-1/2 -right-4 lg:-right-5 w-8 lg:w-10 h-px bg-gradient-to-r from-border to-transparent z-10"
                     aria-hidden
                   />
                 ) : null}
@@ -74,9 +69,9 @@ export function HomeHowItWorks() {
                     <Icon className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                <h3 className="text-xl font-bold mb-2">{t(item.titleKey)}</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                  {item.description}
+                  {t(item.descKey)}
                 </p>
               </div>
             );

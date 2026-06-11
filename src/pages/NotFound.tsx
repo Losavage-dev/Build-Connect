@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Building2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import { PageContent } from "@/components/layout/PageHero";
 
 const NotFound = () => {
+  const { t } = useTranslation(["home", "common"]);
   const location = useLocation();
 
   useEffect(() => {
@@ -20,9 +22,9 @@ const NotFound = () => {
         <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} aria-hidden />
         <div className="container relative px-4 py-16 md:py-20 text-center">
           <p className="text-7xl md:text-8xl font-black gradient-text mb-4">404</p>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Страница не найдена</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("notFound.title")}</h1>
           <p className="text-muted-foreground mb-0 max-w-md mx-auto">
-            Запрашиваемый адрес не существует или был перемещён.
+            {t("notFound.description")}
           </p>
         </div>
       </section>
@@ -34,7 +36,7 @@ const NotFound = () => {
           <Button asChild size="lg" className="rounded-xl btn-glow">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              На главную
+              {t("backHome", { ns: "common" })}
             </Link>
           </Button>
         </div>
