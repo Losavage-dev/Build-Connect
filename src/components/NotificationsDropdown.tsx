@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +13,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMarkNotificationRead, useMyNotifications } from "@/hooks/useNotifications";
 import { useInboxCounts } from "@/hooks/useInboxCounts";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
 
 export function NotificationsDropdown() {
+  const { t } = useTranslation("common");
+  const dateLocale = useDateFnsLocale();
   const { profile } = useAuth();
   const { data: items = [], isLoading } = useMyNotifications(profile?.id);
   const { data: inbox } = useInboxCounts();
@@ -31,7 +34,7 @@ export function NotificationsDropdown() {
           variant="outline"
           size="icon"
           className="relative h-9 w-9 rounded-full shrink-0"
-          aria-label="Уведомления"
+          aria-label={t("notifications.ariaLabel")}
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 ? (
@@ -43,9 +46,11 @@ export function NotificationsDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-80 sm:w-96 rounded-xl p-0" align="end" forceMount>
         <DropdownMenuLabel className="px-4 py-3 font-semibold">
-          Уведомления
+          {t("notifications.title")}
           {unreadCount > 0 ? (
-            <span className="ml-2 text-xs font-normal text-destructive">{unreadCount} новых</span>
+            <span className="ml-2 text-xs font-normal text-destructive">
+              {t("notifications.newCount", { count: unreadCount })}
+            </span>
           ) : null}
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="m-0" />
@@ -55,7 +60,7 @@ export function NotificationsDropdown() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8 px-2">Пока нет уведомлений</p>
+            <p className="text-sm text-muted-foreground text-center py-8 px-2">{t("notifications.empty")}</p>
           ) : (
             items.map((n) => (
               <div
@@ -70,7 +75,7 @@ export function NotificationsDropdown() {
                 ) : null}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2">
                   <span className="text-[11px] text-muted-foreground">
-                    {format(new Date(n.created_at), "d MMM, HH:mm", { locale: ru })}
+                    {format(new Date(n.created_at), "d MMM, HH:mm", { locale: dateLocale })}
                   </span>
                   {n.link ? (
                     <Button
@@ -82,7 +87,7 @@ export function NotificationsDropdown() {
                         if (!n.read_at) void markRead.mutateAsync(n.id);
                       }}
                     >
-                      <Link to={n.link}>Открыть</Link>
+                      <Link to={n.link}>{t("notifications.open")}</Link>
                     </Button>
                   ) : null}
                   {!n.read_at ? (
@@ -94,7 +99,7 @@ export function NotificationsDropdown() {
                       disabled={markRead.isPending}
                       onClick={() => void markRead.mutateAsync(n.id)}
                     >
-                      Прочитано
+                      {t("notifications.read")}
                     </Button>
                   ) : null}
                 </div>

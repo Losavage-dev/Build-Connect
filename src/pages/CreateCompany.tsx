@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +15,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { toast } from "sonner";
 import { createCompanySchema, firstZodError } from "@/lib/validation";
-
+import { translateValidationError } from "@/lib/validation/translateError";
 import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
 
 const categories = BUSINESS_CATEGORIES;
 const cities = KAZAKHSTAN_CITIES;
 
 const CreateCompany = () => {
+  const { t } = useTranslation(["profile", "common", "validation"]);
   const navigate = useNavigate();
   const { user, profile, isLoading: authLoading } = useAuth();
   const createCompany = useCreateCompany();
@@ -60,7 +62,7 @@ const CreateCompany = () => {
     e.preventDefault();
 
     if (!profile) {
-      toast.error("Профиль не загружен");
+      toast.error(t("createCompany.profileNotLoaded"));
       return;
     }
 
@@ -77,7 +79,7 @@ const CreateCompany = () => {
     });
     const validationErr = firstZodError(parsed);
     if (validationErr) {
-      toast.error(validationErr);
+      toast.error(translateValidationError(validationErr, t));
       return;
     }
 
@@ -96,10 +98,11 @@ const CreateCompany = () => {
         owner_id: profile.id,
         categories: selectedCategories,
       });
-      toast.success("Компания создана. Загрузите документы для проверки.");
+      toast.success(t("createCompany.success"));
       navigate(`/company/${result.id}/manage?tab=verification`);
-    } catch (error: any) {
-      toast.error(error?.message || "Ошибка при создании компании");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("createCompany.error");
+      toast.error(message);
     }
   };
 
@@ -108,15 +111,15 @@ const CreateCompany = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Компания"
+        eyebrow={t("company.eyebrow")}
         eyebrowIcon={Building2}
-        title="Добавить компанию"
-        description="После создания загрузите документы для верификации — в каталоге компания появится после одобрения модератором."
+        title={t("createCompany.title")}
+        description={t("createCompany.subtitle")}
         compact
         actions={
           <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-xl">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Назад
+            {t("common:back")}
           </Button>
         }
       />
@@ -127,24 +130,22 @@ const CreateCompany = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />
-                Данные компании
+                {t("createCompany.formTitle")}
               </CardTitle>
-              <CardDescription>
-                Можно указать несколько категорий деятельности.
-              </CardDescription>
+              <CardDescription>{t("createCompany.formDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Основная информация
+                    {t("createCompany.basicInfo")}
                   </h3>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name">Название компании *</Label>
+                    <Label htmlFor="name">{t("createCompany.name")}</Label>
                     <Input
                       id="name"
-                      placeholder="ООО СтройМастер"
+                      placeholder={t("createCompany.namePlaceholder")}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       maxLength={100}
@@ -161,10 +162,10 @@ const CreateCompany = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="city">Город *</Label>
+                    <Label htmlFor="city">{t("createCompany.city")}</Label>
                     <Select value={city} onValueChange={setCity}>
                       <SelectTrigger id="city">
-                        <SelectValue placeholder="Выберите город" />
+                        <SelectValue placeholder={t("common:selectCity")} />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
                         {cities.map((c) => (
@@ -177,10 +178,10 @@ const CreateCompany = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description">Описание</Label>
+                    <Label htmlFor="description">{t("createCompany.description")}</Label>
                     <Textarea
                       id="description"
-                      placeholder="Расскажите о вашей компании, опыте работы и преимуществах..."
+                      placeholder={t("createCompany.descriptionPlaceholder")}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
@@ -194,14 +195,14 @@ const CreateCompany = () => {
 
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Контактная информация
+                    {t("createCompany.contactInfo")}
                   </h3>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Адрес</Label>
+                    <Label htmlFor="address">{t("createCompany.address")}</Label>
                     <Input
                       id="address"
-                      placeholder="ул. Абая 123, офис 45"
+                      placeholder={t("createCompany.addressPlaceholder")}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       maxLength={200}
@@ -210,11 +211,11 @@ const CreateCompany = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Телефон</Label>
+                      <Label htmlFor="phone">{t("createCompany.phone")}</Label>
                       <Input
                         id="phone"
                         type="tel"
-                        placeholder="+7 (777) 123-45-67"
+                        placeholder={t("createCompany.phonePlaceholder")}
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         maxLength={20}
@@ -222,11 +223,11 @@ const CreateCompany = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="company-email">Email</Label>
+                      <Label htmlFor="company-email">{t("createCompany.email")}</Label>
                       <Input
                         id="company-email"
                         type="email"
-                        placeholder="info@company.kz"
+                        placeholder={t("createCompany.emailPlaceholder")}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         maxLength={255}
@@ -235,10 +236,10 @@ const CreateCompany = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="bin">БИН</Label>
+                    <Label htmlFor="bin">{t("createCompany.bin")}</Label>
                     <Input
                       id="bin"
-                      placeholder="12 цифр"
+                      placeholder={t("createCompany.binPlaceholder")}
                       value={bin}
                       onChange={(e) => setBin(e.target.value.replace(/\D/g, "").slice(0, 12))}
                       inputMode="numeric"
@@ -247,10 +248,10 @@ const CreateCompany = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="website">Веб-сайт</Label>
+                    <Label htmlFor="website">{t("createCompany.website")}</Label>
                     <Input
                       id="website"
-                      placeholder="https://company.kz"
+                      placeholder={t("createCompany.websitePlaceholder")}
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                       maxLength={255}
@@ -267,10 +268,10 @@ const CreateCompany = () => {
                   {createCompany.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Создание...
+                      {t("createCompany.creating")}
                     </>
                   ) : (
-                    "Создать компанию"
+                    t("createCompany.submit")
                   )}
                 </Button>
               </form>

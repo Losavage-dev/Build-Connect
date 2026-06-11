@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Download, FileDown, Loader2, FileText } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -16,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  CONTRACT_TEMPLATE_LABELS,
   type ContractDocumentFields,
   type ContractTemplateId,
 } from "@/lib/contractTemplates";
@@ -30,23 +30,39 @@ import { downloadContractDocx, downloadContractPdf } from "@/lib/contractDocumen
 import { useAuth } from "@/contexts/AuthContext";
 import { useCapabilities } from "@/hooks/useCapabilities";
 import { useContractCounterparties } from "@/hooks/useContractCounterparties";
+import { useAppFormat } from "@/hooks/useAppFormat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const NONE_COUNTERPARTY = "__none__";
 
-const dateToday = (): string =>
-  new Date().toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+const CONTRACT_TEMPLATE_IDS: ContractTemplateId[] = ["services", "supply", "act"];
+
+type PartyRoleKey = "customer" | "buyer" | "supplier" | "contractor";
+
+function roleKeyFromOwnSide(side: string): PartyRoleKey {
+  if (side === "customer") return "customer";
+  if (side === "buyer") return "buyer";
+  if (side === "supplier") return "supplier";
+  return "contractor";
+}
+
+function counterpartyRoleKey(ownSide: string): PartyRoleKey {
+  if (ownSide === "customer") return "contractor";
+  if (ownSide === "buyer") return "supplier";
+  if (ownSide === "supplier") return "buyer";
+  return "customer";
+}
 
 export default function ContractTemplates() {
+  const { t } = useTranslation(["profile", "common"]);
+  const { formatDate, formatCurrency } = useAppFormat();
   const { profile, user } = useAuth();
   const caps = useCapabilities();
   const [city, setCity] = useState("Астана");
-  const [docDate, setDocDate] = useState(dateToday());
+  const [docDate, setDocDate] = useState(() =>
+    formatDate(new Date(), { day: "2-digit", month: "long", year: "numeric" }),
+  );
   const [templateId, setTemplateId] = useState<ContractTemplateId>("services");
   const [companyId, setCompanyId] = useState("");
   const [counterpartyRequestId, setCounterpartyRequestId] = useState(NONE_COUNTERPARTY);
@@ -139,23 +155,8 @@ export default function ContractTemplates() {
     servicePrice: selectedCounterparty?.servicePrice ?? null,
   };
 
-  const ownPartyLabel =
-    ownPartySide === "customer"
-      ? "Заказчик"
-      : ownPartySide === "buyer"
-        ? "Покупатель"
-        : ownPartySide === "supplier"
-          ? "Поставщик"
-          : "Исполнитель";
-
-  const counterpartyLabel =
-    ownPartySide === "customer"
-      ? "Исполнитель"
-      : ownPartySide === "buyer"
-        ? "Поставщик"
-        : ownPartySide === "supplier"
-          ? "Покупатель"
-          : "Заказчик";
+  const ownPartyLabel = t(`contracts.roles.${roleKeyFromOwnSide(ownPartySide)}`);
+  const counterpartyLabel = t(`contracts.roles.${counterpartyRoleKey(ownPartySide)}`);
 
   const runExport = async (kind: "docx" | "pdf") => {
     if (kind === "docx") setExportingDocx(true);
@@ -163,13 +164,13 @@ export default function ContractTemplates() {
     try {
       if (kind === "docx") {
         await downloadContractDocx(templateId, documentFields);
-        toast.success("Файл .docx сохранён");
+        toast.success(t("contracts.docxSaved"));
       } else {
         await downloadContractPdf(templateId, documentFields);
-        toast.success("Файл .pdf сохранён");
+        toast.success(t("contracts.pdfSaved"));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Не удалось сформировать файл";
+      const msg = e instanceof Error ? e.message : t("contracts.exportError");
       toast.error(msg);
     } finally {
       if (kind === "docx") setExportingDocx(false);
@@ -182,16 +183,16 @@ export default function ContractTemplates() {
       <Navbar />
 
       <PageHero
-        eyebrow="Документы"
+        eyebrow={t("contracts.eyebrow")}
         eyebrowIcon={FileText}
-        title="Шаблоны договоров"
-        description="Скачайте документ в Word или PDF — реквизиты обеих сторон подставятся из профиля и активных сделок."
+        title={t("contracts.title")}
+        description={t("contracts.subtitle")}
         compact
         actions={
           <Button variant="ghost" asChild className="rounded-xl">
             <Link to="/profile">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              В профиль
+              {t("contracts.backToProfile")}
             </Link>
           </Button>
         }
@@ -201,22 +202,20 @@ export default function ContractTemplates() {
         <div className="max-w-2xl mx-auto">
           <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl">Параметры документа</CardTitle>
-              <CardDescription>
-                Реквизиты вашей стороны и контрагента подставятся из профиля и активной заявки.
-              </CardDescription>
+              <CardTitle className="text-2xl">{t("contracts.paramsTitle")}</CardTitle>
+              <CardDescription>{t("contracts.paramsDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="template-type">Тип документа</Label>
+                <Label htmlFor="template-type">{t("contracts.docType")}</Label>
                 <Select value={templateId} onValueChange={(v) => setTemplateId(v as ContractTemplateId)}>
                   <SelectTrigger id="template-type" className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(CONTRACT_TEMPLATE_LABELS) as ContractTemplateId[]).map((id) => (
+                    {CONTRACT_TEMPLATE_IDS.map((id) => (
                       <SelectItem key={id} value={id}>
-                        {CONTRACT_TEMPLATE_LABELS[id]}
+                        {t(`contracts.templateLabels.${id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -225,10 +224,10 @@ export default function ContractTemplates() {
 
               {companies.length > 1 ? (
                 <div className="space-y-2">
-                  <Label htmlFor="contract-company">Ваша компания</Label>
+                  <Label htmlFor="contract-company">{t("contracts.yourCompany")}</Label>
                   <Select value={companyId} onValueChange={setCompanyId}>
                     <SelectTrigger id="contract-company" className="rounded-xl">
-                      <SelectValue placeholder="Выберите компанию..." />
+                      <SelectValue placeholder={t("contracts.selectCompany")} />
                     </SelectTrigger>
                     <SelectContent>
                       {companies.map((c) => (
@@ -242,13 +241,13 @@ export default function ContractTemplates() {
               ) : null}
 
               <div className="space-y-2">
-                <Label htmlFor="contract-counterparty">Контрагент по сделке</Label>
+                <Label htmlFor="contract-counterparty">{t("contracts.counterparty")}</Label>
                 <Select value={counterpartyRequestId} onValueChange={setCounterpartyRequestId}>
                   <SelectTrigger id="contract-counterparty" className="rounded-xl">
-                    <SelectValue placeholder="Выберите активную заявку..." />
+                    <SelectValue placeholder={t("contracts.selectRequest")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE_COUNTERPARTY}>Не выбран — заполню вручную</SelectItem>
+                    <SelectItem value={NONE_COUNTERPARTY}>{t("contracts.counterpartyNone")}</SelectItem>
                     {counterparties.map((option) => (
                       <SelectItem key={option.requestId} value={option.requestId}>
                         {option.label}
@@ -257,51 +256,44 @@ export default function ContractTemplates() {
                   </SelectContent>
                 </Select>
                 {counterpartiesLoading ? (
-                  <p className="text-xs text-muted-foreground">Загрузка активных сделок...</p>
+                  <p className="text-xs text-muted-foreground">{t("contracts.loadingDeals")}</p>
                 ) : counterparties.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Нет активных заявок. Контрагента можно указать вручную после скачивания или начать переговоры в
-                    чате.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("contracts.noActiveDeals")}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Список — только активные заявки. Реквизиты берутся из профиля на платформе.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("contracts.activeDealsHint")}</p>
                 )}
               </div>
 
               <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm space-y-1">
-                <p className="font-medium text-foreground">Ваши реквизиты ({ownPartyLabel})</p>
+                <p className="font-medium text-foreground">{t("contracts.yourDetails", { role: ownPartyLabel })}</p>
                 {companiesLoading ? (
-                  <p className="text-muted-foreground">Загрузка данных...</p>
+                  <p className="text-muted-foreground">{t("contracts.loadingData")}</p>
                 ) : (
                   <>
                     <p>
-                      <span className="text-muted-foreground">Наименование: </span>
-                      {ownParty.name || "— укажите в профиле или компании"}
+                      <span className="text-muted-foreground">{t("contracts.nameLabel")} </span>
+                      {ownParty.name || t("contracts.nameEmpty")}
                     </p>
                     {ownParty.bin ? (
                       <p>
-                        <span className="text-muted-foreground">БИН: </span>
+                        <span className="text-muted-foreground">{t("contracts.binLabel")} </span>
                         {ownParty.bin}
                       </p>
                     ) : null}
                     {ownParty.address ? (
                       <p>
-                        <span className="text-muted-foreground">Адрес: </span>
+                        <span className="text-muted-foreground">{t("contracts.addressLabel")} </span>
                         {ownParty.address}
                       </p>
                     ) : null}
                     {ownParty.phoneEmail ? (
                       <p>
-                        <span className="text-muted-foreground">Контакты: </span>
+                        <span className="text-muted-foreground">{t("contracts.contactsLabel")} </span>
                         {ownParty.phoneEmail}
                       </p>
                     ) : null}
                     {!ownParty.name && !companies.length ? (
-                      <p className="text-muted-foreground">
-                        Создайте компанию или заполните профиль — тогда реквизиты попадут в документ автоматически.
-                      </p>
+                      <p className="text-muted-foreground">{t("contracts.fillProfileHint")}</p>
                     ) : null}
                   </>
                 )}
@@ -310,39 +302,41 @@ export default function ContractTemplates() {
               {selectedCounterparty ? (
                 <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm space-y-1">
                   <p className="font-medium text-foreground">
-                    Контрагент ({counterpartyLabel}): {selectedCounterparty.party.name}
+                    {t("contracts.counterpartyDetails", {
+                      role: counterpartyLabel,
+                      name: selectedCounterparty.party.name,
+                    })}
                   </p>
                   {selectedCounterparty.party.bin ? (
                     <p>
-                      <span className="text-muted-foreground">БИН: </span>
+                      <span className="text-muted-foreground">{t("contracts.binLabel")} </span>
                       {selectedCounterparty.party.bin}
                     </p>
                   ) : null}
                   {selectedCounterparty.party.address ? (
                     <p>
-                      <span className="text-muted-foreground">Адрес: </span>
+                      <span className="text-muted-foreground">{t("contracts.addressLabel")} </span>
                       {selectedCounterparty.party.address}
                     </p>
                   ) : null}
                   {selectedCounterparty.party.phoneEmail ? (
                     <p>
-                      <span className="text-muted-foreground">Контакты: </span>
+                      <span className="text-muted-foreground">{t("contracts.contactsLabel")} </span>
                       {selectedCounterparty.party.phoneEmail}
                     </p>
                   ) : null}
                   {selectedCounterparty.servicePrice ? (
                     <p>
-                      <span className="text-muted-foreground">Цена из отклика: </span>
-                      {selectedCounterparty.servicePrice} ₸
+                      <span className="text-muted-foreground">{t("contracts.priceFromBid")} </span>
+                      {formatCurrency(selectedCounterparty.servicePrice)}
                     </p>
                   ) : null}
                   <p className="text-xs text-muted-foreground pt-1">
-                    По заявке: {selectedCounterparty.requestTitle}
+                    {t("contracts.byRequest", { title: selectedCounterparty.requestTitle })}
                   </p>
                   {!selectedCounterparty.party.bin && !selectedCounterparty.party.address ? (
                     <p className="text-xs text-amber-700 dark:text-amber-400 pt-1">
-                      БИН и адрес не заполнены в карточке контрагента на платформе — допишите вручную после
-                      скачивания.
+                      {t("contracts.fillManuallyHint")}
                     </p>
                   ) : null}
                 </div>
@@ -350,7 +344,7 @@ export default function ContractTemplates() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="city">Город в шапке</Label>
+                  <Label htmlFor="city">{t("contracts.headerCity")}</Label>
                   <Input
                     id="city"
                     value={city}
@@ -360,19 +354,17 @@ export default function ContractTemplates() {
                     }}
                     placeholder={
                       selectedCounterparty?.dealCity
-                        ? `${selectedCounterparty.dealCity} — из тендера`
-                        : "Город выполнения заказа"
+                        ? t("contracts.headerCityFromTender", { city: selectedCounterparty.dealCity })
+                        : t("contracts.headerCityPlaceholder")
                     }
                     className="rounded-xl"
                   />
                   {selectedCounterparty?.dealCity ? (
-                    <p className="text-xs text-muted-foreground">
-                      Город выполнения заказа (из тендера). Можно изменить.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t("contracts.headerCityHint")}</p>
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="doc-date">Дата в шапке</Label>
+                  <Label htmlFor="doc-date">{t("contracts.headerDate")}</Label>
                   <Input
                     id="doc-date"
                     value={docDate}
@@ -382,9 +374,7 @@ export default function ContractTemplates() {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Тексты носят ознакомительный характер; перед подписанием документ нужно согласовать с юристом.
-              </p>
+              <p className="text-sm text-muted-foreground">{t("contracts.disclaimer")}</p>
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -395,7 +385,7 @@ export default function ContractTemplates() {
                   onClick={() => void runExport("docx")}
                 >
                   {exportingDocx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Скачать .docx
+                  {t("contracts.downloadDocx")}
                 </Button>
                 <Button
                   type="button"
@@ -406,7 +396,7 @@ export default function ContractTemplates() {
                   onClick={() => void runExport("pdf")}
                 >
                   {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                  Скачать .pdf
+                  {t("contracts.downloadPdf")}
                 </Button>
               </div>
             </CardContent>

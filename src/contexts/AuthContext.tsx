@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase, pingSupabase, clearSupabaseAuthStorage } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 const SIGNED_OUT_FLAG = "bc_signed_out";
 
@@ -99,11 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession?.user) {
         const p = await loadProfile(nextSession.user.id);
         if (p?.banned_until && new Date(p.banned_until) > new Date()) {
-          const until = new Date(p.banned_until).toLocaleString("ru-RU");
+          const locale = i18n.language === "en" ? "en-US" : "ru-RU";
+          const until = new Date(p.banned_until).toLocaleString(locale);
           toast.error(
             p.ban_reason
-              ? `Аккаунт заблокирован до ${until}. Причина: ${p.ban_reason}`
-              : `Аккаунт заблокирован до ${until}`,
+              ? i18n.t("auth:bannedUntilWithReason", { until, reason: p.ban_reason })
+              : i18n.t("auth:bannedUntil", { until }),
           );
           await supabase.auth.signOut();
           if (mounted) {
@@ -183,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    toast.success("Проверьте почту для подтверждения регистрации");
+    toast.success(i18n.t("auth:checkEmail"));
   };
 
   const signIn = async (email: string, password: string) => {
@@ -197,13 +199,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       const msg =
         error.message === "Invalid login credentials"
-          ? "Неверный email или пароль."
+          ? i18n.t("auth:invalidCredentials")
           : error.message;
       toast.error(msg);
       throw error;
     }
 
-    toast.success("Вы успешно вошли");
+    toast.success(i18n.t("auth:loginSuccess"));
   };
 
   const signInWithGoogle = async () => {
@@ -238,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setUser(null);
     setProfile(null);
-    toast.success("Вы вышли из аккаунта");
+    toast.success(i18n.t("auth:logoutSuccess"));
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
@@ -256,7 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshed = await loadProfile(user.id);
     setProfile(refreshed);
-    toast.success("Профиль обновлен");
+    toast.success(i18n.t("auth:profileUpdated"));
   };
 
   return (

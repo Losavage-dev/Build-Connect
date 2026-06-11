@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Building2, Check, ExternalLink, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +11,10 @@ import {
   useModerateCompanyVerification,
 } from "@/hooks/useCompanyVerification";
 import { usePrivateFileUpload } from "@/hooks/usePrivateFileUpload";
-import { COMPANY_DOCUMENT_LABELS } from "@/lib/companyVerification";
+import type { CompanyDocumentType } from "@/lib/companyVerification";
 import { toast } from "sonner";
+import { useAppFormat } from "@/hooks/useAppFormat";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
 
 type Props = {
   companyId: string;
@@ -36,15 +39,21 @@ export function ModerationCompanyCard({
   companyBin,
   moderatorProfileId,
 }: Props) {
+  const { t } = useTranslation(["common", "profile"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatDate } = useAppFormat();
   const [comment, setComment] = useState("");
   const [expanded, setExpanded] = useState(false);
   const { data: documents = [], isLoading } = useCompanyDocuments(expanded ? companyId : undefined);
   const moderate = useModerateCompanyVerification();
   const { getSignedUrl } = usePrivateFileUpload();
 
+  const docTypeLabel = (type: CompanyDocumentType) =>
+    t(`verificationPanel.docTypes.${type}` as "verificationPanel.docTypes.registration");
+
   const handleDecision = async (decision: "approved" | "rejected") => {
     if (decision === "rejected" && !comment.trim()) {
-      toast.error("Укажите причину отклонения");
+      toast.error(t("moderator.companyCard.rejectReasonRequired"));
       return;
     }
     try {
@@ -54,10 +63,10 @@ export function ModerationCompanyCard({
         comment: comment.trim() || undefined,
         moderatorProfileId,
       });
-      toast.success(decision === "approved" ? "Компания одобрена" : "Заявка отклонена");
+      toast.success(decision === "approved" ? t("moderator.companyCard.approved") : t("moderator.companyCard.rejected"));
       setComment("");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Ошибка";
+      const msg = err instanceof Error ? err.message : t("moderator.companyCard.error");
       toast.error(msg);
     }
   };
@@ -70,15 +79,17 @@ export function ModerationCompanyCard({
           {companyName}
         </CardTitle>
         <CardDescription>
-          {category} · {city}
+          {catalogLabel(category)} · {catalogLabel(city)}
           {submittedAt
-            ? ` · подана ${new Date(submittedAt).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}`
+            ? t("moderator.companyCard.submitted", {
+                date: formatDate(submittedAt, { dateStyle: "short", timeStyle: "short" }),
+              })
             : ""}
         </CardDescription>
         <p className="text-sm text-muted-foreground">
-          Владелец: {ownerName}
+          {t("moderator.companyCard.owner")} {ownerName}
           {ownerPhone ? ` · ${ownerPhone}` : ""}
-          {companyBin ? ` · БИН ${companyBin}` : ""}
+          {companyBin ? t("moderator.companyCard.bin", { bin: companyBin }) : ""}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -86,11 +97,11 @@ export function ModerationCompanyCard({
           <Button variant="outline" size="sm" asChild>
             <Link to={`/company/${companyId}`} target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-1" />
-              Карточка
+              {t("moderator.companyCard.profile")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? "Скрыть документы" : "Показать документы"}
+            {expanded ? t("moderator.companyCard.hideDocs") : t("moderator.companyCard.showDocs")}
           </Button>
         </div>
 
@@ -98,13 +109,13 @@ export function ModerationCompanyCard({
           isLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Документы не найдены.</p>
+            <p className="text-sm text-muted-foreground">{t("moderator.companyCard.noDocs")}</p>
           ) : (
             <ul className="space-y-2 text-sm">
               {documents.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between gap-2 border rounded-md px-3 py-2">
                   <span>
-                    {doc.file_name} — {COMPANY_DOCUMENT_LABELS[doc.document_type]}
+                    {doc.file_name} — {docTypeLabel(doc.document_type as CompanyDocumentType)}
                   </span>
                   <Button
                     type="button"
@@ -113,10 +124,10 @@ export function ModerationCompanyCard({
                     onClick={async () => {
                       const url = await getSignedUrl(doc.storage_path);
                       if (url) window.open(url, "_blank", "noopener,noreferrer");
-                      else toast.error("Не удалось открыть файл");
+                      else toast.error(t("moderator.companyCard.openError"));
                     }}
                   >
-                    Открыть
+                    {t("moderator.companyCard.open")}
                   </Button>
                 </li>
               ))}
@@ -125,12 +136,12 @@ export function ModerationCompanyCard({
         ) : null}
 
         <div className="space-y-2">
-          <Label htmlFor={`comment-${companyId}`}>Комментарий (обязателен при отклонении)</Label>
+          <Label htmlFor={`comment-${companyId}`}>{t("moderator.companyCard.commentLabel")}</Label>
           <Textarea
             id={`comment-${companyId}`}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Замечания модератора для владельца компании"
+            placeholder={t("moderator.companyCard.commentPlaceholder")}
             rows={2}
           />
         </div>
@@ -138,7 +149,7 @@ export function ModerationCompanyCard({
         <div className="flex flex-wrap gap-2">
           <Button className="gap-1" disabled={moderate.isPending} onClick={() => handleDecision("approved")}>
             <Check className="h-4 w-4" />
-            Одобрить
+            {t("moderator.companyCard.approve")}
           </Button>
           <Button
             variant="destructive"
@@ -147,7 +158,7 @@ export function ModerationCompanyCard({
             onClick={() => handleDecision("rejected")}
           >
             <X className="h-4 w-4" />
-            Отклонить
+            {t("moderator.companyCard.reject")}
           </Button>
         </div>
       </CardContent>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Building2, Loader2, Plus, Trash2, Upload, Image as ImageIcon, Clapperboard, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,11 +33,17 @@ import { parseYouTubeVideoId } from "@/lib/youtube";
 import { SearchableMultiCategoryPicker } from "@/components/SearchableMultiCategoryPicker";
 import { CompanyVerificationPanel } from "@/components/CompanyVerificationPanel";
 import type { CompanyVerificationStatus } from "@/lib/companyVerification";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 const categories = BUSINESS_CATEGORIES;
 const cities = KAZAKHSTAN_CITIES;
+const DEFAULT_SERVICE_CATEGORY = "Другое";
 
 const ManageCompany = () => {
+  const { t } = useTranslation(["profile", "common", "catalogData"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatNumber } = useAppFormat();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -76,7 +83,7 @@ const ManageCompany = () => {
   const [serviceDescription, setServiceDescription] = useState("");
   const [servicePriceFrom, setServicePriceFrom] = useState("");
   const [servicePriceTo, setServicePriceTo] = useState("");
-  const [serviceCategory, setServiceCategory] = useState("Другое");
+  const [serviceCategory, setServiceCategory] = useState(DEFAULT_SERVICE_CATEGORY);
 
   // Project dialog
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
@@ -142,8 +149,8 @@ const ManageCompany = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container px-4 py-16 text-center">
-          <p className="text-muted-foreground mb-4">Компания не найдена</p>
-          <Button asChild><Link to="/profile">В профиль</Link></Button>
+          <p className="text-muted-foreground mb-4">{t("manageCompany.notFound")}</p>
+          <Button asChild><Link to="/profile">{t("manageCompany.toProfile")}</Link></Button>
         </div>
       </div>
     );
@@ -155,8 +162,8 @@ const ManageCompany = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container px-4 py-16 text-center">
-          <p className="text-muted-foreground mb-4">У вас нет прав для управления этой компанией</p>
-          <Button asChild><Link to={`/company/${id}`}>Перейти к компании</Link></Button>
+          <p className="text-muted-foreground mb-4">{t("manageCompany.noAccess")}</p>
+          <Button asChild><Link to={`/company/${id}`}>{t("manageCompany.goToCompany")}</Link></Button>
         </div>
       </div>
     );
@@ -164,24 +171,24 @@ const ManageCompany = () => {
 
   const handleSaveCompany = async () => {
     if (!name.trim()) {
-      toast.error("Введите название компании");
+      toast.error(t("manageCompany.nameRequired"));
       return;
     }
     if (!phone.trim()) {
-      toast.error("Укажите телефон компании");
+      toast.error(t("manageCompany.phoneRequired"));
       return;
     }
     if (!address.trim()) {
-      toast.error("Укажите адрес компании");
+      toast.error(t("manageCompany.addressRequired"));
       return;
     }
     if (selectedCategories.length === 0) {
-      toast.error("Выберите хотя бы одну категорию");
+      toast.error(t("manageCompany.categoryRequired"));
       return;
     }
     const binTrimmed = bin.trim();
     if (binTrimmed && !/^\d{12}$/.test(binTrimmed)) {
-      toast.error("БИН должен содержать 12 цифр");
+      toast.error(t("manageCompany.binInvalid"));
       return;
     }
     try {
@@ -202,15 +209,15 @@ const ManageCompany = () => {
         bin: binTrimmed || null,
         logo_url: logoUrl || null,
       });
-      toast.success("Компания обновлена");
+      toast.success(t("manageCompany.saveSuccess"));
     } catch (error: any) {
-      toast.error(error?.message || "Ошибка при обновлении");
+      toast.error(error?.message || t("manageCompany.saveError"));
     }
   };
 
   const handleAddService = async () => {
     if (!serviceName.trim()) {
-      toast.error("Введите название услуги");
+      toast.error(t("manageCompany.serviceNameRequired"));
       return;
     }
     try {
@@ -222,24 +229,24 @@ const ManageCompany = () => {
         price_to: servicePriceTo ? Number(servicePriceTo) : undefined,
         vitrine_category: serviceCategory,
       });
-      toast.success("Услуга добавлена и появится в каталоге «Услуги»");
+      toast.success(t("manageCompany.serviceAdded"));
       setServiceDialogOpen(false);
       setServiceName("");
       setServiceDescription("");
       setServicePriceFrom("");
       setServicePriceTo("");
-      setServiceCategory("Другое");
+      setServiceCategory(DEFAULT_SERVICE_CATEGORY);
     } catch (error: any) {
-      toast.error(error?.message || "Ошибка");
+      toast.error(error?.message || t("manageCompany.genericError"));
     }
   };
 
   const handleDeleteService = async (serviceId: string) => {
     try {
       await deleteService.mutateAsync({ id: serviceId, company_id: id! });
-      toast.success("Услуга удалена");
+      toast.success(t("manageCompany.serviceDeleted"));
     } catch {
-      toast.error("Ошибка при удалении");
+      toast.error(t("manageCompany.deleteError"));
     }
   };
 
@@ -276,7 +283,7 @@ const ManageCompany = () => {
 
   const handleSaveProject = async () => {
     if (!projectTitle.trim()) {
-      toast.error("Введите название проекта");
+      toast.error(t("manageCompany.projectNameRequired"));
       return;
     }
     try {
@@ -290,7 +297,7 @@ const ManageCompany = () => {
           start_date: projectStartDate || null,
           project_phase: projectPhase,
         });
-        toast.success("Проект обновлён");
+        toast.success(t("manageCompany.projectUpdated"));
       } else {
         await createProject.mutateAsync({
           company_id: id!,
@@ -300,33 +307,33 @@ const ManageCompany = () => {
           start_date: projectStartDate || undefined,
           project_phase: projectPhase,
         });
-        toast.success("Проект добавлен");
+        toast.success(t("manageCompany.projectAdded"));
       }
       setProjectDialogOpen(false);
       resetProjectForm();
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Ошибка";
+      const msg = error instanceof Error ? error.message : t("manageCompany.genericError");
       toast.error(msg);
     }
   };
 
   const handleDeleteProjectImage = async (imageId: string, imageUrl: string) => {
-    if (!window.confirm("Удалить это фото?")) return;
+    if (!window.confirm(t("manageCompany.confirmDeletePhoto"))) return;
     try {
       await deleteProjectImage.mutateAsync({ imageId, imageUrl, company_id: id! });
       await deleteImage(imageUrl, "projects");
-      toast.success("Фото удалено");
+      toast.success(t("manageCompany.photoDeleted"));
     } catch {
-      toast.error("Не удалось удалить фото");
+      toast.error(t("manageCompany.photoDeleteError"));
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
     try {
       await deleteProject.mutateAsync({ id: projectId, company_id: id! });
-      toast.success("Проект удалён");
+      toast.success(t("manageCompany.projectDeleted"));
     } catch {
-      toast.error("Ошибка при удалении");
+      toast.error(t("manageCompany.deleteError"));
     }
   };
 
@@ -344,9 +351,9 @@ const ManageCompany = () => {
           company_id: id!,
           image_role: imageRole,
         });
-        toast.success("Изображение добавлено");
+        toast.success(t("manageCompany.imageAdded"));
       } catch {
-        toast.error("Ошибка при сохранении изображения");
+        toast.error(t("manageCompany.imageSaveError"));
       }
     }
   };
@@ -354,7 +361,7 @@ const ManageCompany = () => {
   const handleAddPromoVideo = async () => {
     const videoId = parseYouTubeVideoId(promoYoutubeUrl);
     if (!videoId) {
-      toast.error("Вставьте корректную ссылку на YouTube или ID ролика (11 символов)");
+      toast.error(t("manageCompany.youtubeInvalid"));
       return;
     }
     try {
@@ -362,49 +369,59 @@ const ManageCompany = () => {
       await createPromoPost.mutateAsync({
         companyId: id!,
         youtubeVideoId: videoId,
-        title: promoVideoTitle.trim() || "Презентация компании",
+        title: promoVideoTitle.trim() || t("manageCompany.defaultVideoTitle"),
         caption: promoVideoCaption.trim() || undefined,
         categories: cats.length ? cats : undefined,
       });
-      toast.success("Ролик добавлен — он появится в витрине «Витрина роликов»");
+      toast.success(t("manageCompany.videoAdded"));
       setPromoYoutubeUrl("");
       setPromoVideoTitle("");
       setPromoVideoCaption("");
       setPromoVideoCategories([]);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка";
+      const msg = e instanceof Error ? e.message : t("manageCompany.genericError");
       toast.error(msg);
     }
   };
 
   const handleDeletePromoVideo = async (postId: string) => {
-    if (!window.confirm("Удалить ролик из витрины?")) return;
+    if (!window.confirm(t("manageCompany.confirmDeleteVideo"))) return;
     try {
       await deletePromoPost.mutateAsync({ postId, companyId: id! });
-      toast.success("Ролик удалён");
+      toast.success(t("manageCompany.videoDeleted"));
     } catch {
-      toast.error("Не удалось удалить");
+      toast.error(t("manageCompany.videoDeleteError"));
     }
   };
 
   const services = company.company_services || [];
   const projects = company.projects || [];
 
+  const projectImageRoleLabel = (role: string) => {
+    const map: Record<string, string> = {
+      gallery: t("manageCompany.projects.imageRoleShortGallery"),
+      site_start: t("manageCompany.projects.imageRoleShortStart"),
+      site_end: t("manageCompany.projects.imageRoleShortEnd"),
+      work_in_progress: t("manageCompany.projects.imageRoleShortWork"),
+    };
+    return map[role] || t("manageCompany.projects.photo");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <PageHero
-        eyebrow="Управление"
+        eyebrow={t("manageCompany.eyebrow")}
         eyebrowIcon={Building2}
-        title="Управление компанией"
+        title={t("manageCompany.title")}
         description={company.name}
         compact
         actions={
           <Button variant="ghost" asChild className="rounded-xl">
             <Link to={`/company/${id}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              К профилю компании
+              {t("manageCompany.backToProfile")}
             </Link>
           </Button>
         }
@@ -415,19 +432,19 @@ const ManageCompany = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 h-auto p-1 rounded-xl bg-muted/50">
               <TabsTrigger value="info" className="text-xs sm:text-sm px-2">
-                Информация
+                {t("manageCompany.tabs.info")}
               </TabsTrigger>
               <TabsTrigger value="verification" className="text-xs sm:text-sm px-2">
-                Верификация
+                {t("manageCompany.tabs.verification")}
               </TabsTrigger>
               <TabsTrigger value="services" className="text-xs sm:text-sm px-2">
-                Услуги ({services.length})
+                {t("manageCompany.tabs.services", { count: services.length })}
               </TabsTrigger>
               <TabsTrigger value="projects" className="text-xs sm:text-sm px-2">
-                Проекты ({projects.length})
+                {t("manageCompany.tabs.projects", { count: projects.length })}
               </TabsTrigger>
               <TabsTrigger value="videos" className="text-xs sm:text-sm px-2">
-                Видео ({promoPosts.length})
+                {t("manageCompany.tabs.videos", { count: promoPosts.length })}
               </TabsTrigger>
             </TabsList>
 
@@ -451,8 +468,8 @@ const ManageCompany = () => {
             <TabsContent value="info">
               <Card>
                 <CardHeader>
-                  <CardTitle>Основная информация</CardTitle>
-                  <CardDescription>Редактируйте данные вашей компании</CardDescription>
+                  <CardTitle>{t("manageCompany.info.title")}</CardTitle>
+                  <CardDescription>{t("manageCompany.info.desc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Logo Upload Area */}
@@ -468,7 +485,7 @@ const ManageCompany = () => {
                       <Label htmlFor="logo-upload" className="cursor-pointer">
                         <div className="flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-lg transition-colors font-medium">
                           {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          Изменить логотип
+                          {t("manageCompany.info.changeLogo")}
                         </div>
                       </Label>
                       <input 
@@ -485,17 +502,17 @@ const ManageCompany = () => {
                           e.target.value = "";
                         }}
                       />
-                      <p className="text-xs text-muted-foreground mt-2">Рекомендуется квадратное лого, до 5MB</p>
+                      <p className="text-xs text-muted-foreground mt-2">{t("manageCompany.info.logoHint")}</p>
                       {logoUrl ? (
                         <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setLogoUrl("")}>
-                          Убрать логотип
+                          {t("manageCompany.info.removeLogo")}
                         </Button>
                       ) : null}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Название *</Label>
+                    <Label>{t("manageCompany.info.name")}</Label>
                     <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
                   </div>
 
@@ -508,57 +525,57 @@ const ManageCompany = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Город *</Label>
+                    <Label>{t("manageCompany.info.city")}</Label>
                     <Select value={city} onValueChange={setCity}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent className="max-h-72">
-                        {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {cities.map((c) => <SelectItem key={c} value={c}>{catalogLabel(c)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Описание</Label>
+                    <Label>{t("manageCompany.info.description")}</Label>
                     <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} />
                   </div>
 
                   <Separator />
 
                   <div className="space-y-2">
-                    <Label>Адрес *</Label>
+                    <Label>{t("manageCompany.info.address")}</Label>
                     <Input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Телефон *</Label>
+                      <Label>{t("manageCompany.info.phone")}</Label>
                       <Input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Email (необязательно)</Label>
+                      <Label>{t("manageCompany.info.emailOptional")}</Label>
                       <Input value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>БИН (необязательно)</Label>
+                    <Label>{t("manageCompany.info.binOptional")}</Label>
                     <Input
                       value={bin}
                       onChange={(e) => setBin(e.target.value.replace(/\D/g, "").slice(0, 12))}
                       inputMode="numeric"
-                      placeholder="12 цифр"
+                      placeholder={t("createCompany.binPlaceholder")}
                       maxLength={12}
                     />
-                    <p className="text-xs text-muted-foreground">Виден авторизованным пользователям после публикации профиля</p>
+                    <p className="text-xs text-muted-foreground">{t("manageCompany.info.binHint")}</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Веб-сайт (необязательно)</Label>
+                    <Label>{t("manageCompany.info.websiteOptional")}</Label>
                     <Input value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} />
                   </div>
 
                   <Button onClick={handleSaveCompany} disabled={updateCompany.isPending || replaceCompanyCategories.isPending} className="w-full">
-                    {updateCompany.isPending || replaceCompanyCategories.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Сохранение...</> : "Сохранить изменения"}
+                    {updateCompany.isPending || replaceCompanyCategories.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("manageCompany.info.saving")}</> : t("manageCompany.info.saveChanges")}
                   </Button>
                 </CardContent>
               </Card>
@@ -569,39 +586,39 @@ const ManageCompany = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Услуги</CardTitle>
-                    <CardDescription>Управляйте списком услуг вашей компании</CardDescription>
+                    <CardTitle>{t("manageCompany.services.title")}</CardTitle>
+                    <CardDescription>{t("manageCompany.services.desc")}</CardDescription>
                   </div>
                   <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm"><Plus className="h-4 w-4 mr-2" />Добавить</Button>
+                      <Button size="sm"><Plus className="h-4 w-4 mr-2" />{t("manageCompany.services.add")}</Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Новая услуга</DialogTitle>
-                        <DialogDescription>Добавьте услугу в каталог компании</DialogDescription>
+                        <DialogTitle>{t("manageCompany.services.newTitle")}</DialogTitle>
+                        <DialogDescription>{t("manageCompany.services.newDesc")}</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>Название *</Label>
-                          <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Монтаж кровли" />
+                          <Label>{t("manageCompany.services.name")}</Label>
+                          <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder={t("manageCompany.services.namePlaceholder")} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Описание</Label>
-                          <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder="Описание услуги..." rows={3} />
+                          <Label>{t("manageCompany.services.description")}</Label>
+                          <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("manageCompany.services.descPlaceholder")} rows={3} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Цена от (₸)</Label>
+                            <Label>{t("manageCompany.services.priceFrom")}</Label>
                             <Input type="number" value={servicePriceFrom} onChange={(e) => setServicePriceFrom(e.target.value)} placeholder="50000" />
                           </div>
                           <div className="space-y-2">
-                            <Label>Цена до (₸)</Label>
+                            <Label>{t("manageCompany.services.priceTo")}</Label>
                             <Input type="number" value={servicePriceTo} onChange={(e) => setServicePriceTo(e.target.value)} placeholder="200000" />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Категория в каталоге «Услуги» *</Label>
+                          <Label>{t("manageCompany.services.vitrineCategory")}</Label>
                           <Select value={serviceCategory} onValueChange={setServiceCategory}>
                             <SelectTrigger>
                               <SelectValue />
@@ -609,7 +626,7 @@ const ManageCompany = () => {
                             <SelectContent>
                               {SERVICE_VITRINE_CATEGORIES.map((c) => (
                                 <SelectItem key={c} value={c}>
-                                  {c}
+                                  {catalogLabel(c)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -617,9 +634,9 @@ const ManageCompany = () => {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>Отмена</Button>
+                        <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>{t("common:cancel")}</Button>
                         <Button onClick={handleAddService} disabled={createService.isPending}>
-                          {createService.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Добавить"}
+                          {createService.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common:add")}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -635,8 +652,14 @@ const ManageCompany = () => {
                             {service.description && <p className="text-sm text-muted-foreground">{service.description}</p>}
                             {service.price_from && (
                               <p className="text-sm text-primary font-medium mt-1">
-                                от {Number(service.price_from).toLocaleString()} ₸
-                                {service.price_to && ` до ${Number(service.price_to).toLocaleString()} ₸`}
+                                {service.price_to
+                                  ? t("manageCompany.services.priceRange", {
+                                      from: `${formatNumber(Number(service.price_from))} ${t("common:currencyKzt")}`,
+                                      to: `${formatNumber(Number(service.price_to))} ${t("common:currencyKzt")}`,
+                                    })
+                                  : t("manageCompany.services.priceFromShort", {
+                                      price: `${formatNumber(Number(service.price_from))} ${t("common:currencyKzt")}`,
+                                    })}
                               </p>
                             )}
                           </div>
@@ -647,7 +670,7 @@ const ManageCompany = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-muted-foreground">Услуги ещё не добавлены</p>
+                    <p className="text-center py-8 text-muted-foreground">{t("manageCompany.services.empty")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -658,8 +681,8 @@ const ManageCompany = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Портфолио</CardTitle>
-                    <CardDescription>Добавляйте выполненные проекты</CardDescription>
+                    <CardTitle>{t("manageCompany.projects.title")}</CardTitle>
+                    <CardDescription>{t("manageCompany.projects.desc")}</CardDescription>
                   </div>
                   <Dialog
                     open={projectDialogOpen}
@@ -670,50 +693,48 @@ const ManageCompany = () => {
                   >
                     <Button size="sm" type="button" onClick={openCreateProject}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Добавить
+                      {t("common:add")}
                     </Button>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>{editingProjectId ? "Изменить проект" : "Новый проект"}</DialogTitle>
+                        <DialogTitle>{editingProjectId ? t("manageCompany.projects.editTitle") : t("manageCompany.projects.newTitle")}</DialogTitle>
                         <DialogDescription>
-                          {editingProjectId
-                            ? "Обновите данные и сохраните"
-                            : "Добавьте проект в портфолио"}
+                          {editingProjectId ? t("manageCompany.projects.editDesc") : t("manageCompany.projects.newDesc")}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>Название *</Label>
-                          <Input value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Строительство коттеджа" />
+                          <Label>{t("manageCompany.projects.name")}</Label>
+                          <Input value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder={t("manageCompany.projects.namePlaceholder")} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Описание</Label>
-                          <Textarea value={projectDescription} onChange={(e) => setProjectDescription(e.target.value)} placeholder="Описание проекта..." rows={3} />
+                          <Label>{t("manageCompany.projects.description")}</Label>
+                          <Textarea value={projectDescription} onChange={(e) => setProjectDescription(e.target.value)} placeholder={t("manageCompany.projects.descPlaceholder")} rows={3} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Дата начала (необязательно)</Label>
+                          <Label>{t("manageCompany.projects.startDate")}</Label>
                           <Input type="date" value={projectStartDate} onChange={(e) => setProjectStartDate(e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Дата завершения (необязательно)</Label>
+                          <Label>{t("manageCompany.projects.completionDate")}</Label>
                           <Input type="date" value={projectDate} onChange={(e) => setProjectDate(e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Статус проекта *</Label>
+                          <Label>{t("manageCompany.projects.phase")}</Label>
                           <Select value={projectPhase} onValueChange={(v) => setProjectPhase(v as "in_progress" | "completed")}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="in_progress">В процессе</SelectItem>
-                              <SelectItem value="completed">Завершён</SelectItem>
+                              <SelectItem value="in_progress">{t("manageCompany.projects.phaseInProgress")}</SelectItem>
+                              <SelectItem value="completed">{t("manageCompany.projects.phaseCompleted")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setProjectDialogOpen(false)}>
-                          Отмена
+                          {t("common:cancel")}
                         </Button>
                         <Button
                           onClick={() => void handleSaveProject()}
@@ -722,9 +743,9 @@ const ManageCompany = () => {
                           {createProject.isPending || updateProject.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : editingProjectId ? (
-                            "Сохранить"
+                            t("common:saveBtn")
                           ) : (
-                            "Добавить"
+                            t("common:add")
                           )}
                         </Button>
                       </DialogFooter>
@@ -735,16 +756,16 @@ const ManageCompany = () => {
                   {projects.length > 0 ? (
                     <div className="space-y-4">
                       <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg border bg-muted/20 text-sm">
-                        <span className="text-muted-foreground">Тип следующего загружаемого фото:</span>
+                        <span className="text-muted-foreground">{t("manageCompany.projects.nextPhotoType")}</span>
                         <Select value={nextImageRole} onValueChange={(v) => setNextImageRole(v as typeof nextImageRole)}>
                           <SelectTrigger className="h-9 w-[220px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="gallery">Галерея</SelectItem>
-                            <SelectItem value="site_start">Начало объекта</SelectItem>
-                            <SelectItem value="work_in_progress">Ход работ</SelectItem>
-                            <SelectItem value="site_end">Завершение / сдача</SelectItem>
+                            <SelectItem value="gallery">{t("manageCompany.projects.imageRoleGallery")}</SelectItem>
+                            <SelectItem value="site_start">{t("manageCompany.projects.imageRoleSiteStart")}</SelectItem>
+                            <SelectItem value="work_in_progress">{t("manageCompany.projects.imageRoleWork")}</SelectItem>
+                            <SelectItem value="site_end">{t("manageCompany.projects.imageRoleSiteEnd")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -761,18 +782,24 @@ const ManageCompany = () => {
                                       : "text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-100"
                                   }
                                 >
-                                  {project.project_phase === "in_progress" ? "В процессе" : "Завершён"}
+                                  {project.project_phase === "in_progress"
+                                    ? t("manageCompany.projects.phaseInProgress")
+                                    : t("manageCompany.projects.phaseCompleted")}
                                 </span>
                               </div>
                               {project.description && <p className="text-sm text-muted-foreground">{project.description}</p>}
                               {project.start_date && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Старт: {formatDisplayDate(project.start_date) || project.start_date}
+                                  {t("manageCompany.projects.startLabel", {
+                                    date: formatDisplayDate(project.start_date) || project.start_date,
+                                  })}
                                 </p>
                               )}
                               {project.completion_date && (
                                 <p className="text-xs text-muted-foreground">
-                                  Завершение: {formatDisplayDate(project.completion_date) || project.completion_date}
+                                  {t("manageCompany.projects.completionLabel", {
+                                    date: formatDisplayDate(project.completion_date) || project.completion_date,
+                                  })}
                                 </p>
                               )}
                             </div>
@@ -782,7 +809,7 @@ const ManageCompany = () => {
                                 size="icon"
                                 type="button"
                                 onClick={() => openEditProject(project)}
-                                aria-label="Изменить проект"
+                                aria-label={t("manageCompany.projects.editProject")}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -792,7 +819,7 @@ const ManageCompany = () => {
                                 type="button"
                                 onClick={() => void handleDeleteProject(project.id)}
                                 className="text-destructive hover:text-destructive"
-                                aria-label="Удалить проект"
+                                aria-label={t("manageCompany.projects.deleteProject")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -801,36 +828,29 @@ const ManageCompany = () => {
 
                           {/* Project images */}
                           <div className="flex flex-wrap gap-2 mt-3">
-                            {project.project_images?.map((img: any) => {
-                              const roleRu: Record<string, string> = {
-                                gallery: "Галерея",
-                                site_start: "Начало",
-                                site_end: "Конец",
-                                work_in_progress: "Процесс",
-                              };
-                              return (
+                            {project.project_images?.map((img: any) => (
                               <div key={img.id} className="w-24 h-24 rounded-lg overflow-hidden border relative group/img">
                                 <img src={img.image_url} alt={img.caption || project.title} className="w-full h-full object-cover" />
                                 <button
                                   type="button"
                                   className="absolute top-0.5 right-0.5 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-90 hover:opacity-100"
-                                  aria-label="Удалить фото"
+                                  aria-label={t("manageCompany.projects.deletePhoto")}
                                   onClick={() => void handleDeleteProjectImage(img.id, img.image_url)}
                                 >
                                   <X className="h-3.5 w-3.5" />
                                 </button>
                                 <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-[9px] text-white text-center py-0.5 truncate px-1">
-                                  {roleRu[img.image_role] || "Фото"}
+                                  {projectImageRoleLabel(img.image_role)}
                                 </span>
                               </div>
-                            );})}
+                            ))}
                             <label className="w-24 h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                               {isUploading ? (
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                               ) : (
                                 <>
                                   <Upload className="h-5 w-5 text-muted-foreground mb-1" />
-                                  <span className="text-[10px] text-muted-foreground">Фото</span>
+                                  <span className="text-[10px] text-muted-foreground">{t("manageCompany.projects.photo")}</span>
                                 </>
                               )}
                               <input
@@ -850,7 +870,7 @@ const ManageCompany = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-muted-foreground">Проекты ещё не добавлены</p>
+                    <p className="text-center py-8 text-muted-foreground">{t("manageCompany.projects.empty")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -861,43 +881,38 @@ const ManageCompany = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clapperboard className="h-5 w-5 text-primary" />
-                    Презентационные ролики
+                    {t("manageCompany.videos.title")}
                   </CardTitle>
-                  <CardDescription>
-                    Видео хранится на YouTube: загрузите ролик в свой аккаунт YouTube и вставьте ссылку сюда. Карточка
-                    появится в общей ленте; лайки и комментарии остаются на платформе для будущих рекомендаций.
-                  </CardDescription>
+                  <CardDescription>{t("manageCompany.videos.desc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="rounded-xl border bg-muted/20 p-4 sm:p-5 space-y-4">
                     <div className="space-y-2">
-                      <Label>Ссылка на YouTube *</Label>
+                      <Label>{t("manageCompany.videos.youtubeUrl")}</Label>
                       <Input
                         value={promoYoutubeUrl}
                         onChange={(e) => setPromoYoutubeUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=… или https://youtu.be/…"
+                        placeholder="https://www.youtube.com/watch?v=…"
                         className="rounded-xl bg-background"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Поддерживаются обычные ролики, embed и Shorts. Храним только ID — встраивание через YouTube.
-                      </p>
+                      <p className="text-xs text-muted-foreground">{t("manageCompany.videos.youtubeHint")}</p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Заголовок на витрине</Label>
+                      <Label>{t("manageCompany.videos.showcaseTitle")}</Label>
                       <Input
                         value={promoVideoTitle}
                         onChange={(e) => setPromoVideoTitle(e.target.value)}
-                        placeholder="Например: Наш бетон за 60 секунд"
+                        placeholder={t("manageCompany.videos.showcaseTitlePlaceholder")}
                         className="rounded-xl bg-background"
                         maxLength={200}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Краткое описание (необязательно)</Label>
+                      <Label>{t("manageCompany.videos.caption")}</Label>
                       <Textarea
                         value={promoVideoCaption}
                         onChange={(e) => setPromoVideoCaption(e.target.value)}
-                        placeholder="Что зритель увидит в ролике…"
+                        placeholder={t("manageCompany.videos.captionPlaceholder")}
                         rows={3}
                         className="rounded-xl bg-background resize-none"
                         maxLength={500}
@@ -907,8 +922,8 @@ const ManageCompany = () => {
                       options={BUSINESS_CATEGORIES}
                       value={promoVideoCategories}
                       onChange={setPromoVideoCategories}
-                      label="О чём этот ролик"
-                      description="Любые направления из общего справочника — так ролик попадёт в фильтры на витрине и не привязан только к категориям карточки компании."
+                      label={t("manageCompany.videos.topicsLabel")}
+                      description={t("manageCompany.videos.topicsDesc")}
                     />
                     <Button
                       type="button"
@@ -919,12 +934,12 @@ const ManageCompany = () => {
                       {createPromoPost.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Сохранение…
+                          {t("manageCompany.videos.saving")}
                         </>
                       ) : (
                         <>
                           <Plus className="h-4 w-4 mr-2" />
-                          Добавить в витрину
+                          {t("manageCompany.videos.addToFeed")}
                         </>
                       )}
                     </Button>
@@ -932,13 +947,13 @@ const ManageCompany = () => {
 
                   <div className="flex flex-wrap gap-3 items-center">
                     <Button variant="outline" size="sm" className="rounded-xl" asChild>
-                      <Link to="/feed">Открыть ленту «Витрина роликов»</Link>
+                      <Link to="/feed">{t("manageCompany.videos.openFeed")}</Link>
                     </Button>
                   </div>
 
                   {promoPosts.length > 0 ? (
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-muted-foreground">Опубликовано</h4>
+                      <h4 className="text-sm font-semibold text-muted-foreground">{t("manageCompany.videos.published")}</h4>
                       {promoPosts.map((row) => {
                         const vc =
                           row.company_promo_post_categories?.map((x) => x.category).filter(Boolean) ?? [];
@@ -948,14 +963,15 @@ const ManageCompany = () => {
                           className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border bg-card"
                         >
                           <div className="min-w-0">
-                            <p className="font-medium truncate">{row.title || "Без названия"}</p>
+                            <p className="font-medium truncate">{row.title || t("manageCompany.videos.untitled")}</p>
                             <p className="text-xs text-muted-foreground font-mono truncate">ID: {row.youtube_video_id}</p>
                             {row.caption ? (
                               <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{row.caption}</p>
                             ) : null}
                             {vc.length > 0 ? (
                               <p className="text-xs text-muted-foreground mt-1">
-                                Темы: <span className="text-foreground">{vc.join(" · ")}</span>
+                                {t("manageCompany.videos.topics")}{" "}
+                                <span className="text-foreground">{vc.map(catalogLabel).join(" · ")}</span>
                               </p>
                             ) : null}
                           </div>
@@ -965,7 +981,7 @@ const ManageCompany = () => {
                             size="icon"
                             className="text-destructive shrink-0 self-end sm:self-center"
                             onClick={() => handleDeletePromoVideo(row.id)}
-                            aria-label="Удалить ролик"
+                            aria-label={t("manageCompany.videos.deleteVideo")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -974,7 +990,7 @@ const ManageCompany = () => {
                       })}
                     </div>
                   ) : (
-                    <p className="text-center py-6 text-muted-foreground text-sm">Пока нет роликов в ленте</p>
+                    <p className="text-center py-6 text-muted-foreground text-sm">{t("manageCompany.videos.empty")}</p>
                   )}
                 </CardContent>
               </Card>

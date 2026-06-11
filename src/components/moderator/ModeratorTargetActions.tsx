@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EyeOff, RotateCcw, Ban, Loader2, ShieldOff, Clock, AlertTriangle, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,7 +38,7 @@ import {
 } from "@/hooks/useModeratorOwnerActions";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
 
 type Props = {
   targetType: "company" | "tender";
@@ -70,6 +71,8 @@ export function ModeratorTargetActions({
   reporterId,
   onActionComplete,
 }: Props) {
+  const { t } = useTranslation("common");
+  const dateLocale = useDateFnsLocale();
   const { profile } = useAuth();
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [reason, setReason] = useState("");
@@ -111,7 +114,11 @@ export function ModeratorTargetActions({
     if (!profile?.id) return;
     const comment = reason.trim();
     if (dialog !== "restore" && dialog !== "unban" && !comment) {
-      toast.error(dialog === "warning" ? "Введите текст предупреждения" : "Укажите причину действия");
+      toast.error(
+        dialog === "warning"
+          ? t("moderator.targetActions.errors.warningRequired")
+          : t("moderator.targetActions.errors.reasonRequired"),
+      );
       return;
     }
 
@@ -127,7 +134,7 @@ export function ModeratorTargetActions({
           closeReportAsReviewed: !!reportId,
           notify,
         });
-        toast.success("Компания скрыта из каталога");
+        toast.success(t("moderator.targetActions.toast.companyHidden"));
       } else if (dialog === "restore") {
         await restore.mutateAsync({
           companyId: targetId,
@@ -136,7 +143,7 @@ export function ModeratorTargetActions({
           reportId,
           notify,
         });
-        toast.success("Компания возвращена в черновик");
+        toast.success(t("moderator.targetActions.toast.companyRestored"));
       } else if (dialog === "revoke") {
         await revoke.mutateAsync({
           companyId: targetId,
@@ -146,7 +153,7 @@ export function ModeratorTargetActions({
           closeReportAsReviewed: !!reportId,
           notify,
         });
-        toast.success("Снят статус «Проверено»");
+        toast.success(t("moderator.targetActions.toast.verifiedRevoked"));
       } else if (dialog === "close_tender") {
         await closeTender.mutateAsync({
           tenderId: targetId,
@@ -156,11 +163,11 @@ export function ModeratorTargetActions({
           closeReportAsReviewed: !!reportId,
           notify,
         });
-        toast.success("Тендер закрыт");
+        toast.success(t("moderator.targetActions.toast.tenderClosed"));
       } else if (dialog === "ban") {
         const parties = await resolveReportParties(targetType, targetId, reporterId || "");
         if (!parties.ownerProfileId) {
-          toast.error("Не найден владелец объекта");
+          toast.error(t("moderator.targetActions.errors.ownerNotFound"));
           return;
         }
         await banProfile.mutateAsync({
@@ -171,7 +178,7 @@ export function ModeratorTargetActions({
           reportId,
           notify,
         });
-        toast.success(`Аккаунт заблокирован на ${banDays} дн.`);
+        toast.success(t("moderator.targetActions.toast.banSuccess", { days: banDays }));
       } else if (dialog === "warning") {
         await sendWarning.mutateAsync({
           targetType,
@@ -181,10 +188,10 @@ export function ModeratorTargetActions({
           message: comment,
           reportId,
         });
-        toast.success("Предупреждение отправлено владельцу");
+        toast.success(t("moderator.targetActions.toast.warningSent"));
       } else if (dialog === "unban") {
         if (!ownerProfile?.id) {
-          toast.error("Не найден владелец");
+          toast.error(t("moderator.targetActions.errors.ownerMissing"));
           return;
         }
         await unbanProfile.mutateAsync({
@@ -196,7 +203,7 @@ export function ModeratorTargetActions({
           targetId,
           targetLabel,
         });
-        toast.success("Блокировка снята");
+        toast.success(t("moderator.targetActions.toast.unbanSuccess"));
       }
       setDialog(null);
       setReason("");
@@ -205,7 +212,7 @@ export function ModeratorTargetActions({
       const msg =
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Не удалось выполнить действие";
+          : t("moderator.targetActions.errors.actionFailed");
       toast.error(msg);
     }
   };
@@ -230,10 +237,10 @@ export function ModeratorTargetActions({
             }
           : undefined,
       });
-      toast.success("Жалоба закрыта как необоснованная");
+      toast.success(t("moderator.targetActions.toast.dismissSuccess"));
       onActionComplete?.();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ошибка");
+      toast.error(err instanceof Error ? err.message : t("moderator.targetActions.errors.generic"));
     }
   };
 
@@ -257,10 +264,10 @@ export function ModeratorTargetActions({
             }
           : undefined,
       });
-      toast.success("Жалоба закрыта без санкций к объекту");
+      toast.success(t("moderator.targetActions.toast.reviewedSuccess"));
       onActionComplete?.();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ошибка");
+      toast.error(err instanceof Error ? err.message : t("moderator.targetActions.errors.generic"));
     }
   };
 
@@ -270,32 +277,36 @@ export function ModeratorTargetActions({
   const isSuspended = companyVerificationStatus === "suspended";
   const isVerified = companyVerificationStatus === "verified";
 
-  const dialogTitle =
-    dialog === "suspend"
-      ? "Скрыть компанию"
-      : dialog === "restore"
-        ? "Вернуть компанию"
-        : dialog === "revoke"
-          ? "Снять «Проверено»"
-          : dialog === "close_tender"
-            ? "Закрыть тендер"
-            : dialog === "ban"
-              ? "Временная блокировка владельца"
-              : dialog === "warning"
-                ? "Предупреждение владельцу"
-                : dialog === "unban"
-                  ? "Снять блокировку"
-                  : "";
+  const dialogTitle = dialog
+    ? t(`moderator.targetActions.dialogs.${dialog === "close_tender" ? "closeTender" : dialog}.title`)
+    : "";
+
+  const dialogDescKey =
+    dialog === "close_tender"
+      ? "closeTender"
+      : dialog === "suspend" || dialog === "restore" || dialog === "revoke" || dialog === "ban" || dialog === "warning" || dialog === "unban"
+        ? dialog
+        : null;
+
+  const reasonLabel =
+    dialog === "warning"
+      ? t("moderator.targetActions.labels.warningText")
+      : dialog === "unban"
+        ? t("moderator.targetActions.labels.commentOptional")
+        : dialog === "restore"
+          ? t("moderator.targetActions.labels.reasonOptional")
+          : t("moderator.targetActions.labels.reasonRequired");
 
   return (
     <div className="space-y-3">
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Действия модератора
+        {t("moderator.targetActions.sectionTitle")}
       </p>
       {ownerBanned && ownerProfile?.banned_until ? (
         <p className="text-xs text-destructive">
-          Владелец заблокирован до{" "}
-          {format(new Date(ownerProfile.banned_until), "d MMM yyyy, HH:mm", { locale: ru })}
+          {t("moderator.targetActions.ownerBannedUntil", {
+            date: format(new Date(ownerProfile.banned_until), "d MMM yyyy, HH:mm", { locale: dateLocale }),
+          })}
           {ownerProfile.ban_reason ? ` · ${ownerProfile.ban_reason}` : ""}
         </p>
       ) : null}
@@ -315,7 +326,7 @@ export function ModeratorTargetActions({
                 }}
               >
                 <ShieldOff className="h-3.5 w-3.5" />
-                Снять «Проверено»
+                {t("moderator.targetActions.buttons.revokeVerified")}
               </Button>
             ) : null}
             {!isSuspended ? (
@@ -331,7 +342,7 @@ export function ModeratorTargetActions({
                 }}
               >
                 <EyeOff className="h-3.5 w-3.5" />
-                Скрыть компанию
+                {t("moderator.targetActions.buttons.hideCompany")}
               </Button>
             ) : (
               <Button
@@ -346,7 +357,7 @@ export function ModeratorTargetActions({
                 }}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Вернуть в черновик
+                {t("moderator.targetActions.buttons.restoreDraft")}
               </Button>
             )}
           </>
@@ -363,7 +374,7 @@ export function ModeratorTargetActions({
             }}
           >
             <Ban className="h-3.5 w-3.5" />
-            Закрыть тендер
+            {t("moderator.targetActions.buttons.closeTender")}
           </Button>
         )}
 
@@ -379,7 +390,7 @@ export function ModeratorTargetActions({
           }}
         >
           <AlertTriangle className="h-3.5 w-3.5" />
-          Предупреждение владельцу
+          {t("moderator.targetActions.buttons.warning")}
         </Button>
 
         {ownerBanned ? (
@@ -395,7 +406,7 @@ export function ModeratorTargetActions({
             }}
           >
             <Unlock className="h-3.5 w-3.5" />
-            Снять блокировку
+            {t("moderator.targetActions.buttons.unban")}
           </Button>
         ) : (
           <Button
@@ -410,7 +421,7 @@ export function ModeratorTargetActions({
             }}
           >
             <Clock className="h-3.5 w-3.5" />
-            Бан владельца
+            {t("moderator.targetActions.buttons.ban")}
           </Button>
         )}
 
@@ -423,7 +434,7 @@ export function ModeratorTargetActions({
               disabled={busy}
               onClick={() => void handleReviewedOnly()}
             >
-              Закрыть без санкций
+              {t("moderator.targetActions.buttons.closeWithoutSanctions")}
             </Button>
             <Button
               type="button"
@@ -432,7 +443,7 @@ export function ModeratorTargetActions({
               disabled={busy}
               onClick={() => void handleDismissReport()}
             >
-              Жалоба необоснована
+              {t("moderator.targetActions.buttons.dismiss")}
             </Button>
           </>
         ) : null}
@@ -444,26 +455,14 @@ export function ModeratorTargetActions({
             <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
               {targetLabel}.
-              {dialog === "revoke"
-                ? " Компания останется в каталоге, но без бейджа «Проверено»."
-                : dialog === "ban"
-                  ? " Владелец не сможет войти до окончания срока."
-                  : dialog === "warning"
-                    ? " Владелец получит уведомление в личном кабинете. Объект не скрывается."
-                    : dialog === "unban"
-                      ? " Владелец снова сможет войти в аккаунт."
-                      : dialog === "close_tender"
-                    ? " Тендер будет закрыт."
-                    : dialog === "suspend"
-                      ? " Компания исчезнет из каталога."
-                      : ""}
-              {reportId ? " Событие попадёт в историю жалобы." : ""}
+              {dialogDescKey ? t(`moderator.targetActions.dialogs.${dialogDescKey}.desc`) : ""}
+              {reportId ? t("moderator.targetActions.historyNote") : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-1">
             {dialog === "ban" ? (
               <div className="space-y-2">
-                <Label>Срок блокировки</Label>
+                <Label>{t("moderator.targetActions.labels.banDuration")}</Label>
                 <Select
                   value={String(banDays)}
                   onValueChange={(v) => setBanDays(Number(v) as BanDurationDays)}
@@ -472,29 +471,23 @@ export function ModeratorTargetActions({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 день</SelectItem>
-                    <SelectItem value="7">7 дней</SelectItem>
-                    <SelectItem value="30">30 дней</SelectItem>
+                    <SelectItem value="1">{t("moderator.targetActions.labels.banDay1")}</SelectItem>
+                    <SelectItem value="7">{t("moderator.targetActions.labels.banDay7")}</SelectItem>
+                    <SelectItem value="30">{t("moderator.targetActions.labels.banDay30")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             ) : null}
             <div className="space-y-2">
-              <Label htmlFor="mod-action-reason">
-                {dialog === "warning"
-                  ? "Текст предупреждения *"
-                  : dialog === "unban"
-                    ? "Комментарий (необязательно)"
-                    : `Причина ${dialog === "restore" ? "(необязательно)" : "*"}`}
-              </Label>
+              <Label htmlFor="mod-action-reason">{reasonLabel}</Label>
               <Textarea
                 id="mod-action-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder={
                   dialog === "warning"
-                    ? "Опишите, что нужно исправить или уточнить"
-                    : "Для владельца, заявителя и журнала"
+                    ? t("moderator.targetActions.placeholders.warning")
+                    : t("moderator.targetActions.placeholders.reason")
                 }
                 rows={3}
                 maxLength={2000}
@@ -503,10 +496,10 @@ export function ModeratorTargetActions({
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setDialog(null)}>
-              Отмена
+              {t("cancel")}
             </Button>
             <Button type="button" disabled={busy} onClick={() => void runAction()}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Подтвердить"}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("moderator.targetActions.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

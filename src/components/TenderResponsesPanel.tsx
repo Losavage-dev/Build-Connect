@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
 import { MessageSquare, UserCheck, Undo2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,13 +23,7 @@ import { useUpdateRequestStatus } from "@/hooks/useRequests";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { tenderHasAcceptedBid, tenderHasCompletedBid } from "@/lib/tenderStatusRules";
-
-const requestStatusLabel: Record<string, string> = {
-  pending: "На рассмотрении",
-  accepted: "Принят",
-  rejected: "Отклонён",
-  completed: "Завершён",
-};
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
 
 type Props = {
   tenderId: string;
@@ -39,10 +33,19 @@ type Props = {
 };
 
 export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, compact }: Props) {
+  const { t } = useTranslation(["marketplace", "common", "profile"]);
+  const dateLocale = useDateFnsLocale();
   const navigate = useNavigate();
   const { data: responses, isLoading } = useTenderResponses(tenderId, tenderTitle);
   const updateTender = useUpdateTender();
   const updateRequest = useUpdateRequestStatus();
+
+  const requestStatusLabel: Record<string, string> = {
+    pending: t("tenderResponses.statusPending"),
+    accepted: t("tenderResponses.statusAccepted"),
+    rejected: t("tenderResponses.statusRejected"),
+    completed: t("tenderResponses.statusCompleted"),
+  };
 
   const count = responses?.length ?? 0;
   const isClosed = tenderStatus === "closed";
@@ -54,18 +57,18 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
     try {
       await updateTender.mutateAsync({ id: tenderId, status: "in_progress" });
       await updateRequest.mutateAsync({ id: requestId, status: "accepted" });
-      toast.success("Исполнитель принят, тендер переведён в «В работе»");
+      toast.success(t("tenderResponses.acceptSuccess"));
     } catch {
-      toast.error("Не удалось принять отклик");
+      toast.error(t("tenderResponses.acceptError"));
     }
   };
 
   const handleCloseTender = async () => {
     try {
       await updateTender.mutateAsync({ id: tenderId, status: "closed" });
-      toast.success("Тендер закрыт");
+      toast.success(t("tenderResponses.closeSuccess"));
     } catch {
-      toast.error("Не удалось закрыть тендер");
+      toast.error(t("tenderResponses.closeError"));
     }
   };
 
@@ -79,9 +82,9 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
       if (tenderStatus !== "open") {
         await updateTender.mutateAsync({ id: tenderId, status: "open" });
       }
-      toast.success("Тендер снова принимает отклики, исполнитель снят с выбора");
+      toast.success(t("tenderResponses.reopenSuccess"));
     } catch {
-      toast.error("Не удалось отменить принятие");
+      toast.error(t("tenderResponses.reopenError"));
     }
   };
 
@@ -89,7 +92,7 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
     <div className={cn("border-t pt-4 mt-4", compact && "pt-3 mt-3")}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h4 className="text-sm font-semibold text-foreground">
-          Отклики {isLoading ? "" : `(${count})`}
+          {t("tenderResponses.title")} {isLoading ? "" : `(${count})`}
         </h4>
         <div className="flex flex-wrap gap-1.5">
           {!isClosed && hasAcceptedBid && !hasCompletedBid ? (
@@ -103,21 +106,18 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
                   disabled={busy}
                 >
                   <Undo2 className="h-3.5 w-3.5 mr-1" />
-                  Снова принимать отклики
+                  {t("tenderResponses.reopenBtn")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Отменить выбор исполнителя?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Статус отклика «Принят» будет сброшен, тендер снова станет «Открыт» и сможет принимать новые
-                    отклики. Переписка в чате сохранится.
-                  </AlertDialogDescription>
+                  <AlertDialogTitle>{t("tenderResponses.reopenTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>{t("tenderResponses.reopenDesc")}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl">Отмена</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-xl">{t("common:cancel")}</AlertDialogCancel>
                   <AlertDialogAction className="rounded-xl" onClick={() => void handleReopenForBids()}>
-                    Да, открыть снова
+                    {t("tenderResponses.reopenConfirm")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -133,7 +133,7 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
               onClick={() => void handleCloseTender()}
             >
               <XCircle className="h-3.5 w-3.5 mr-1" />
-              Закрыть тендер
+              {t("tenderResponses.closeBtn")}
             </Button>
           ) : null}
         </div>
@@ -146,16 +146,14 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
         </div>
       ) : count === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {tenderStatus === "open"
-            ? "Пока нет откликов. Они появятся здесь и во вкладке «Заявки»."
-            : "Откликов не было или они созданы до обновления системы."}
+          {tenderStatus === "open" ? t("tenderResponses.emptyOpen") : t("tenderResponses.emptyClosed")}
         </p>
       ) : (
         <ul className="space-y-2">
           {responses!.map((r) => {
             const name = r.client
-              ? `${r.client.first_name || ""} ${r.client.last_name || ""}`.trim() || "Участник"
-              : "Участник";
+              ? `${r.client.first_name || ""} ${r.client.last_name || ""}`.trim() || t("common:participant")
+              : t("common:participant");
             const initials = name.charAt(0) || "?";
             const canAccept = tenderStatus === "open" && r.status === "pending";
 
@@ -171,7 +169,7 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(r.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
+                    {format(new Date(r.created_at), "d MMM yyyy, HH:mm", { locale: dateLocale })}
                   </p>
                 </div>
                 <Badge variant="outline" className="text-[10px] shrink-0">
@@ -186,7 +184,7 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
                     onClick={() => navigate(`/chat/${r.id}`)}
                   >
                     <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                    Чат
+                    {t("common:chat")}
                   </Button>
                   {canAccept ? (
                     <Button
@@ -197,7 +195,7 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
                       onClick={() => void handleAccept(r.id)}
                     >
                       <UserCheck className="h-3.5 w-3.5 mr-1" />
-                      Принять
+                      {t("common:accept")}
                     </Button>
                   ) : null}
                 </div>
@@ -210,9 +208,9 @@ export function TenderResponsesPanel({ tenderId, tenderTitle, tenderStatus, comp
       {count > 0 ? (
         <p className="text-xs text-muted-foreground mt-3">
           <Link to="/profile" className="text-primary hover:underline">
-            Все заявки
-          </Link>{" "}
-          — полный список переписок.
+            {t("tenderResponses.allRequests")}
+          </Link>
+          {t("tenderResponses.allRequestsHint")}
         </p>
       ) : null}
     </div>

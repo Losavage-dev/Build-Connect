@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import {
   Archive,
   Building2,
@@ -21,13 +22,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { SearchableCitySelect } from "@/components/SearchableCitySelect";
 import { KAZAKHSTAN_CITIES } from "@/lib/constants";
-import { STAFF_ROLE_LABELS } from "@/lib/userRoles";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
-import {
-  reportOpenTargetLabel,
-  reportTargetTypeLabel,
-  REPORT_ESCALATION_THRESHOLD,
-} from "@/lib/moderationLabels";
+import { REPORT_ESCALATION_THRESHOLD } from "@/lib/moderationLabels";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { profileSettingsSchema, firstZodError } from "@/lib/validation";
@@ -39,7 +35,7 @@ import { ModerationJournalPanel } from "@/components/moderator/ModerationJournal
 import { ModerationReportDetail } from "@/components/moderator/ModerationReportDetail";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
 
 const MOD_TABS = [
   "reports",
@@ -58,9 +54,26 @@ function ReportCard({
   report: ModerationReportRow;
   onOpen: (id: string) => void;
 }) {
+  const { t } = useTranslation("common");
+  const dateLocale = useDateFnsLocale();
   const reporterName = [report.reporter?.first_name, report.reporter?.last_name]
     .filter(Boolean)
     .join(" ");
+
+  const targetTypeLabel =
+    report.target_type === "company"
+      ? t("moderator.report.targetCompany")
+      : t("moderator.report.targetTender");
+  const openTargetLabel =
+    report.target_type === "company"
+      ? t("moderator.report.openCompanyPage")
+      : t("moderator.report.openTender");
+  const statusLabel =
+    report.status === "new"
+      ? t("moderator.report.statusNew")
+      : report.status === "reviewed"
+        ? t("moderator.report.statusReviewed")
+        : t("moderator.report.statusDismissed");
 
   return (
     <Card className="hover:border-primary/30 transition-colors">
@@ -68,44 +81,40 @@ function ReportCard({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Flag className="h-4 w-4 text-destructive" />
-            {reportTargetTypeLabel(report.target_type)}: {report.targetLabel}
+            {targetTypeLabel}: {report.targetLabel}
           </CardTitle>
           <div className="flex flex-wrap gap-2">
             {report.escalated ? (
-              <Badge variant="destructive">Эскалация · {REPORT_ESCALATION_THRESHOLD}+ жалоб</Badge>
+              <Badge variant="destructive">
+                {t("moderator.report.escalationBadge", { count: REPORT_ESCALATION_THRESHOLD })}
+              </Badge>
             ) : null}
             {report.initiated_by_staff ? (
               <Badge variant="outline" className="border-primary/40 text-primary">
-                От модератора
+                {t("moderator.report.fromModerator")}
               </Badge>
             ) : null}
-            <Badge variant={report.status === "new" ? "destructive" : "secondary"}>
-              {report.status === "new"
-                ? "Новая"
-                : report.status === "reviewed"
-                  ? "Меры приняты"
-                  : "Необоснована"}
-            </Badge>
+            <Badge variant={report.status === "new" ? "destructive" : "secondary"}>{statusLabel}</Badge>
           </div>
         </div>
         <CardDescription>
-          {format(new Date(report.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
-          {reporterName ? ` · от ${reporterName}` : ""}
+          {format(new Date(report.created_at), "d MMM yyyy, HH:mm", { locale: dateLocale })}
+          {reporterName ? t("moderator.report.fromReporter", { name: reporterName }) : ""}
           {report.reporter?.phone ? ` · ${report.reporter.phone}` : ""}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm line-clamp-2">
-          <span className="font-medium">Причина:</span> {report.reason}
+          <span className="font-medium">{t("moderator.report.reason")}</span> {report.reason}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="default" size="sm" onClick={() => onOpen(report.id)}>
-            Открыть жалобу
+            {t("moderator.report.openReport")}
           </Button>
           {report.targetHref ? (
             <Button variant="outline" size="sm" asChild>
               <Link to={report.targetHref} target="_blank" rel="noreferrer">
-                {reportOpenTargetLabel(report.target_type)}
+                {openTargetLabel}
               </Link>
             </Button>
           ) : null}
@@ -116,6 +125,7 @@ function ReportCard({
 }
 
 export function ModeratorWorkspace() {
+  const { t } = useTranslation("common");
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, signOut, updateProfile } = useAuth();
   const tabParam = searchParams.get("tab");
@@ -225,16 +235,17 @@ export function ModeratorWorkspace() {
 
   const newReportsCount = newReports.length;
   const roleLabel =
-    profile?.role && profile.role in STAFF_ROLE_LABELS
-      ? STAFF_ROLE_LABELS[profile.role as keyof typeof STAFF_ROLE_LABELS]
-      : "Модератор";
+    profile?.role === "moderator" || profile?.role === "admin"
+      ? t(`moderator.workspace.roles.${profile.role}`)
+      : t("moderator.workspace.defaultName");
 
-  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Модератор";
+  const displayName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || t("moderator.workspace.defaultName");
 
   return (
     <>
       <PageHero
-        eyebrow="Кабинет модератора"
+        eyebrow={t("moderator.workspace.eyebrow")}
         eyebrowIcon={Shield}
         title={displayName}
         description={roleLabel}
@@ -257,7 +268,7 @@ export function ModeratorWorkspace() {
             <p className="text-sm text-muted-foreground mb-2 font-medium">{roleLabel}</p>
             <Badge variant="outline" className="mb-4 gap-1">
               <Shield className="h-3 w-3" />
-              Кабинет модератора
+              {t("moderator.workspace.eyebrow")}
             </Badge>
             <Button
               variant="outline"
@@ -265,7 +276,7 @@ export function ModeratorWorkspace() {
               onClick={() => void handleSignOut()}
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Выйти
+              {t("signOut")}
             </Button>
           </div>
 
@@ -281,7 +292,7 @@ export function ModeratorWorkspace() {
             >
               <span className="flex items-center">
                 <Flag className="h-5 w-5 mr-3" />
-                Жалобы
+                {t("moderator.workspace.nav.reports")}
               </span>
               {newReportsCount > 0 ? (
                 <Badge variant="destructive" className="rounded-full">
@@ -300,7 +311,7 @@ export function ModeratorWorkspace() {
             >
               <span className="flex items-center">
                 <Archive className="h-5 w-5 mr-3" />
-                Архив жалоб
+                {t("moderator.workspace.nav.reportsArchive")}
               </span>
             </button>
             <button
@@ -313,7 +324,7 @@ export function ModeratorWorkspace() {
               }`}
             >
               <ScrollText className="h-5 w-5 mr-3" />
-              Журнал
+              {t("moderator.workspace.nav.journal")}
             </button>
             <button
               type="button"
@@ -326,7 +337,7 @@ export function ModeratorWorkspace() {
             >
               <span className="flex items-center">
                 <Building2 className="h-5 w-5 mr-3" />
-                Верификация
+                {t("moderator.workspace.nav.verification")}
               </span>
               {pending.length > 0 ? (
                 <Badge variant={activeTab === "verification" ? "secondary" : "destructive"}>
@@ -339,7 +350,7 @@ export function ModeratorWorkspace() {
               className="flex items-center px-4 py-3.5 rounded-xl transition-all hover:bg-muted font-medium text-foreground"
             >
               <Scale className="h-5 w-5 mr-3 shrink-0" />
-              Шаблоны договоров
+              {t("moderator.workspace.nav.contractTemplates")}
             </Link>
             <button
               type="button"
@@ -351,7 +362,7 @@ export function ModeratorWorkspace() {
               }`}
             >
               <SettingsIcon className="h-5 w-5 mr-3" />
-              Настройки
+              {t("moderator.workspace.nav.settings")}
             </button>
           </nav>
         </aside>
@@ -363,34 +374,49 @@ export function ModeratorWorkspace() {
           {activeTab === "reports" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold">Новые жалобы</h2>
-                <p className="text-muted-foreground">
-                  Только необработанные — после решения жалоба уходит в архив
-                </p>
+                <h2 className="text-2xl font-bold">{t("moderator.workspace.reports.title")}</h2>
+                <p className="text-muted-foreground">{t("moderator.workspace.reports.desc")}</p>
               </div>
 
               <Alert>
-                <AlertTitle>Действия модератора</AlertTitle>
+                <AlertTitle>{t("moderator.workspace.reports.actionsTitle")}</AlertTitle>
                 <AlertDescription className="space-y-2 text-sm">
                   <ul className="list-disc pl-5 space-y-1">
                     <li>
-                      <strong>Закрыть без санкций</strong> — жалоба уходит в архив как «Меры приняты», объект
-                      (компания/тендер) не меняется. Используйте, если вы уже связались с сторонами или санкции не
-                      нужны.
+                      <Trans
+                        ns="common"
+                        i18nKey="moderator.workspace.reports.actionsGuide.closeWithoutSanctions"
+                        components={{ strong: <strong /> }}
+                      />
                     </li>
                     <li>
-                      <strong>Предупреждение владельцу</strong> — уведомление в кабинете: исправить описание,
-                      тендер и т.д. Без скрытия и без бана.
+                      <Trans
+                        ns="common"
+                        i18nKey="moderator.workspace.reports.actionsGuide.warning"
+                        components={{ strong: <strong /> }}
+                      />
                     </li>
                     <li>
-                      <strong>Жалоба необоснована</strong> — сигнал отклонён, объект не трогаем.
+                      <Trans
+                        ns="common"
+                        i18nKey="moderator.workspace.reports.actionsGuide.dismiss"
+                        components={{ strong: <strong /> }}
+                      />
                     </li>
                     <li>
-                      <strong>Бан / снять блокировку</strong> — временный запрет входа; при необходимости бан
-                      можно отменить кнопкой «Снять блокировку».
+                      <Trans
+                        ns="common"
+                        i18nKey="moderator.workspace.reports.actionsGuide.ban"
+                        components={{ strong: <strong /> }}
+                      />
                     </li>
                     <li>
-                      При <strong>{REPORT_ESCALATION_THRESHOLD}+ жалобах</strong> на один объект — бейдж эскалации.
+                      <Trans
+                        ns="common"
+                        i18nKey="moderator.workspace.reports.actionsGuide.escalation"
+                        values={{ count: REPORT_ESCALATION_THRESHOLD }}
+                        components={{ strong: <strong /> }}
+                      />
                     </li>
                   </ul>
                 </AlertDescription>
@@ -402,7 +428,9 @@ export function ModeratorWorkspace() {
                 </div>
               ) : newReports.length === 0 ? (
                 <Card className="border-dashed">
-                  <CardContent className="py-12 text-center text-muted-foreground">Новых жалоб нет</CardContent>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    {t("moderator.workspace.reports.empty")}
+                  </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -417,8 +445,8 @@ export function ModeratorWorkspace() {
           {activeTab === "reports-archive" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold">Архив жалоб</h2>
-                <p className="text-muted-foreground">Обработанные и отклонённые — не отображаются в очереди новых</p>
+                <h2 className="text-2xl font-bold">{t("moderator.workspace.archive.title")}</h2>
+                <p className="text-muted-foreground">{t("moderator.workspace.archive.desc")}</p>
               </div>
 
               {archiveLoading ? (
@@ -427,7 +455,9 @@ export function ModeratorWorkspace() {
                 </div>
               ) : archiveReports.length === 0 ? (
                 <Card className="border-dashed">
-                  <CardContent className="py-12 text-center text-muted-foreground">Архив пуст</CardContent>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    {t("moderator.workspace.archive.empty")}
+                  </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -444,8 +474,8 @@ export function ModeratorWorkspace() {
           {activeTab === "verification" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold">Верификация компаний</h2>
-                <p className="text-muted-foreground">Проверка документов перед публикацией в каталоге</p>
+                <h2 className="text-2xl font-bold">{t("moderator.workspace.verification.title")}</h2>
+                <p className="text-muted-foreground">{t("moderator.workspace.verification.desc")}</p>
               </div>
 
               {pendingLoading ? (
@@ -455,7 +485,7 @@ export function ModeratorWorkspace() {
               ) : pending.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-12 text-center text-muted-foreground">
-                    Нет заявок на проверке компаний
+                    {t("moderator.workspace.verification.empty")}
                   </CardContent>
                 </Card>
               ) : (
@@ -463,7 +493,7 @@ export function ModeratorWorkspace() {
                   {pending.map((c) => {
                     const owner = c.owner;
                     const ownerName =
-                      [owner?.first_name, owner?.last_name].filter(Boolean).join(" ") || "—";
+                      [owner?.first_name, owner?.last_name].filter(Boolean).join(" ") || t("emDash");
                     return (
                       <ModerationCompanyCard
                         key={c.id}
@@ -487,17 +517,17 @@ export function ModeratorWorkspace() {
           {activeTab === "settings" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold">Настройки</h2>
-                <p className="text-muted-foreground">Контакты модератора для служебной связи</p>
+                <h2 className="text-2xl font-bold">{t("moderator.workspace.settings.title")}</h2>
+                <p className="text-muted-foreground">{t("moderator.workspace.settings.desc")}</p>
               </div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Личные данные</CardTitle>
+                  <CardTitle>{t("moderator.workspace.settings.personalData")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="mod-first">Имя</Label>
+                      <Label htmlFor="mod-first">{t("moderator.workspace.settings.firstName")}</Label>
                       <Input
                         id="mod-first"
                         value={firstName}
@@ -506,7 +536,7 @@ export function ModeratorWorkspace() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="mod-last">Фамилия</Label>
+                      <Label htmlFor="mod-last">{t("moderator.workspace.settings.lastName")}</Label>
                       <Input
                         id="mod-last"
                         value={lastName}
@@ -516,12 +546,12 @@ export function ModeratorWorkspace() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="mod-email">Email</Label>
+                    <Label htmlFor="mod-email">{t("moderator.workspace.settings.email")}</Label>
                     <Input id="mod-email" value={user?.email || ""} disabled className="rounded-xl bg-muted" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="mod-phone">Телефон</Label>
+                      <Label htmlFor="mod-phone">{t("moderator.workspace.settings.phone")}</Label>
                       <Input
                         id="mod-phone"
                         value={phone}
@@ -530,7 +560,7 @@ export function ModeratorWorkspace() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="mod-city">Город</Label>
+                      <Label htmlFor="mod-city">{t("city")}</Label>
                       <SearchableCitySelect
                         id="mod-city"
                         cities={KAZAKHSTAN_CITIES}
@@ -541,11 +571,16 @@ export function ModeratorWorkspace() {
                   </div>
                   <Separator />
                   <p className="text-sm text-muted-foreground">
-                    Роль аккаунта: <strong>{roleLabel}</strong>. Смена роли недоступна для модераторов.
+                    <Trans
+                      ns="common"
+                      i18nKey="moderator.workspace.settings.roleNote"
+                      values={{ role: roleLabel }}
+                      components={{ strong: <strong /> }}
+                    />
                   </p>
                   <Button className="rounded-xl" disabled={isSaving || !isSettingsDirty} onClick={() => void handleSaveProfile()}>
                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Сохранить
+                    {t("saveBtn")}
                   </Button>
                 </CardContent>
               </Card>

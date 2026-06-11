@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Building2, Loader2, ShoppingBag, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +14,14 @@ import { isProfileComplete } from "@/lib/profile";
 import { isIdentityNameEditable, isIdentityPhoneEditable } from "@/lib/profileIdentity";
 import { hasCompletedOnboardingIntent, setOnboardingIntent } from "@/lib/onboarding";
 import { completeProfileSchema, firstZodError } from "@/lib/validation";
+import { translateValidationError } from "@/lib/validation/translateError";
 import { formatKzPhoneDisplay, normalizeKzPhone } from "@/lib/phone";
 import { toast } from "sonner";
 
 type Step = "profile" | "intent";
 
 const CompleteProfile = () => {
+  const { t } = useTranslation(["profile", "common", "validation"]);
   const navigate = useNavigate();
   const { user, profile, isLoading, updateProfile, signOut } = useAuth();
   const [step, setStep] = useState<Step>("profile");
@@ -71,7 +74,7 @@ const CompleteProfile = () => {
     });
     const err = firstZodError(parsed);
     if (err) {
-      toast.error(err);
+      toast.error(translateValidationError(err, t));
       return;
     }
     if (!parsed.success) return;
@@ -133,16 +136,14 @@ const CompleteProfile = () => {
         {step === "profile" ? (
           <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
             <CardHeader>
-              <CardTitle>Заполните профиль</CardTitle>
-              <CardDescription>
-                Имя, телефон и город нужны, чтобы с вами могли связаться по заявкам и тендерам.
-              </CardDescription>
+              <CardTitle>{t("completeProfile.title")}</CardTitle>
+              <CardDescription>{t("completeProfile.subtitle")}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fn">Имя *</Label>
+                    <Label htmlFor="fn">{t("completeProfile.firstName")}</Label>
                     <Input
                       id="fn"
                       value={firstName}
@@ -152,7 +153,7 @@ const CompleteProfile = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ln">Фамилия *</Label>
+                    <Label htmlFor="ln">{t("completeProfile.lastName")}</Label>
                     <Input
                       id="ln"
                       value={lastName}
@@ -163,7 +164,7 @@ const CompleteProfile = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ph">Телефон *</Label>
+                  <Label htmlFor="ph">{t("completeProfile.phone")}</Label>
                   <Input
                     id="ph"
                     type="tel"
@@ -175,15 +176,20 @@ const CompleteProfile = () => {
                     maxLength={18}
                   />
                   {phoneEditable ? (
-                    <p className="text-xs text-muted-foreground">10 цифр (7XX…) или формат +7 …</p>
+                    <p className="text-xs text-muted-foreground">{t("completeProfile.phoneHint")}</p>
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label>Город *</Label>
-                  <SearchableCitySelect cities={KAZAKHSTAN_CITIES} value={city} onChange={setCity} placeholder="Выберите город" />
+                  <Label>{t("completeProfile.city")}</Label>
+                  <SearchableCitySelect
+                    cities={KAZAKHSTAN_CITIES}
+                    value={city}
+                    onChange={setCity}
+                    placeholder={t("common:selectCity")}
+                  />
                 </div>
                 <Button type="submit" className="w-full rounded-xl btn-glow" disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Продолжить"}
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("completeProfile.continue")}
                 </Button>
               </form>
               <p className="text-center text-sm text-muted-foreground mt-4">
@@ -195,7 +201,7 @@ const CompleteProfile = () => {
                     navigate("/auth", { replace: true });
                   }}
                 >
-                  Выйти из аккаунта
+                  {t("completeProfile.signOut")}
                 </button>
               </p>
             </CardContent>
@@ -203,11 +209,8 @@ const CompleteProfile = () => {
         ) : (
           <Card className="rounded-2xl border-border/60 bg-card/95 backdrop-blur shadow-sm">
             <CardHeader>
-              <CardTitle>Что планируете на платформе?</CardTitle>
-              <CardDescription>
-                Это подсказка для старта — позже можно и заказывать, и продавать. Компания в профиле нужна для витрины и
-                откликов на тендеры.
-              </CardDescription>
+              <CardTitle>{t("completeProfile.intentTitle")}</CardTitle>
+              <CardDescription>{t("completeProfile.intentSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <button
@@ -218,9 +221,9 @@ const CompleteProfile = () => {
                 <div className="flex gap-3">
                   <Store className="h-6 w-6 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">Создать компанию</p>
+                    <p className="font-semibold">{t("completeProfile.createCompanyTitle")}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Каталог, услуги, материалы, отклики на тендеры от имени компании.
+                      {t("completeProfile.createCompanyDesc")}
                     </p>
                   </div>
                 </div>
@@ -233,9 +236,9 @@ const CompleteProfile = () => {
                 <div className="flex gap-3">
                   <ShoppingBag className="h-6 w-6 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">Пока только заказываю</p>
+                    <p className="font-semibold">{t("completeProfile.buyOnlyTitle")}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Тендеры, заявки в каталог, покупка услуг и материалов. Компанию можно добавить позже.
+                      {t("completeProfile.buyOnlyDesc")}
                     </p>
                   </div>
                 </div>

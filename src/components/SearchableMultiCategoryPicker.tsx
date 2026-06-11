@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 type Props = {
   options: readonly string[];
@@ -17,16 +20,21 @@ export function SearchableMultiCategoryPicker({
   options,
   value,
   onChange,
-  label = "Категории деятельности",
-  description = "Можно выбрать несколько. Используйте поиск — список длинный.",
+  label,
+  description,
 }: Props) {
+  const { t } = useTranslation("common");
+  const catalogLabel = useCatalogLabel();
+  const { compareStrings } = useAppFormat();
+  const resolvedLabel = label ?? t("categoryPicker.label");
+  const resolvedDescription = description ?? t("categoryPicker.description");
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const sorted = [...options].sort((a, b) => a.localeCompare(b, "ru"));
+    const sorted = [...options].sort((a, b) => compareStrings(a, b));
     if (!needle) return sorted;
-    return sorted.filter((o) => o.toLowerCase().includes(needle));
-  }, [options, q]);
+    return sorted.filter((o) => catalogLabel(o).toLowerCase().includes(needle) || o.toLowerCase().includes(needle));
+  }, [options, q, compareStrings, catalogLabel]);
 
   const toggle = (cat: string) => {
     if (value.includes(cat)) {
@@ -39,18 +47,19 @@ export function SearchableMultiCategoryPicker({
   return (
     <div className="space-y-2">
       <div>
-        <Label>{label} *</Label>
-        {description ? <p className="text-xs text-muted-foreground mt-1">{description}</p> : null}
+        <Label>{resolvedLabel} *</Label>
+        {resolvedDescription ? <p className="text-xs text-muted-foreground mt-1">{resolvedDescription}</p> : null}
       </div>
       <Input
-        placeholder="Поиск категории…"
+        placeholder={t("categoryPicker.searchPlaceholder")}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="rounded-xl bg-muted/30"
       />
       {value.length > 0 ? (
         <p className="text-xs text-muted-foreground">
-          Выбрано: <span className="font-medium text-foreground">{value.join(" · ")}</span>
+          {t("categoryPicker.selected")}{" "}
+          <span className="font-medium text-foreground">{value.map(catalogLabel).join(" · ")}</span>
         </p>
       ) : null}
       <ScrollArea className="h-[min(280px,40vh)] rounded-xl border bg-card">
@@ -75,7 +84,7 @@ export function SearchableMultiCategoryPicker({
                 >
                   {selected ? <Check className="h-3 w-3" /> : null}
                 </span>
-                <span className="flex-1 leading-snug">{cat}</span>
+                <span className="flex-1 leading-snug">{catalogLabel(cat)}</span>
               </button>
             );
           })}

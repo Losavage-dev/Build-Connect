@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Send, ArrowLeft, Building2, CheckCircle2, Star, Paperclip, Loader2, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,25 +35,26 @@ import { canProfileCompleteRequest } from "@/lib/requestCompletion";
 import { canProfileAcceptRequest, canProfileRejectRequest } from "@/lib/requestWorkflow";
 import { fetchPendingCompanyReview } from "@/lib/pendingCompanyReview";
 import { RequestDealPanel } from "@/components/RequestDealPanel";
+import { useAppLocale } from "@/hooks/useAppFormat";
 
-function linkActionLabel(url: string): string {
+function linkActionLabel(url: string, t: TFunction<"profile">): string {
   try {
     const u = new URL(url);
     const hasPost = u.searchParams.get("post");
     const hasListing = u.searchParams.get("listing");
-    if (u.pathname.includes("/feed") && hasPost) return "Открыть этот ролик на витрине";
-    if (u.pathname.includes("/feed")) return "Открыть витрину роликов";
-    if (u.pathname.includes("/materials") && hasListing) return "Открыть этот материал в списке";
-    if (u.pathname.includes("/materials")) return "Витрина материалов";
-    if (u.pathname.includes("/services") && hasListing) return "Открыть эту услугу в списке";
-    if (u.pathname.includes("/services")) return "Витрина услуг";
-    if (u.pathname.includes("/company/")) return "Открыть карточку компании";
-    if (u.pathname.includes("/tenders") && hasListing) return "Открыть этот тендер в списке";
-    if (u.pathname.includes("/tenders")) return "Раздел тендеров";
+    if (u.pathname.includes("/feed") && hasPost) return t("chat.linkFeedPost");
+    if (u.pathname.includes("/feed")) return t("chat.linkFeed");
+    if (u.pathname.includes("/materials") && hasListing) return t("chat.linkMaterialPost");
+    if (u.pathname.includes("/materials")) return t("chat.linkMaterials");
+    if (u.pathname.includes("/services") && hasListing) return t("chat.linkServicePost");
+    if (u.pathname.includes("/services")) return t("chat.linkServices");
+    if (u.pathname.includes("/company/")) return t("chat.linkCompany");
+    if (u.pathname.includes("/tenders") && hasListing) return t("chat.linkTenderPost");
+    if (u.pathname.includes("/tenders")) return t("chat.linkTenders");
   } catch {
     /* invalid URL */
   }
-  return "Открыть ссылку";
+  return t("chat.linkGeneric");
 }
 
 function internalAppPath(url: string): string | null {
@@ -65,6 +68,7 @@ function internalAppPath(url: string): string | null {
 }
 
 function ChatMetaLine({ line, isMe }: { line: string; isMe: boolean }) {
+  const { t } = useTranslation("profile");
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith(META_LINE_COMPANY)) return null;
 
@@ -72,7 +76,7 @@ function ChatMetaLine({ line, isMe }: { line: string; isMe: boolean }) {
   for (const prefix of linkPrefixes) {
     if (trimmed.startsWith(prefix)) {
       const url = trimmed.slice(prefix.length).trim();
-      const shortLabel = linkActionLabel(url);
+      const shortLabel = linkActionLabel(url, t);
       const internalTo = internalAppPath(url);
       const linkClass = `inline-flex max-w-full text-sm font-medium underline underline-offset-2 break-all ${
         isMe ? "text-primary-foreground" : "text-primary"
@@ -101,13 +105,19 @@ function ChatMetaLine({ line, isMe }: { line: string; isMe: boolean }) {
   );
 }
 
-function formatCompanyLine(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed.startsWith("\u00ab") && trimmed.endsWith("\u00bb")) return `\u041e\u0442 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438 ${trimmed}`;
-  return `\u041e\u0442 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438 \u00ab${trimmed}\u00bb`;
-}
-
 function ChatMessageBody({ content, isMe }: { content: string; isMe: boolean }) {
+  const { t } = useTranslation("profile");
+
+  const formatCompanyLine = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      const displayName =
+        trimmed.startsWith("\u00ab") && trimmed.endsWith("\u00bb") ? trimmed : `\u00ab${trimmed}\u00bb`;
+      return t("chat.fromCompany", { name: displayName });
+    },
+    [t],
+  );
+
   const filePayload = tryParseChatFileMessage(content);
   if (filePayload) {
     return (
@@ -151,6 +161,8 @@ function ChatMessageBody({ content, isMe }: { content: string; isMe: boolean }) 
 }
 
 const Chat = () => {
+  const { t } = useTranslation(["profile", "common"]);
+  const appLocale = useAppLocale();
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -237,6 +249,9 @@ const Chat = () => {
     }
   }, [requestId, profile?.id, messages, queryClient]);
 
+  const chatClosed =
+    requestInfo?.status === "completed" || requestInfo?.status === "rejected";
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || !requestId || chatClosed) return;
@@ -267,9 +282,9 @@ const Chat = () => {
         request_id: requestId,
         content: buildChatFileMessage(file.name, path),
       });
-      toast.success("Файл отправлен");
+      toast.success(t("chat.fileSent"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось отправить файл";
+      const msg = err instanceof Error ? err.message : t("chat.fileError");
       toast.error(msg);
     } finally {
       setUploadingFile(false);
@@ -277,7 +292,7 @@ const Chat = () => {
   };
 
   const formatMessageTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("ru-RU", {
+    return new Date(dateString).toLocaleTimeString(appLocale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -297,14 +312,12 @@ const Chat = () => {
     profile?.id &&
     canProfileCompleteRequest(requestInfo, profile.id);
 
-  /** Исполнитель ждёт решения заказчика. */
   const showPendingHint =
     requestInfo &&
     profile &&
     requestInfo.status === "pending" &&
     !canProfileAcceptRequest(requestInfo, profile.id, caps.myCompanyIds);
 
-  /** Исполнитель: сделка принята, завершит заказчик после выполнения. */
   const showAcceptedHint =
     requestInfo &&
     profile &&
@@ -313,20 +326,15 @@ const Chat = () => {
 
   const canLeaveReview = Boolean(pendingCompanyReview ?? reviewTarget);
 
-  const chatClosed =
-    requestInfo?.status === "completed" || requestInfo?.status === "rejected";
-
   const handleAcceptRequest = async () => {
     if (!requestId) return;
     try {
       await updateRequest.mutateAsync({ id: requestId, status: "accepted" });
       toast.success(
-        requestInfo?.source_tender_id
-          ? "Исполнитель принят, заявка переведена в работу."
-          : "Заявка принята в работу.",
+        requestInfo?.source_tender_id ? t("chat.acceptSuccessTender") : t("chat.acceptSuccess"),
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось принять заявку";
+      const msg = err instanceof Error ? err.message : t("chat.acceptError");
       toast.error(msg);
     }
   };
@@ -335,9 +343,9 @@ const Chat = () => {
     if (!requestId) return;
     try {
       await updateRequest.mutateAsync({ id: requestId, status: "rejected" });
-      toast.success("Заявка отклонена");
+      toast.success(t("chat.rejectSuccess"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось отклонить заявку";
+      const msg = err instanceof Error ? err.message : t("chat.rejectError");
       toast.error(msg);
     }
   };
@@ -347,11 +355,7 @@ const Chat = () => {
     try {
       await updateRequest.mutateAsync({ id: requestId, status: "completed" });
       const linkedTender = requestInfo?.source_tender_id;
-      toast.success(
-        linkedTender
-          ? "Заявка завершена, тендер закрыт."
-          : "Заявка завершена.",
-      );
+      toast.success(linkedTender ? t("chat.completeSuccessTender") : t("chat.completeSuccess"));
       reviewAutoOpenedRef.current = null;
       await queryClient.refetchQueries({ queryKey: ["request-info", requestId] });
 
@@ -368,7 +372,7 @@ const Chat = () => {
         await queryClient.invalidateQueries({ queryKey: ["pending-company-review", requestId] });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось завершить заявку";
+      const msg = err instanceof Error ? err.message : t("chat.completeError");
       toast.error(msg);
     }
   };
@@ -401,7 +405,7 @@ const Chat = () => {
                   </Avatar>
                   <div className="min-w-0">
                     <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words hover:text-primary transition-colors">
-                      {chatDisplay.title || "Загрузка…"}
+                      {chatDisplay.title || t("chat.loading")}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 break-words">
                       {requestInfo?.title || ""}
@@ -414,7 +418,7 @@ const Chat = () => {
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">?</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words">Загрузка…</h2>
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight break-words">{t("chat.loading")}</h2>
                   </div>
                 </>
               )}
@@ -441,7 +445,7 @@ const Chat = () => {
                 onClick={() => void handleAcceptRequest()}
               >
                 <UserCheck className="h-3.5 w-3.5 mr-1" />
-                Принять в работу
+                {t("chat.accept")}
               </Button>
             ) : null}
             {canRejectRequest ? (
@@ -454,7 +458,7 @@ const Chat = () => {
                 onClick={() => void handleRejectRequest()}
               >
                 <XCircle className="h-3.5 w-3.5 mr-1" />
-                Отклонить
+                {t("chat.reject")}
               </Button>
             ) : null}
             {canCompleteRequest ? (
@@ -467,17 +471,17 @@ const Chat = () => {
                 onClick={() => void handleCompleteRequest()}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                Завершить заявку
+                {t("chat.complete")}
               </Button>
             ) : null}
             {showPendingHint ? (
               <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
-                Заказчик рассматривает заявку. Принять или отклонить может автор тендера / инициатор заявки.
+                {t("chat.pendingHint")}
               </span>
             ) : null}
             {showAcceptedHint ? (
               <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
-                Сделка в работе. Завершить заявку и оставить отзыв может заказчик после выполнения.
+                {t("chat.acceptedHint")}
               </span>
             ) : null}
             {canLeaveReview ? (
@@ -489,12 +493,12 @@ const Chat = () => {
                 onClick={() => setReviewDialogOpen(true)}
               >
                 <Star className="h-3.5 w-3.5 mr-1" />
-                Оставить отзыв
+                {t("chat.leaveReview")}
               </Button>
             ) : null}
             <Button type="button" variant="ghost" size="sm" className="rounded-lg h-8 text-muted-foreground" asChild>
               <Link to="/contracts" target="_blank" rel="noreferrer">
-                Шаблоны договоров
+                {t("chat.contractTemplates")}
               </Link>
             </Button>
           </div>
@@ -503,21 +507,21 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto bg-muted/15 p-4 space-y-4 min-h-0">
           {isLoading && (
             <div className="text-center py-8 text-muted-foreground">
-              {"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439\u2026"}
+              {t("chat.loadingMessages")}
             </div>
           )}
 
           {!isLoading && messages?.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
               <Building2 className="h-12 w-12 mb-3" />
-              <p>{"\u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u043f\u0435\u0440\u0432\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435"}</p>
+              <p>{t("chat.emptyMessages")}</p>
             </div>
           )}
 
           {messages?.map((msg) => {
             const isMe = msg.sender_id === profile?.id;
             const initials = msg.sender?.first_name?.charAt(0) || "U";
-            const senderName = msg.sender?.first_name || (isMe ? "Вы" : "Собеседник");
+            const senderName = msg.sender?.first_name || (isMe ? t("chat.you") : t("chat.interlocutor"));
             const senderProfileHref = `/user/${msg.sender_id}`;
 
             return (
@@ -528,7 +532,7 @@ const Chat = () => {
                 <Link
                   to={senderProfileHref}
                   className="shrink-0 rounded-full outline-offset-2 hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                  title="Открыть профиль"
+                  title={t("chat.openProfile")}
                 >
                   <Avatar className="h-8 w-8 mt-1">
                     <AvatarImage src={msg.sender?.avatar_url || ""} />
@@ -566,14 +570,12 @@ const Chat = () => {
         <div className="bg-card/50 border-t border-border/60 p-4 shrink-0">
           {chatClosed ? (
             <p className="text-sm text-muted-foreground text-center py-2">
-              {requestInfo?.status === "rejected"
-                ? "Заявка отклонена — переписка закрыта."
-                : "Заявка завершена — новые сообщения отправить нельзя. История чата сохранена."}
+              {requestInfo?.status === "rejected" ? t("chat.closedRejected") : t("chat.closedCompleted")}
             </p>
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-muted-foreground">
-                <span>До 20 МБ. Подписанный договор можно приложить кнопкой «Файл».</span>
+                <span>{t("chat.fileHint")}</span>
               </div>
               <form onSubmit={handleSend} className="flex gap-2 items-end">
                 <input
@@ -590,14 +592,14 @@ const Chat = () => {
                   className="rounded-xl shrink-0 h-10 w-10"
                   disabled={uploadingFile || sendMessage.isPending}
                   onClick={handlePickFile}
-                  title="Прикрепить файл"
+                  title={t("chat.attach")}
                 >
                   {uploadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
                 </Button>
                 <Input
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder={"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435\u2026"}
+                  placeholder={t("chat.sendPlaceholder")}
                   className="flex-1 rounded-xl bg-muted/50 border-transparent focus-visible:border-primary/30"
                   autoComplete="off"
                 />

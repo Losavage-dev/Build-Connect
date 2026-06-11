@@ -42,7 +42,10 @@ export function statsFromCompanyRow(company: {
   };
 }
 
-export function formatReviewCount(count: number): string {
+import type { TFunction } from "i18next";
+
+export function formatReviewCount(count: number, t?: TFunction<"common">): string {
+  if (t) return t("reviewCount", { count });
   const n = Math.abs(count);
   const mod10 = n % 10;
   const mod100 = n % 100;

@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation, Trans } from "react-i18next";
 import { authPath } from "@/lib/authRedirect";
 import {
   Heart,
@@ -44,14 +45,12 @@ import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
 import { ModeratorPromoContactDialog } from "@/components/moderator/ModeratorPromoContactDialog";
 import { youtubeEmbedUrl } from "@/lib/youtube";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BUSINESS_CATEGORIES, KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
-
-const defaultQuoteText =
-  "Прошу рассчитать потенциальный объём заказа и условия по этому предложению.";
 
 function PromoPostCard({
   post,
@@ -86,12 +85,13 @@ function PromoPostCard({
   onLike: () => void;
   likePending: boolean;
   onOpenContact: () => void;
-  /** Обычная заявка «Связаться» (не для модераторов) */
   canRegularContact: boolean;
-  /** Кнопка служебного обращения для модератора */
   showStaffPromoActions: boolean;
   onOpenStaffContact: () => void;
 }) {
+  const { t } = useTranslation(["profile", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const dateFnsLocale = useDateFnsLocale();
   const c = post.company;
   const initials = (c.name || "?").slice(0, 2).toUpperCase();
 
@@ -130,7 +130,7 @@ function PromoPostCard({
                   {c.city}
                 </span>
                 <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
-                  {c.category}
+                  {catalogLabel(c.category)}
                 </Badge>
               </div>
             </div>
@@ -142,7 +142,7 @@ function PromoPostCard({
             <div className="flex flex-wrap gap-1.5">
               {post.videoCategories.map((cat) => (
                 <Badge key={cat} variant="outline" className="text-[10px] font-normal px-2 py-0.5 rounded-lg">
-                  {cat}
+                  {catalogLabel(cat)}
                 </Badge>
               ))}
             </div>
@@ -171,7 +171,7 @@ function PromoPostCard({
             <span className="flex-1 min-w-2" aria-hidden />
             {canRegularContact ? (
               <Button type="button" variant="secondary" size="sm" className="rounded-full shrink-0" onClick={onOpenContact}>
-                Связаться
+                {t("promoFeed.contact")}
               </Button>
             ) : null}
             {showStaffPromoActions ? (
@@ -183,17 +183,25 @@ function PromoPostCard({
                 onClick={onOpenStaffContact}
               >
                 <Shield className="h-3.5 w-3.5" />
-                Служебное обращение
+                {t("promoFeed.staffContact")}
               </Button>
             ) : null}
           </div>
 
           {!user ? (
             <p className="text-xs text-muted-foreground">
-              <Link to="/auth" className="text-primary font-medium underline-offset-2 hover:underline">
-                Войдите
-              </Link>
-              , чтобы ставить лайки и писать комментарии — данные пригодятся для персональных рекомендаций.
+              <Trans
+                i18nKey="promoFeed.loginPrompt"
+                ns="profile"
+                components={{
+                  link: (
+                    <Link
+                      to="/auth"
+                      className="text-primary font-medium underline-offset-2 hover:underline"
+                    />
+                  ),
+                }}
+              />
             </p>
           ) : null}
 
@@ -201,22 +209,22 @@ function PromoPostCard({
             <div className="space-y-4 pt-2 border-t border-border/60">
               <div className="max-h-56 overflow-y-auto space-y-3 pr-1">
                 {post.comments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Пока нет комментариев — будьте первым.</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t("promoFeed.noComments")}</p>
                 ) : (
                   post.comments.map((cm) => (
                     <div key={cm.id} className="rounded-xl bg-muted/40 px-3 py-2.5 text-sm">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-medium text-foreground">
-                          {cm.author?.first_name || "Участник"}{" "}
+                          {cm.author?.first_name || t("promoFeed.participant")}{" "}
                           {cm.author?.last_name ? `${cm.author.last_name[0]}.` : ""}
                         </span>
                         <span className="text-[10px] text-muted-foreground shrink-0">
-                          {format(new Date(cm.created_at), "d MMM HH:mm", { locale: ru })}
+                          {format(new Date(cm.created_at), "d MMM HH:mm", { locale: dateFnsLocale })}
                         </span>
                       </div>
                       {cm.is_quote_request ? (
                         <Badge variant="outline" className="text-[10px] mb-1 border-primary/40 text-primary">
-                          Запрос расчёта объёма
+                          {t("promoFeed.quoteBadge")}
                         </Badge>
                       ) : null}
                       <p className="text-muted-foreground whitespace-pre-wrap">{cm.content}</p>
@@ -228,15 +236,15 @@ function PromoPostCard({
               {user && profile ? (
                 <div className="space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Комментарии публичны на витрине.{" "}
+                    {t("promoFeed.commentsPublic")}{" "}
                     {canRegularContact
-                      ? "Для личного диалога с компанией нажмите «Связаться»."
+                      ? t("promoFeed.commentsContact")
                       : showStaffPromoActions
-                        ? "Для служебного контакта с владельцем используйте «Служебное обращение»."
-                        : "Личная переписка с этой компанией с этого аккаунта недоступна."}
+                        ? t("promoFeed.commentsStaff")
+                        : t("promoFeed.commentsUnavailable")}
                   </p>
                   <Textarea
-                    placeholder="Комментарий или уточняющий вопрос…"
+                    placeholder={t("promoFeed.commentPlaceholder")}
                     value={commentDraft}
                     onChange={(e) => onCommentDraft(e.target.value)}
                     rows={3}
@@ -250,7 +258,7 @@ function PromoPostCard({
                       onCheckedChange={(v) => onQuoteChecked(v === true)}
                     />
                     <Label htmlFor={`quote-${post.id}`} className="text-sm font-normal leading-snug cursor-pointer">
-                      Отметить как запрос расчёта потенциального объёма заказа (поставщик увидит это в комментарии)
+                      {t("promoFeed.quoteCheckbox")}
                     </Label>
                   </div>
                   <Button
@@ -260,11 +268,11 @@ function PromoPostCard({
                     onClick={onSubmitComment}
                   >
                     {commentPending ? (
-                      "Отправка…"
+                      t("common:sending")
                     ) : (
                       <>
                         <Send className="h-4 w-4" />
-                        Отправить
+                        {t("promoFeed.send")}
                       </>
                     )}
                   </Button>
@@ -279,6 +287,8 @@ function PromoPostCard({
 }
 
 const PromoFeed = () => {
+  const { t } = useTranslation(["profile", "common"]);
+  const catalogLabel = useCatalogLabel();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -338,11 +348,11 @@ const PromoFeed = () => {
 
   const openContact = (companyId: string, companyName: string, postId: string, postTitle: string) => {
     if (caps.isStaff) {
-      toast.error("Для модераторов доступно только «Служебное обращение».");
+      toast.error(t("promoFeed.staffOnlyContact"));
       return;
     }
     if (!user) {
-      toast.error("Войдите, чтобы отправить заявку");
+      toast.error(t("promoFeed.loginToRequest"));
       navigate(authPath(`${location.pathname}${location.search}`));
       return;
     }
@@ -350,14 +360,18 @@ const PromoFeed = () => {
     setContactCompanyName(companyName);
     setContactPostId(postId);
     setContactPostTitle(postTitle.trim());
-    setRequestTitle(postTitle.trim() ? `Запрос по ролику: ${postTitle.trim()}` : `Запрос по ролику: ${companyName}`);
+    setRequestTitle(
+      postTitle.trim()
+        ? t("promoFeed.requestTitleTemplate", { title: postTitle.trim() })
+        : t("promoFeed.requestTitleCompany", { company: companyName }),
+    );
     setRequestDescription("");
     setContactOpen(true);
   };
 
   const submitRequest = async () => {
     if (!requestTitle.trim()) {
-      toast.error("Укажите тему заявки");
+      toast.error(t("promoFeed.subjectRequired"));
       return;
     }
     try {
@@ -374,18 +388,18 @@ const PromoFeed = () => {
         source: buildRequestSource({
           kind: "promo",
           detail: contactPostTitle.trim()
-            ? `ролик «${contactPostTitle.trim()}»`
-            : `витрина — ${contactCompanyName}`,
+            ? t("marketplace:promoFeedContact.videoDetail", { title: contactPostTitle.trim() })
+            : t("marketplace:promoFeedContact.showcaseDetail", { company: contactCompanyName }),
           url: feedUrl,
         }),
       });
-      toast.success("Заявка отправлена — откройте чат для переписки.");
+      toast.success(t("promoFeed.requestSent"));
       openRequestChat(navigate, req.id);
       setContactOpen(false);
       setContactPostId("");
       setContactPostTitle("");
     } catch {
-      toast.error("Не удалось отправить заявку");
+      toast.error(t("promoFeed.requestError"));
     }
   };
 
@@ -404,34 +418,48 @@ const PromoFeed = () => {
 
       <PageHero
         align="center"
-        eyebrow="Витрина роликов"
+        eyebrow={t("promoFeed.eyebrow")}
         eyebrowIcon={Clapperboard}
         title={
           <>
-            Выбирайте партнёра по{" "}
-            <span className="gradient-text">живой презентации</span>
+            {t("promoFeed.titlePrefix")}{" "}
+            <span className="gradient-text">{t("promoFeed.titleHighlight")}</span>
           </>
         }
         description={
           <>
-            Ролики на YouTube — смотрите, лайкайте и оставляйте комментарии прямо в ленте.
+            {t("promoFeed.descBase")}
             {!caps.isStaff && hasCompanies ? (
               <>
                 {" "}
-                Управление:{" "}
-                <Link to="/profile?tab=companies" className="text-primary font-semibold underline-offset-2 hover:underline">
-                  профиль → мои компании → видео
-                </Link>
-                .
+                <Trans
+                  i18nKey="promoFeed.descManage"
+                  ns="profile"
+                  components={{
+                    link: (
+                      <Link
+                        to="/profile?tab=companies"
+                        className="text-primary font-semibold underline-offset-2 hover:underline"
+                      />
+                    ),
+                  }}
+                />
               </>
             ) : user && !caps.isStaff ? (
               <>
                 {" "}
-                Чтобы публиковать,{" "}
-                <Link to="/create-company" className="text-primary font-semibold underline-offset-2 hover:underline">
-                  создайте компанию
-                </Link>
-                .
+                <Trans
+                  i18nKey="promoFeed.descCreate"
+                  ns="profile"
+                  components={{
+                    link: (
+                      <Link
+                        to="/create-company"
+                        className="text-primary font-semibold underline-offset-2 hover:underline"
+                      />
+                    ),
+                  }}
+                />
               </>
             ) : null}
           </>
@@ -442,16 +470,16 @@ const PromoFeed = () => {
       <div className="max-w-lg mx-auto space-y-8 pb-10">
         <StaffBrowsingBanner />
         <div className="rounded-2xl border bg-card/80 p-4 space-y-3 shadow-sm">
-          <p className="text-sm font-medium text-foreground">Фильтры ленты</p>
+          <p className="text-sm font-medium text-foreground">{t("promoFeed.filtersTitle")}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Город компании</Label>
+              <Label className="text-xs text-muted-foreground">{t("promoFeed.companyCity")}</Label>
               <Select value={filterCity} onValueChange={setFilterCity}>
                 <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Город" />
+                  <SelectValue placeholder={t("common:city")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  <SelectItem value="all">Все города</SelectItem>
+                  <SelectItem value="all">{t("common:allCities")}</SelectItem>
                   {KAZAKHSTAN_CITIES.map((city) => (
                     <SelectItem key={city} value={city}>
                       {city}
@@ -461,16 +489,16 @@ const PromoFeed = () => {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Тема ролика</Label>
+              <Label className="text-xs text-muted-foreground">{t("promoFeed.videoTopic")}</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Категория" />
+                  <SelectValue placeholder={t("common:category")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  <SelectItem value="all">Все категории</SelectItem>
+                  <SelectItem value="all">{t("common:allCategories")}</SelectItem>
                   {BUSINESS_CATEGORIES.map((cat) => (
                     <SelectItem key={cat} value={cat}>
-                      {cat}
+                      {catalogLabel(cat)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -481,7 +509,7 @@ const PromoFeed = () => {
 
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
-          <span>Свежие публикации</span>
+          <span>{t("promoFeed.freshPosts")}</span>
         </div>
 
         {isError ? (
@@ -499,33 +527,26 @@ const PromoFeed = () => {
               <div>
                 <p className="font-semibold text-lg">
                   {filterCity !== "all" || filterCategory !== "all"
-                    ? "Нет роликов с такими фильтрами"
-                    : "Пока нет роликов в ленте"}
+                    ? t("promoFeed.emptyFiltered")
+                    : t("promoFeed.emptyTitle")}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                  {filterCity !== "all" || filterCategory !== "all" ? (
-                    <>
-                      Сбросьте фильтры или выберите другой город или тему — публикации идут по времени добавления.
-                    </>
-                  ) : (
-                    <>
-                      Владельцы компаний могут добавить ссылку на YouTube в управлении компанией — запись появится
-                      здесь.
-                    </>
-                  )}
+                  {filterCity !== "all" || filterCategory !== "all"
+                    ? t("promoFeed.emptyFilteredDesc")
+                    : t("promoFeed.emptyDesc")}
                 </p>
               </div>
               {!caps.isStaff && hasCompanies ? (
                 <Button asChild variant="default" className="rounded-xl">
-                  <Link to="/profile">Мои компании</Link>
+                  <Link to="/profile">{t("promoFeed.myCompanies")}</Link>
                 </Button>
               ) : user && !caps.isStaff ? (
                 <Button asChild variant="default" className="rounded-xl">
-                  <Link to="/create-company">Создать компанию</Link>
+                  <Link to="/create-company">{t("promoFeed.createCompany")}</Link>
                 </Button>
               ) : (
                 <Button asChild variant="outline" className="rounded-xl">
-                  <Link to={authPath("/feed")}>Войти</Link>
+                  <Link to={authPath("/feed")}>{t("common:signIn")}</Link>
                 </Button>
               )}
             </CardContent>
@@ -555,9 +576,9 @@ const PromoFeed = () => {
               onSubmitComment={async () => {
                 const raw = (drafts[post.id] ?? "").trim();
                 const quote = quoteByPost[post.id] ?? false;
-                const content = raw || (quote ? defaultQuoteText : "");
+                const content = raw || (quote ? t("promoFeed.defaultQuote") : "");
                 if (!content) {
-                  toast.error("Введите текст или отметьте запрос расчёта");
+                  toast.error(t("promoFeed.commentRequired"));
                   return;
                 }
                 try {
@@ -568,9 +589,9 @@ const PromoFeed = () => {
                   });
                   setDrafts((d) => ({ ...d, [post.id]: "" }));
                   setQuoteByPost((q) => ({ ...q, [post.id]: false }));
-                  toast.success("Комментарий опубликован");
+                  toast.success(t("promoFeed.commentPublished"));
                 } catch {
-                  toast.error("Не удалось отправить");
+                  toast.error(t("promoFeed.commentError"));
                 }
               }}
               commentPending={addComment.isPending && addComment.variables?.postId === post.id}
@@ -582,7 +603,7 @@ const PromoFeed = () => {
                     videoCategories: post.videoCategories,
                   });
                 } catch {
-                  toast.error("Не удалось обновить лайк");
+                  toast.error(t("promoFeed.likeError"));
                 }
               }}
               likePending={toggleLike.isPending && toggleLike.variables?.postId === post.id}
@@ -615,33 +636,33 @@ const PromoFeed = () => {
       >
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Заявка компании</DialogTitle>
+            <DialogTitle>{t("promoFeed.requestDialogTitle")}</DialogTitle>
             <DialogDescription>
-              {contactCompanyName ? `Сообщение уйдёт в чат с «${contactCompanyName}».` : ""}
+              {contactCompanyName ? t("promoFeed.requestDialogDesc", { company: contactCompanyName }) : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
-              <Label>Тема</Label>
+              <Label>{t("promoFeed.requestSubject")}</Label>
               <Input value={requestTitle} onChange={(e) => setRequestTitle(e.target.value)} className="rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label>Детали (необязательно)</Label>
+              <Label>{t("promoFeed.requestDetails")}</Label>
               <Textarea
                 value={requestDescription}
                 onChange={(e) => setRequestDescription(e.target.value)}
                 rows={4}
                 className="rounded-xl resize-none"
-                placeholder="Объём, сроки, адрес объекта…"
+                placeholder={t("promoFeed.requestDetailsPlaceholder")}
               />
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" className="rounded-xl" onClick={() => setContactOpen(false)}>
-              Отмена
+              {t("common:cancel")}
             </Button>
             <Button className="rounded-xl" onClick={submitRequest} disabled={createRequest.isPending}>
-              {createRequest.isPending ? "Отправка…" : "Отправить"}
+              {createRequest.isPending ? t("common:sending") : t("promoFeed.send")}
             </Button>
           </DialogFooter>
         </DialogContent>

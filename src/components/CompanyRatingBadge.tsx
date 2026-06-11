@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { formatReviewCount, type CompanyReviewStats } from "@/lib/companyReviewStats";
 import { cn } from "@/lib/utils";
 
@@ -9,10 +10,12 @@ type Props = {
 };
 
 const CompanyRatingBadge = ({ stats, size = "sm", className }: Props) => {
+  const { t } = useTranslation("common");
+
   if (!stats.hasReviews) {
     return (
       <span className={cn("text-muted-foreground", size === "md" ? "text-sm" : "text-xs", className)}>
-        Нет отзывов
+        {t("noReviews")}
       </span>
     );
   }
@@ -25,7 +28,7 @@ const CompanyRatingBadge = ({ stats, size = "sm", className }: Props) => {
       <Star className={cn(starClass, "fill-yellow-400 text-yellow-400 shrink-0")} />
       <span className={cn("font-bold", textClass)}>{stats.averageRating?.toFixed(1)}</span>
       <span className={cn("text-muted-foreground", size === "md" ? "text-base" : "text-xs")}>
-        ({formatReviewCount(stats.count)})
+        ({formatReviewCount(stats.count, t)})
       </span>
     </div>
   );

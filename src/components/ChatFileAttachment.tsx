@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function ChatFileAttachment({ displayName, storagePath, isMe }: Props) {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
 
   const openDownload = async () => {
@@ -22,11 +24,11 @@ export function ChatFileAttachment({ displayName, storagePath, isMe }: Props) {
         .from(BUCKET)
         .createSignedUrl(storagePath, 3600);
       if (error || !data?.signedUrl) {
-        throw error ?? new Error("Нет ссылки");
+        throw error ?? new Error(t("chatFile.noLink"));
       }
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Не удалось получить ссылку на файл";
+      const msg = err instanceof Error ? err.message : t("chatFile.downloadError");
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -43,10 +45,10 @@ export function ChatFileAttachment({ displayName, storagePath, isMe }: Props) {
         <FileText className={`h-4 w-4 shrink-0 mt-0.5 ${isMe ? "text-primary-foreground" : "text-primary"}`} />
         <div className="min-w-0">
           <p className={`text-sm font-medium break-words ${isMe ? "text-primary-foreground" : ""}`}>
-            Файл: {displayName}
+            {t("chatFile.label", { name: displayName })}
           </p>
           <p className={`text-xs break-all ${isMe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-            Доступен только участникам этой заявки
+            {t("chatFile.accessHint")}
           </p>
         </div>
       </div>
@@ -59,7 +61,7 @@ export function ChatFileAttachment({ displayName, storagePath, isMe }: Props) {
         onClick={() => void openDownload()}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-        Скачать
+        {t("download")}
       </Button>
     </div>
   );

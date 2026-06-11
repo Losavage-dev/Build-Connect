@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Building2, MessageSquare, Star, LogOut, Loader2, Plus, Upload, Settings as SettingsIcon, Trash2, FileText, MapPin, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import { SearchableCitySelect } from "@/components/SearchableCitySelect";
-import { KAZAKHSTAN_CITIES, TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
+import { KAZAKHSTAN_CITIES, type TenderTypeValue } from "@/lib/constants";
 import { useMyTenders, useUpdateTender, type TenderStatus } from "@/hooks/useTenders";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequests, useDeleteRequest } from "@/hooks/useRequests";
@@ -33,7 +34,7 @@ import { useMyCompanies } from "@/hooks/useServices";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, addDays } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -42,7 +43,8 @@ import { TenderResponsesPanel } from "@/components/TenderResponsesPanel";
 import { TenderOwnerStatusSelect } from "@/components/TenderOwnerStatusSelect";
 import { getRequestDisplay, isRequestIncoming } from "@/lib/requestDisplay";
 import { getOnboardingIntent } from "@/lib/onboarding";
-import { USER_ROLE_HINTS, USER_ROLE_LABELS, isStaffRole } from "@/lib/userRoles";
+import { isStaffRole } from "@/lib/userRoles";
+import { useUserRoleLabel, useTenderTypeLabel } from "@/lib/i18nCatalog";
 import { ModeratorWorkspace } from "@/components/moderator/ModeratorWorkspace";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
 import {
@@ -53,6 +55,7 @@ import {
   isIdentityPhoneEditable,
 } from "@/lib/profileIdentity";
 import { parseProfileSettingsSave } from "@/lib/validation";
+import { translateValidationError } from "@/lib/validation/translateError";
 import { formatKzPhoneDisplay, normalizeKzPhone } from "@/lib/phone";
 const PROFILE_TABS = ["requests", "tenders", "companies", "reviews", "settings"] as const;
 
@@ -93,6 +96,10 @@ function snapshotsEqual(a: ProfileFormSnapshot, b: ProfileFormSnapshot): boolean
 }
 
 const Profile = () => {
+  const { t } = useTranslation(["profile", "common", "validation", "catalogData"]);
+  const dateFnsLocale = useDateFnsLocale();
+  const roleLabelFn = useUserRoleLabel();
+  const tenderTypeLabel = useTenderTypeLabel();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, isLoading: authLoading, signOut, updateProfile } = useAuth();
@@ -240,7 +247,7 @@ const Profile = () => {
     });
 
     if (!parsed.success) {
-      toast.error(parsed.error);
+      toast.error(translateValidationError(parsed.error, t));
       return;
     }
 
@@ -309,13 +316,11 @@ const Profile = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "pending": return "На рассмотрении";
-      case "accepted": return "В работе";
-      case "rejected": return "Отклонена";
-      case "completed": return "Завершена";
-      default: return status;
+    const key = `requests.status.${status}` as "requests.status.pending" | "requests.status.accepted" | "requests.status.rejected" | "requests.status.completed";
+    if (status === "pending" || status === "accepted" || status === "rejected" || status === "completed") {
+      return t(key);
     }
+    return status;
   };
 
   const getStatusColor = (status: string) => {
@@ -329,30 +334,23 @@ const Profile = () => {
   };
 
   const getStatusHint = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Заявка создана. Владелец компании ещё не сменил статус: он может написать вам в чате. Это не «ожидание модерации сайта».";
-      case "accepted":
-        return "Стороны договорились вести диалог / работу по этой заявке.";
-      case "rejected":
-        return "Владелец отметил заявку как отклонённую.";
-      case "completed":
-        return "Заявка закрыта как выполненная.";
-      default:
-        return "";
+    const key = `requests.statusHint.${status}` as "requests.statusHint.pending" | "requests.statusHint.accepted" | "requests.statusHint.rejected" | "requests.statusHint.completed";
+    if (status === "pending" || status === "accepted" || status === "rejected" || status === "completed") {
+      return t(key);
     }
+    return "";
   };
 
   const handleDeleteRequest = async (id: string) => {
-    if (!window.confirm("Вы уверены, что хотите удалить эту заявку? Это также удалит всю историю чата.")) {
+    if (!window.confirm(t("requests.deleteConfirm"))) {
       return;
     }
     
     try {
       await deleteRequest.mutateAsync(id);
-      toast.success("Заявка успешно удалена");
+      toast.success(t("requests.deleteSuccess"));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Ошибка при удалении заявки";
+      const message = err instanceof Error ? err.message : t("requests.deleteError");
       toast.error(message);
     }
   };
@@ -409,14 +407,13 @@ const Profile = () => {
   const displayName = profile?.first_name
     ? `${profile.first_name} ${profile.last_name || ""}`
     : user?.email?.split("@")[0];
-  const roleLabel =
-    profile?.role === "client" ? "Заказчик" : profile?.role === "contractor" ? "Подрядчик" : "Поставщик";
+  const roleLabel = roleLabelFn(profile?.role);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <PageHero eyebrow="Личный кабинет" title={displayName} description={roleLabel} compact />
+      <PageHero eyebrow={t("hero.eyebrow")} title={displayName} description={roleLabel} compact />
 
       <PageContent className="border-b-0">
         <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
@@ -433,7 +430,7 @@ const Profile = () => {
               <p className="text-sm text-muted-foreground mb-6 font-medium">{roleLabel}</p>
               <Button variant="outline" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
-                Выйти из аккаунта
+                {t("sidebar.signOut")}
               </Button>
             </div>
 
@@ -448,7 +445,7 @@ const Profile = () => {
               >
                 <div className="flex items-center">
                   <MessageSquare className="h-5 w-5 mr-3" />
-                  Заявки и Чаты
+                  {t("sidebar.requestsChats")}
                 </div>
                 {(inbox?.messages ?? 0) > 0 && (
                   <Badge variant={activeTab === "requests" ? "secondary" : "destructive"} className="rounded-full px-2">
@@ -466,7 +463,7 @@ const Profile = () => {
                 }`}
               >
                 <FileText className="h-5 w-5 mr-3" />
-                Мои тендеры
+                {t("sidebar.myTenders")}
               </button>
 
               <button
@@ -478,7 +475,7 @@ const Profile = () => {
                 }`}
               >
                 <Building2 className="h-5 w-5 mr-3" />
-                Мои компании
+                {t("sidebar.myCompanies")}
               </button>
 
               <button 
@@ -490,7 +487,7 @@ const Profile = () => {
                 }`}
               >
                 <Star className="h-5 w-5 mr-3" />
-                Мои отзывы
+                {t("sidebar.myReviews")}
               </button>
 
               <Link
@@ -498,7 +495,7 @@ const Profile = () => {
                 className="flex items-center px-4 py-3.5 rounded-xl transition-all hover:bg-muted text-foreground font-medium"
               >
                 <ScrollText className="h-5 w-5 mr-3 shrink-0" />
-                Шаблоны договоров
+                {t("sidebar.contractTemplates")}
               </Link>
 
               <button 
@@ -510,7 +507,7 @@ const Profile = () => {
                 }`}
               >
                 <SettingsIcon className="h-5 w-5 mr-3" />
-                Настройки профиля
+                {t("sidebar.settings")}
               </button>
             </nav>
           </div>
@@ -520,11 +517,10 @@ const Profile = () => {
             {activeTab === "requests" && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">Заявки и Чаты</h2>
-                  <p className="text-muted-foreground">История ваших обращений и переписки с компаниями</p>
+                  <h2 className="text-2xl font-bold mb-1">{t("requests.title")}</h2>
+                  <p className="text-muted-foreground">{t("requests.subtitle")}</p>
                   <p className="text-xs text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-                    По умолчанию показаны <strong>активные</strong> заявки (на рассмотрении и в работе). Завершённые и отклонённые — во вкладке «Архив».
-                    Входящие — заявки к вашим компаниям и личные отклики на тендеры. Исходящие — то, что вы отправили.
+                    <Trans i18nKey="requests.hint" ns="profile" components={{ strong: <strong /> }} />
                   </p>
                 </div>
                 
@@ -540,13 +536,13 @@ const Profile = () => {
                     <Card className="border-dashed border-2 bg-muted/10">
                       <CardContent className="flex flex-col items-center text-center py-16">
                         <MessageSquare className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                        <h3 className="font-semibold text-lg mb-2">У вас пока нет заявок</h3>
+                        <h3 className="font-semibold text-lg mb-2">{t("requests.emptyTitle")}</h3>
                         <p className="text-muted-foreground mb-6 max-w-sm">
-                          Найдите подходящего подрядчика или поставщика в каталоге и отправьте им заявку.
+                          {t("requests.emptyDesc")}
                         </p>
                         <Button onClick={() => navigate("/catalog")} className="rounded-xl shadow-md">
                           <Plus className="h-4 w-4 mr-2" />
-                          Перейти в каталог
+                          {t("requests.goToCatalog")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -561,14 +557,14 @@ const Profile = () => {
                         className="justify-start flex-wrap gap-1.5 p-1 rounded-xl bg-muted/40 border w-full sm:w-auto"
                         variant="outline"
                       >
-                        <ToggleGroupItem value="all" aria-label="Все заявки" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
-                          Все ({requestScopeCounts.all})
+                        <ToggleGroupItem value="all" aria-label={t("requests.scopeAll")} className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
+                          {t("requests.scopeAll")} ({requestScopeCounts.all})
                         </ToggleGroupItem>
-                        <ToggleGroupItem value="incoming" aria-label="Входящие" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
-                          Входящие ({requestScopeCounts.incoming})
+                        <ToggleGroupItem value="incoming" aria-label={t("requests.scopeIncoming")} className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
+                          {t("requests.scopeIncoming")} ({requestScopeCounts.incoming})
                         </ToggleGroupItem>
-                        <ToggleGroupItem value="outgoing" aria-label="Исходящие" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
-                          Исходящие ({requestScopeCounts.outgoing})
+                        <ToggleGroupItem value="outgoing" aria-label={t("requests.scopeOutgoing")} className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:border-border">
+                          {t("requests.scopeOutgoing")} ({requestScopeCounts.outgoing})
                         </ToggleGroupItem>
                       </ToggleGroup>
 
@@ -582,10 +578,10 @@ const Profile = () => {
                         variant="outline"
                       >
                         <ToggleGroupItem value="active" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm">
-                          Активные ({requestScopeCounts.active})
+                          {t("requests.lifecycleActive")} ({requestScopeCounts.active})
                         </ToggleGroupItem>
                         <ToggleGroupItem value="archive" className="rounded-lg px-3 sm:px-4 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm">
-                          Архив ({requestScopeCounts.archive})
+                          {t("requests.lifecycleArchive")} ({requestScopeCounts.archive})
                         </ToggleGroupItem>
                       </ToggleGroup>
 
@@ -593,22 +589,22 @@ const Profile = () => {
                         <Card className="border-dashed border-2 bg-muted/10">
                           <CardContent className="flex flex-col items-center text-center py-12">
                             <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <h3 className="font-semibold mb-1">Нет заявок в этом разделе</h3>
+                            <h3 className="font-semibold mb-1">{t("requests.filterEmptyTitle")}</h3>
                             <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                               {requestsLifecycle === "archive"
-                                ? "Завершённые и отклонённые заявки попадают сюда. Их можно открыть для истории чата или отзыва."
+                                ? t("requests.filterEmptyArchive")
                                 : requestsScope === "incoming"
-                                ? "Входящие: заявки в ваши компании из каталога, заказы услуг/материалов и отклики на ваши тендеры."
-                                : "Исходящие: заявки в чужие компании, заказы с витрин и ваши отклики на тендеры."}
+                                ? t("requests.filterEmptyIncoming")
+                                : t("requests.filterEmptyOutgoing")}
                             </p>
                             <div className="flex flex-wrap gap-2 justify-center">
                               {requestsLifecycle === "active" && requestScopeCounts.archive > 0 ? (
                                 <Button variant="outline" className="rounded-xl" onClick={() => setRequestsLifecycle("archive")}>
-                                  Открыть архив ({requestScopeCounts.archive})
+                                  {t("requests.openArchive", { count: requestScopeCounts.archive })}
                                 </Button>
                               ) : null}
                               <Button variant="outline" className="rounded-xl" onClick={() => { setRequestsScope("all"); setRequestsLifecycle("active"); }}>
-                                Сбросить фильтры
+                                {t("requests.resetFilters")}
                               </Button>
                             </div>
                           </CardContent>
@@ -650,11 +646,11 @@ const Profile = () => {
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <CardTitle className="text-lg">{display.title}</CardTitle>
                                     <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 h-4">
-                                      {isIncoming ? "Входящая" : "Исходящая"}
+                                      {isIncoming ? t("requests.incoming") : t("requests.outgoing")}
                                     </Badge>
                                     {unread > 0 ? (
                                       <Badge className="rounded-full px-2 py-0 text-[10px] h-5">
-                                        {unread > 99 ? "99+" : unread} непрочит.
+                                        {t("requests.unread", { count: unread > 99 ? "99+" : unread })}
                                       </Badge>
                                     ) : null}
                                   </div>
@@ -679,18 +675,18 @@ const Profile = () => {
                           <CardContent className="pt-4 flex flex-wrap justify-between items-center gap-4">
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="text-sm text-muted-foreground">
-                                Заявка от {format(new Date(request.created_at), "d MMM yyyy", { locale: ru })}
+                                {t("requests.createdAt", { date: format(new Date(request.created_at), "d MMM yyyy", { locale: dateFnsLocale }) })}
                               </span>
                               {!isArchived ? (
                                 <>
-                              <span className="text-xs text-muted-foreground mt-1">Последнее в чате</span>
+                              <span className="text-xs text-muted-foreground mt-1">{t("requests.lastInChat")}</span>
                               <span className="text-sm text-foreground line-clamp-2 mt-0.5 max-w-xl break-words">
-                                {lastPreview || "Пока нет сообщений — откройте чат, чтобы начать переписку."}
+                                {lastPreview || t("requests.noMessagesYet")}
                               </span>
                                 </>
                               ) : (
                                 <span className="text-xs text-muted-foreground mt-1">
-                                  {request.status === "completed" ? "Сделка завершена — чат доступен для просмотра и отзыва" : "Заявка закрыта"}
+                                  {request.status === "completed" ? t("requests.dealCompleted") : t("requests.requestClosed")}
                                 </span>
                               )}
                             </div>
@@ -703,14 +699,14 @@ const Profile = () => {
                                 className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
                                 onClick={() => handleDeleteRequest(request.id)}
                                 disabled={deleteRequest.isPending}
-                                title="Удалить завершённую заявку"
+                                title={t("requests.deleteTitle")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                               ) : null}
                               <Button onClick={() => navigate(`/chat/${request.id}`)} variant={isArchived ? "outline" : "default"} className="rounded-xl shadow-sm group-hover:bg-primary/90 transition-colors">
                                 <MessageSquare className="h-4 w-4 mr-2" />
-                                {isArchived ? "Открыть" : "Перейти в чат"}
+                                {isArchived ? t("requests.open") : t("requests.openChat")}
                               </Button>
                             </div>
                           </CardContent>
@@ -728,14 +724,14 @@ const Profile = () => {
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold mb-1">Мои тендеры</h2>
+                    <h2 className="text-2xl font-bold mb-1">{t("tenders.title")}</h2>
                     <p className="text-muted-foreground">
-                      Управляйте статусом: открыт — принимает отклики, в работе / закрыт — отклики недоступны
+                      {t("tenders.subtitle")}
                     </p>
                   </div>
                   <Button className="rounded-xl" onClick={() => navigate("/tenders")}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Создать тендер
+                    {t("tenders.create")}
                   </Button>
                 </div>
 
@@ -754,12 +750,12 @@ const Profile = () => {
                   <Card className="border-dashed border-2 bg-muted/10">
                     <CardContent className="flex flex-col items-center text-center py-16">
                       <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                      <h3 className="font-semibold text-lg mb-2">У вас пока нет тендеров</h3>
+                      <h3 className="font-semibold text-lg mb-2">{t("tenders.emptyTitle")}</h3>
                       <p className="text-muted-foreground mb-6 max-w-sm">
-                        Опубликуйте тендер, чтобы найти подрядчика, поставщика или исполнителя — независимо от роли в профиле.
+                        {t("tenders.emptyDesc")}
                       </p>
                       <Button onClick={() => navigate("/tenders")} className="rounded-xl">
-                        Перейти к тендерам
+                        {t("tenders.goToTenders")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -774,7 +770,7 @@ const Profile = () => {
                               <CardDescription className="line-clamp-2 mt-1">{tender.description}</CardDescription>
                             </div>
                             <Badge variant="outline" className="shrink-0">
-                              {TENDER_TYPE_LABELS[(tender.tender_type || "subcontract") as TenderTypeValue] || "Другое"}
+                              {tenderTypeLabel((tender.tender_type || "subcontract") as TenderTypeValue) || t("other", { ns: "common" })}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -787,7 +783,7 @@ const Profile = () => {
                               </span>
                             ) : null}
                             <span>
-                              Создан {format(new Date(tender.created_at), "d MMM yyyy", { locale: ru })}
+                              {t("tenders.createdAt", { date: format(new Date(tender.created_at), "d MMM yyyy", { locale: dateFnsLocale }) })}
                             </span>
                           </div>
                           <div className="max-w-md">
@@ -795,14 +791,14 @@ const Profile = () => {
                               tenderId={tender.id}
                               tenderTitle={tender.title}
                               status={tender.status}
-                              label="Статус"
+                              label={t("tenders.statusLabel")}
                               disabled={updateTender.isPending}
                               onStatusChange={(v) =>
                                 updateTender.mutate(
                                   { id: tender.id, status: v },
                                   {
-                                    onSuccess: () => toast.success("Статус обновлён"),
-                                    onError: () => toast.error("Не удалось изменить статус"),
+                                    onSuccess: () => toast.success(t("tenders.statusUpdated")),
+                                    onError: () => toast.error(t("tenders.statusUpdateError")),
                                   },
                                 )
                               }
@@ -825,12 +821,12 @@ const Profile = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold mb-1">Мои компании</h2>
-                    <p className="text-muted-foreground">Управление профилями ваших компаний</p>
+                    <h2 className="text-2xl font-bold mb-1">{t("companies.title")}</h2>
+                    <p className="text-muted-foreground">{t("companies.subtitle")}</p>
                   </div>
                   <Button onClick={() => navigate("/create-company")} className="rounded-xl shadow-sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Создать
+                    {t("companies.create")}
                   </Button>
                 </div>
 
@@ -838,11 +834,10 @@ const Profile = () => {
                   <Card className="border-primary/30 bg-primary/5">
                     <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm text-foreground">
-                        Вы выбрали «Создать компанию» при регистрации — добавьте карточку, чтобы попасть в каталог и
-                        откликаться на тендеры.
+                        {t("companies.nudge")}
                       </p>
                       <Button className="rounded-xl shrink-0" onClick={() => navigate("/create-company")}>
-                        Создать компанию
+                        {t("companies.createCompany")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -863,7 +858,7 @@ const Profile = () => {
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 shadow-sm border border-primary/20">
                               {company.logo_url ? (
-                                <img src={company.logo_url} alt="Логотип" className="w-full h-full object-cover rounded-xl" />
+                                <img src={company.logo_url} alt={t("companies.logoAlt")} className="w-full h-full object-cover rounded-xl" />
                               ) : (
                                 <Building2 className="h-6 w-6 text-primary" />
                               )}
@@ -876,7 +871,7 @@ const Profile = () => {
                         </CardHeader>
                         <CardContent className="mt-auto pt-0">
                           <Button variant="secondary" className="w-full rounded-xl" onClick={() => navigate(`/company/${company.id}`)}>
-                            Открыть профиль
+                            {t("companies.openProfile")}
                           </Button>
                         </CardContent>
                       </Card>
@@ -886,14 +881,13 @@ const Profile = () => {
                       <Card className="border-dashed border-2 bg-muted/10">
                         <CardContent className="flex flex-col items-center text-center py-12">
                           <Building2 className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                          <h3 className="font-semibold text-lg mb-2">Нет добавленных компаний</h3>
+                          <h3 className="font-semibold text-lg mb-2">{t("companies.emptyTitle")}</h3>
                           <p className="text-muted-foreground mb-6 max-w-md">
-                            Создайте карточку компании, чтобы принимать заявки, публиковать услуги и материалы. Доступно
-                            при любой роли в профиле.
+                            {t("companies.emptyDesc")}
                           </p>
                           <Button onClick={() => navigate("/create-company")} className="rounded-xl">
                             <Plus className="h-4 w-4 mr-2" />
-                            Зарегистрировать компанию
+                            {t("companies.registerCompany")}
                           </Button>
                         </CardContent>
                       </Card>
@@ -906,8 +900,8 @@ const Profile = () => {
             {activeTab === "reviews" && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">Мои отзывы</h2>
-                  <p className="text-muted-foreground">Отзывы, которые вы оставили компаниям</p>
+                  <h2 className="text-2xl font-bold mb-1">{t("reviews.title")}</h2>
+                  <p className="text-muted-foreground">{t("reviews.subtitle")}</p>
                 </div>
                 
                 <div className="space-y-4">
@@ -925,10 +919,10 @@ const Profile = () => {
                           <div className="flex justify-between items-start">
                             <div>
                               <CardTitle className="text-base font-semibold">
-                                Отзыв на: <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/company/${review.company_id}`)}>{review.company?.name}</span>
+                                {t("reviews.reviewOn")} <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/company/${review.company_id}`)}>{review.company?.name}</span>
                               </CardTitle>
                               <CardDescription className="mt-1">
-                                {format(new Date(review.created_at), "d MMMM yyyy", { locale: ru })}
+                                {format(new Date(review.created_at), "d MMMM yyyy", { locale: dateFnsLocale })}
                               </CardDescription>
                             </div>
                             <div className="flex bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
@@ -954,9 +948,9 @@ const Profile = () => {
                     <Card className="border-dashed border-2 bg-muted/10">
                       <CardContent className="flex flex-col items-center text-center py-16">
                         <Star className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                        <h3 className="font-semibold text-lg mb-2">У вас пока нет отзывов</h3>
+                        <h3 className="font-semibold text-lg mb-2">{t("reviews.emptyTitle")}</h3>
                         <p className="text-muted-foreground mb-6 max-w-sm">
-                          После завершения работы с компанией, не забудьте оставить отзыв об их работе на странице компании.
+                          {t("reviews.emptyDesc")}
                         </p>
                       </CardContent>
                     </Card>
@@ -968,30 +962,26 @@ const Profile = () => {
             {activeTab === "settings" && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">Настройки профиля</h2>
-                  <p className="text-muted-foreground">Управление личными данными и аккаунтом</p>
+                  <h2 className="text-2xl font-bold mb-1">{t("settings.title")}</h2>
+                  <p className="text-muted-foreground">{t("settings.subtitle")}</p>
                 </div>
                 
                 <Card className="border-0 shadow-md">
                   <CardHeader className="bg-muted/30 border-b">
-                    <CardTitle>Основная информация</CardTitle>
+                    <CardTitle>{t("settings.basicInfo")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6 pt-6">
                     {identityLocked ? (
                       <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
                         {nameCorrectionAllowed && correctionDeadline ? (
-                          <>
-                            Исправление опечатки в ФИО доступно до{" "}
-                            <span className="font-medium text-foreground">
-                              {format(correctionDeadline, "d MMMM yyyy, HH:mm", { locale: ru })}
-                            </span>
-                            . Телефон после сохранения профиля не меняется.
-                          </>
+                          <Trans
+                            i18nKey="settings.identityCorrection"
+                            ns="profile"
+                            values={{ date: format(correctionDeadline, "d MMMM yyyy, HH:mm", { locale: dateFnsLocale }) }}
+                            components={{ deadline: <span className="font-medium text-foreground" /> }}
+                          />
                         ) : (
-                          <>
-                            Имя, фамилия и телефон зафиксированы. Изменить можно через поддержку. Редактируются
-                            город и фото профиля.
-                          </>
+                          t("settings.identityLocked")
                         )}
                       </div>
                     ) : null}
@@ -1005,13 +995,13 @@ const Profile = () => {
                       </Avatar>
                       <div className="space-y-3 text-center sm:text-left mt-2">
                         <div>
-                          <h3 className="font-medium text-lg">Фотография профиля</h3>
-                          <p className="text-sm text-muted-foreground">Будет отображаться в ваших отзывах и чатах</p>
+                          <h3 className="font-medium text-lg">{t("settings.avatarTitle")}</h3>
+                          <p className="text-sm text-muted-foreground">{t("settings.avatarHint")}</p>
                         </div>
                         <Label htmlFor="avatar-upload" className="cursor-pointer inline-flex">
                           <div className="flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-xl transition-colors font-medium cursor-pointer shadow-sm">
                             {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                            Изменить фото
+                            {t("settings.changePhoto")}
                           </div>
                         </Label>
                         <input 
@@ -1038,7 +1028,7 @@ const Profile = () => {
                               }
                             }}
                           >
-                            Убрать фото
+                            {t("settings.removePhoto")}
                           </Button>
                         ) : null}
                       </div>
@@ -1048,23 +1038,23 @@ const Profile = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="font-medium">Имя</Label>
+                        <Label htmlFor="firstName" className="font-medium">{t("settings.firstName")}</Label>
                         <Input
                           id="firstName"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="Введите имя"
+                          placeholder={t("settings.firstNamePlaceholder")}
                           className="rounded-xl bg-muted/50"
                           disabled={!namesEditable}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="font-medium">Фамилия</Label>
+                        <Label htmlFor="lastName" className="font-medium">{t("settings.lastName")}</Label>
                         <Input
                           id="lastName"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Введите фамилию"
+                          placeholder={t("settings.lastNamePlaceholder")}
                           className="rounded-xl bg-muted/50"
                           disabled={!namesEditable}
                         />
@@ -1072,14 +1062,14 @@ const Profile = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="font-medium">Email</Label>
+                      <Label htmlFor="email" className="font-medium">{t("settings.email")}</Label>
                       <Input id="email" type="email" value={user?.email || ""} disabled className="bg-muted cursor-not-allowed rounded-xl" />
-                      <p className="text-xs text-muted-foreground">Email привязан к вашей учетной записи и не подлежит изменению напрямую.</p>
+                      <p className="text-xs text-muted-foreground">{t("settings.emailHint")}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="font-medium">Телефон</Label>
+                        <Label htmlFor="phone" className="font-medium">{t("settings.phone")}</Label>
                         <Input
                           id="phone"
                           type="tel"
@@ -1091,17 +1081,17 @@ const Profile = () => {
                           maxLength={18}
                         />
                         {phoneEditable ? (
-                          <p className="text-xs text-muted-foreground">10 цифр без префикса или формат +7 …</p>
+                          <p className="text-xs text-muted-foreground">{t("settings.phoneHint")}</p>
                         ) : null}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="city" className="font-medium">Город</Label>
+                        <Label htmlFor="city" className="font-medium">{t("settings.city")}</Label>
                         <SearchableCitySelect
                           id="city"
                           cities={KAZAKHSTAN_CITIES}
                           value={city}
                           onChange={setCity}
-                          placeholder="Выберите город"
+                          placeholder={t("selectCity", { ns: "common" })}
                         />
                       </div>
                     </div>
@@ -1110,22 +1100,20 @@ const Profile = () => {
 
                     <div className="rounded-xl border border-dashed bg-muted/20 p-4 space-y-3">
                       <div>
-                        <h3 className="font-semibold">Тип аккаунта</h3>
+                        <h3 className="font-semibold">{t("settings.accountType")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Сейчас:{" "}
+                          {t("settings.accountTypeCurrent")}{" "}
                           <span className="font-medium text-foreground">
-                            {profile?.role ? USER_ROLE_LABELS[profile.role] : "—"}
+                            {profile?.role ? roleLabelFn(profile.role) : "—"}
                           </span>
                         </p>
                         {!canChangeRole && cooldownUntil ? (
                           <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                            Следующая смена роли будет доступна с{" "}
-                            {format(cooldownUntil, "d MMMM yyyy", { locale: ru })} (не чаще раза в 14 дней).
+                            {t("settings.roleCooldown", { date: format(cooldownUntil, "d MMMM yyyy", { locale: dateFnsLocale }) })}
                           </p>
                         ) : (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Смена роли требует явного подтверждения и ограничена по частоте — защита от случайных
-                            переключений.
+                            {t("settings.roleChangeHint")}
                           </p>
                         )}
                       </div>
@@ -1141,7 +1129,7 @@ const Profile = () => {
                           setRoleDialogOpen(true);
                         }}
                       >
-                        Сменить тип аккаунта…
+                        {t("settings.changeAccountType")}
                       </Button>
                     </div>
 
@@ -1153,9 +1141,9 @@ const Profile = () => {
                         size="lg"
                       >
                         {isSaving ? (
-                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Сохранение...</>
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("settings.saving")}</>
                         ) : (
-                          "Сохранить изменения"
+                          t("settings.saveChanges")
                         )}
                       </Button>
                     </div>
@@ -1170,44 +1158,43 @@ const Profile = () => {
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Смена типа аккаунта</DialogTitle>
+            <DialogTitle>{t("roleDialog.title")}</DialogTitle>
             <DialogDescription>
-              Роль — подсказка интерфейса, а не удаление данных. Не чаще одного раза в 14 дней — проверка на стороне
-              сервера.
+              {t("roleDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {(companyCount > 0 || activeTenderCount > 0) && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm space-y-1">
-                <p className="font-medium text-foreground">Что останется при смене роли:</p>
+                <p className="font-medium text-foreground">{t("roleDialog.whatRemains")}</p>
                 {companyCount > 0 ? (
                   <p className="text-muted-foreground">
-                    {companyCount} {companyCount === 1 ? "компания" : "компаний"} в каталоге и связанные услуги/материалы.
+                    {t("roleDialog.companiesRemain", { count: companyCount })}
                   </p>
                 ) : null}
                 {openTenderCount > 0 ? (
                   <p className="text-muted-foreground">
-                    {openTenderCount} открытых тендеров — отклики по-прежнему принимаются.
+                    {t("roleDialog.openTenders", { count: openTenderCount })}
                   </p>
                 ) : null}
                 {activeTenderCount > openTenderCount ? (
-                  <p className="text-muted-foreground">Тендеры «В работе» и переписки не удаляются.</p>
+                  <p className="text-muted-foreground">{t("roleDialog.activeTenders")}</p>
                 ) : null}
               </div>
             )}
             <div className="space-y-2">
-              <Label>Новый тип</Label>
+              <Label>{t("roleDialog.newType")}</Label>
               <Select value={newRole} onValueChange={(v) => setNewRole(v as typeof newRole)}>
                 <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="client">{USER_ROLE_LABELS.client}</SelectItem>
-                  <SelectItem value="contractor">{USER_ROLE_LABELS.contractor}</SelectItem>
-                  <SelectItem value="supplier">{USER_ROLE_LABELS.supplier}</SelectItem>
+                  <SelectItem value="client">{roleLabelFn("client")}</SelectItem>
+                  <SelectItem value="contractor">{roleLabelFn("contractor")}</SelectItem>
+                  <SelectItem value="supplier">{roleLabelFn("supplier")}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground leading-relaxed">{USER_ROLE_HINTS[newRole]}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t(`userRoleHints.${newRole}`, { ns: "catalogData" })}</p>
             </div>
             <div className="flex items-start gap-3">
               <Checkbox
@@ -1216,16 +1203,16 @@ const Profile = () => {
                 onCheckedChange={(v) => setRoleRiskAccepted(v === true)}
               />
               <Label htmlFor="role-risk" className="text-sm font-normal leading-snug cursor-pointer">
-                Я понимаю, что смена типа аккаунта изменит подписи и подсказки, но не удалит компании, тендеры и чаты
+                {t("roleDialog.confirmCheckbox")}
               </Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role-phrase">Введите слово заглавными: ПОДТВЕРЖДАЮ</Label>
+              <Label htmlFor="role-phrase">{t("roleDialog.confirmPhrase")}</Label>
               <Input
                 id="role-phrase"
                 value={rolePhrase}
                 onChange={(e) => setRolePhrase(e.target.value)}
-                placeholder="ПОДТВЕРЖДАЮ"
+                placeholder={t("roleDialog.confirmPhrasePlaceholder")}
                 className="rounded-xl font-mono"
                 autoComplete="off"
               />
@@ -1233,7 +1220,7 @@ const Profile = () => {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" className="rounded-xl" onClick={() => setRoleDialogOpen(false)}>
-              Отмена
+              {t("cancel", { ns: "common" })}
             </Button>
             <Button
               type="button"
@@ -1242,15 +1229,15 @@ const Profile = () => {
               onClick={async () => {
                 if (!profile) return;
                 if (newRole === profile.role) {
-                  toast.error("Выберите тип, отличный от текущего");
+                  toast.error(t("roleDialog.selectDifferent"));
                   return;
                 }
                 if (!roleRiskAccepted) {
-                  toast.error("Отметьте, что вы понимаете последствия");
+                  toast.error(t("roleDialog.acceptRisk"));
                   return;
                 }
-                if (rolePhrase.trim() !== "ПОДТВЕРЖДАЮ") {
-                  toast.error("Введите ровно: ПОДТВЕРЖДАЮ");
+                if (rolePhrase.trim() !== t("roleDialog.confirmPhraseExact")) {
+                  toast.error(t("roleDialog.phraseMismatch"));
                   return;
                 }
                 setRoleSaving(true);
@@ -1266,7 +1253,7 @@ const Profile = () => {
                 }
               }}
             >
-              {roleSaving ? "Сохранение…" : "Подтвердить смену"}
+              {roleSaving ? t("settings.saving") : t("roleDialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

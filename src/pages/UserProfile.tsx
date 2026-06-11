@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Building2, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { PageHero, PageContent } from "@/components/layout/PageHero";
@@ -12,38 +13,42 @@ import { companyCategoryLabel } from "@/lib/companyDisplay";
 import { isStaffRole, STAFF_ROLE_LABELS, USER_ROLE_LABELS } from "@/lib/userRoles";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
+import { useCatalogLabel, useUserRoleLabel } from "@/lib/i18nCatalog";
 
 const UserProfile = () => {
+  const { t } = useTranslation(["profile", "common", "catalogData"]);
+  const catalogLabel = useCatalogLabel();
+  const roleLabelFn = useUserRoleLabel();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: person, isLoading, isError, error, refetch } = usePublicProfile(id);
   const { data: companies = [], isLoading: companiesLoading } = useProfileCompanies(id);
 
-  const fullName = formatPersonName(person, "Пользователь");
+  const fullName = formatPersonName(person, t("userProfile.anonymous"));
   const roleLabel = person?.role
     ? isStaffRole(person.role)
       ? STAFF_ROLE_LABELS[person.role]
-      : USER_ROLE_LABELS[person.role as keyof typeof USER_ROLE_LABELS] ?? person.role
+      : roleLabelFn(person.role) || person.role
     : null;
 
   const heroDescription =
     isLoading || !person
       ? undefined
-      : [roleLabel, person.city].filter(Boolean).join(" · ");
+      : [roleLabel, person.city ? catalogLabel(person.city) : null].filter(Boolean).join(" · ");
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <PageHero
-        eyebrow="Профиль пользователя"
-        title={isLoading ? "Загрузка…" : fullName}
+        eyebrow={t("userProfile.eyebrow")}
+        title={isLoading ? t("common:loading") : fullName}
         description={heroDescription}
         compact
         actions={
           <Button variant="ghost" className="rounded-xl" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Назад
+            {t("common:back")}
           </Button>
         }
       />
@@ -60,7 +65,7 @@ const UserProfile = () => {
           ) : !person ? (
             <Card className="rounded-2xl border-border/60">
               <CardContent className="py-12 text-center text-muted-foreground">
-                Пользователь не найден
+                {t("userProfile.notFound")}
               </CardContent>
             </Card>
           ) : (
@@ -73,7 +78,7 @@ const UserProfile = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-lg">Компании пользователя</CardTitle>
+                  <CardTitle className="text-lg">{t("userProfile.companiesTitle")}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-0.5">{fullName}</p>
                 </div>
               </CardHeader>
@@ -83,7 +88,7 @@ const UserProfile = () => {
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : companies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">Публичных компаний пока нет</p>
+                  <p className="text-sm text-muted-foreground py-2">{t("userProfile.noCompanies")}</p>
                 ) : (
                   companies.map((company) => (
                     <Link
@@ -103,7 +108,9 @@ const UserProfile = () => {
                           {company.verification_status === "verified" ? <VerifiedBadge /> : null}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                          {[companyCategoryLabel(company.category), company.city].filter(Boolean).join(" · ")}
+                          {[catalogLabel(companyCategoryLabel(company.category)), catalogLabel(company.city)]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </p>
                       </div>
                     </Link>

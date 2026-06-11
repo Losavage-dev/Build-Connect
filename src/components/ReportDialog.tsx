@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Flag, Loader2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,21 +18,8 @@ import { useSubmitReport, type ReportTargetType } from "@/hooks/useReports";
 import { firstZodError, reportSchema } from "@/lib/validation";
 import { toast } from "sonner";
 
-const USER_REPORT_REASONS = [
-  { value: "spam", label: "Спам или реклама" },
-  { value: "fraud", label: "Мошенничество / обман" },
-  { value: "misleading", label: "Недостоверная информация" },
-  { value: "inappropriate", label: "Неприемлемый контент" },
-  { value: "other", label: "Другое" },
-] as const;
-
-const MODERATOR_REPORT_REASONS = [
-  { value: "policy", label: "Нарушение правил платформы" },
-  { value: "verification", label: "Противоречие данным / верификации" },
-  { value: "misleading", label: "Вводящая в заблуждение информация" },
-  { value: "inappropriate", label: "Неприемлемый контент" },
-  { value: "other", label: "Иное (служебная фиксация)" },
-] as const;
+const USER_REPORT_REASON_KEYS = ["spam", "fraud", "misleading", "inappropriate", "other"] as const;
+const MODERATOR_REPORT_REASON_KEYS = ["policy", "verification", "misleadingMod", "inappropriateMod", "otherMod"] as const;
 
 export type ReportDialogVariant = "user" | "moderator";
 
@@ -41,7 +29,6 @@ type Props = {
   targetLabel: string;
   triggerClassName?: string;
   variant?: ReportDialogVariant;
-  /** Кнопка-триггер: для модератора — outline по умолчанию */
   triggerVariant?: "outline" | "ghost" | "link";
 };
 
@@ -53,9 +40,15 @@ export function ReportDialog({
   variant = "user",
   triggerVariant,
 }: Props) {
+  const { t } = useTranslation("common");
   const isModerator = variant === "moderator";
-  const reasons = isModerator ? MODERATOR_REPORT_REASONS : USER_REPORT_REASONS;
+  const reasonKeys = isModerator ? MODERATOR_REPORT_REASON_KEYS : USER_REPORT_REASON_KEYS;
   const defaultReason = isModerator ? "policy" : "spam";
+
+  const reasons = useMemo(
+    () => reasonKeys.map((value) => ({ value, label: t(`reports.reasons.${value}`) })),
+    [reasonKeys, t],
+  );
 
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<string>(defaultReason);
@@ -85,11 +78,7 @@ export function ReportDialog({
         details: details.trim() || undefined,
         initiated_by_staff: isModerator,
       });
-      toast.success(
-        isModerator
-          ? "Служебная жалоба зарегистрирована в очереди."
-          : "Жалоба отправлена. Модераторы рассмотрят её вручную.",
-      );
+      toast.success(isModerator ? t("reports.successModerator") : t("reports.successUser"));
       setOpen(false);
       setDetails("");
       setReason(defaultReason);
@@ -97,7 +86,7 @@ export function ReportDialog({
       const msg =
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Не удалось отправить жалобу";
+          : t("reports.error");
       toast.error(msg);
     }
   };
@@ -116,21 +105,21 @@ export function ReportDialog({
           ) : (
             <Flag className="h-3.5 w-3.5 mr-1.5" />
           )}
-          {isModerator ? "Служебная жалоба" : "Пожаловаться"}
+          {isModerator ? t("reports.moderatorTrigger") : t("reports.userTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>{isModerator ? "Служебная жалоба" : "Жалоба"}</DialogTitle>
+          <DialogTitle>{isModerator ? t("reports.titleModerator") : t("reports.titleUser")}</DialogTitle>
           <DialogDescription>
             {isModerator ? (
               <>
-                Фиксация нарушения от имени модерации:{" "}
+                {t("reports.descModerator")}{" "}
                 <span className="font-medium text-foreground">{targetLabel}</span>
               </>
             ) : (
               <>
-                Сообщите о проблеме:{" "}
+                {t("reports.descUser")}{" "}
                 <span className="font-medium text-foreground">{targetLabel}</span>
               </>
             )}
@@ -139,11 +128,11 @@ export function ReportDialog({
         <div className="space-y-4 py-1">
           {isModerator ? (
             <p className="text-xs text-amber-800 dark:text-amber-200/90 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
-              Запись попадёт в очередь с пометкой «от модератора», отличается от жалобы обычного пользователя.
+              {t("reports.moderatorHint")}
             </p>
           ) : null}
           <div className="space-y-2">
-            <Label>{isModerator ? "Категория (служебная)" : "Причина"}</Label>
+            <Label>{isModerator ? t("reports.reasonModerator") : t("reports.reasonUser")}</Label>
             <Select value={reason} onValueChange={setReason}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue />
@@ -159,16 +148,14 @@ export function ReportDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="report-details">
-              {isModerator ? "Обоснование" : "Подробности (необязательно)"}
+              {isModerator ? t("reports.detailsModerator") : t("reports.detailsUser")}
             </Label>
             <Textarea
               id="report-details"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               placeholder={
-                isModerator
-                  ? "Факты, что проверить, ссылки…"
-                  : "Опишите ситуацию..."
+                isModerator ? t("reports.detailsPlaceholderModerator") : t("reports.detailsPlaceholderUser")
               }
               rows={4}
               maxLength={2000}
@@ -178,10 +165,16 @@ export function ReportDialog({
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>
-            Отмена
+            {t("cancel")}
           </Button>
           <Button type="button" className="rounded-xl" disabled={submit.isPending} onClick={() => void handleSubmit()}>
-            {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : isModerator ? "Зафиксировать" : "Отправить"}
+            {submit.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isModerator ? (
+              t("reports.submitModerator")
+            ) : (
+              t("reports.submitUser")
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Building2, MapPin, Package, Wrench } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -23,22 +24,26 @@ import { buildRequestSource } from "@/lib/requestSource";
 import { openRequestChat } from "@/lib/openRequestChat";
 import { authPath } from "@/lib/authRedirect";
 import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 import { toast } from "sonner";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
 
 type LocationState = { from?: string };
 
-const formatPrice = (price: number, unit?: string | null) => {
-  const base = new Intl.NumberFormat("ru-KZ", {
-    style: "currency",
-    currency: "KZT",
-    maximumFractionDigits: 0,
-  }).format(price);
+const OTHER_GROUP = "Прочее";
+
+function formatPriceWithUnit(
+  price: number,
+  unit: string | null | undefined,
+  formatCurrency: (n: number) => string,
+) {
+  const base = formatCurrency(price);
   if (unit && unit in PRICE_UNIT_LABELS) {
     return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
   }
   return base;
-};
+}
 
 const ListingSkeleton = () => (
   <Card className="border-2 border-transparent">
@@ -52,6 +57,9 @@ const ListingSkeleton = () => (
 );
 
 const CompanyOfferings = () => {
+  const { t } = useTranslation(["profile", "marketplace", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatCurrency, compareStrings } = useAppFormat();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,26 +90,26 @@ const CompanyOfferings = () => {
   const error = companyErr || vitrineErr;
 
   const materialGroupOptions = useMemo(() => {
-    const groups = new Set(materials.map((m) => m.material_group || "Прочее"));
-    return [...groups].sort((a, b) => a.localeCompare(b, "ru"));
-  }, [materials]);
+    const groups = new Set(materials.map((m) => m.material_group || OTHER_GROUP));
+    return [...groups].sort((a, b) => compareStrings(a, b));
+  }, [materials, compareStrings]);
 
   const materialNameOptions = useMemo(() => {
     return materials
-      .filter((m) => materialGroupFilter === "all" || (m.material_group || "Прочее") === materialGroupFilter)
+      .filter((m) => materialGroupFilter === "all" || (m.material_group || OTHER_GROUP) === materialGroupFilter)
       .map((m) => m.title)
       .filter((name, i, arr) => arr.indexOf(name) === i)
-      .sort((a, b) => a.localeCompare(b, "ru"));
-  }, [materials, materialGroupFilter]);
+      .sort((a, b) => compareStrings(a, b));
+  }, [materials, materialGroupFilter, compareStrings]);
 
   const serviceCategoryOptions = useMemo(() => {
     const cats = new Set(services.map((s) => s.category));
-    return [...cats].sort((a, b) => a.localeCompare(b, "ru"));
-  }, [services]);
+    return [...cats].sort((a, b) => compareStrings(a, b));
+  }, [services, compareStrings]);
 
   const filteredMaterials = useMemo(() => {
     return materials.filter((m) => {
-      const group = m.material_group || "Прочее";
+      const group = m.material_group || OTHER_GROUP;
       if (materialGroupFilter !== "all" && group !== materialGroupFilter) return false;
       if (materialNameFilter !== "all" && m.title !== materialNameFilter) return false;
       return true;
@@ -136,16 +144,17 @@ const CompanyOfferings = () => {
 
   const handleOrderMaterial = async (material: Service) => {
     if (!user || !profile) {
-      toast.error("Войдите, чтобы сделать заказ");
+      toast.error(t("common:loginToOrder"));
       navigate(authPath(returnTo));
       return;
     }
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const msg = `Заинтересован в материале "${material.title}" по цене ${formatPrice(material.price, material.price_unit)}`;
+      const price = formatPriceWithUnit(material.price, material.price_unit, formatCurrency);
+      const msg = t("offerings.orderMaterialMsg", { title: material.title, price });
       const req = await createRequest.mutateAsync({
         company_id: material.company_id,
-        title: `Заказ материала: ${material.title}`,
+        title: t("offerings.orderMaterialTitle", { title: material.title }),
         description: msg,
         initial_message: msg,
         source: buildRequestSource({
@@ -154,30 +163,31 @@ const CompanyOfferings = () => {
           url: `${origin}/company/${id}/offerings`,
         }),
       });
-      toast.success("Запрос отправлен — откройте чат для переписки.");
+      toast.success(t("offerings.orderSuccess"));
       openRequestChat(navigate, req.id);
       track("order_material", "material", material.id, {
-        material_group: material.material_group || "Прочее",
+        material_group: material.material_group || OTHER_GROUP,
         city: company?.city,
         company_id: material.company_id,
       });
     } catch {
-      toast.error("Ошибка при отправке запроса");
+      toast.error(t("offerings.orderError"));
     }
   };
 
   const handleOrderService = async (service: Service) => {
     if (!user || !profile) {
-      toast.error("Войдите, чтобы сделать заказ");
+      toast.error(t("common:loginToOrder"));
       navigate(authPath(returnTo));
       return;
     }
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const msg = `Заинтересован в услуге "${service.title}" по цене ${formatPrice(service.price)}`;
+      const price = formatCurrency(service.price);
+      const msg = t("offerings.orderServiceMsg", { title: service.title, price });
       const req = await createRequest.mutateAsync({
         company_id: service.company_id,
-        title: `Заказ услуги: ${service.title}`,
+        title: t("offerings.orderServiceTitle", { title: service.title }),
         description: msg,
         initial_message: msg,
         source: buildRequestSource({
@@ -186,17 +196,17 @@ const CompanyOfferings = () => {
           url: `${origin}/company/${id}/offerings`,
         }),
       });
-      toast.success("Запрос отправлен — откройте чат для переписки.");
+      toast.success(t("offerings.orderSuccess"));
       openRequestChat(navigate, req.id);
     } catch {
-      toast.error("Ошибка при отправке запроса");
+      toast.error(t("offerings.orderError"));
     }
   };
 
   const materialFilterFields = (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Категория материала</label>
+        <label className="text-sm font-medium mb-2 block">{t("offerings.materialCategory")}</label>
         <Select
           value={materialGroupFilter}
           onValueChange={(v) => {
@@ -205,36 +215,36 @@ const CompanyOfferings = () => {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Категория" />
+            <SelectValue placeholder={t("common:category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все категории</SelectItem>
+            <SelectItem value="all">{t("common:allCategories")}</SelectItem>
             {materialGroupOptions.map((g) => (
               <SelectItem key={g} value={g}>
-                {g}
+                {catalogLabel(g)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Наименование</label>
+        <label className="text-sm font-medium mb-2 block">{t("offerings.materialName")}</label>
         <Select value={materialNameFilter} onValueChange={setMaterialNameFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Материал" />
+            <SelectValue placeholder={t("marketplace:materials.materialName")} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            <SelectItem value="all">Все наименования</SelectItem>
+            <SelectItem value="all">{t("marketplace:materials.allNames")}</SelectItem>
             {materialNameOptions.map((n) => (
               <SelectItem key={n} value={n}>
-                {n}
+                {catalogLabel(n)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <Button variant="outline" className="w-full" onClick={resetMaterialFilters}>
-        Сбросить фильтры
+        {t("common:resetFilters")}
       </Button>
     </div>
   );
@@ -242,23 +252,23 @@ const CompanyOfferings = () => {
   const serviceFilterFields = (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Категория услуги</label>
+        <label className="text-sm font-medium mb-2 block">{t("offerings.serviceCategory")}</label>
         <Select value={serviceCategoryFilter} onValueChange={setServiceCategoryFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Категория" />
+            <SelectValue placeholder={t("common:category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все категории</SelectItem>
+            <SelectItem value="all">{t("common:allCategories")}</SelectItem>
             {serviceCategoryOptions.map((c) => (
               <SelectItem key={c} value={c}>
-                {c}
+                {catalogLabel(c)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <Button variant="outline" className="w-full" onClick={resetServiceFilters}>
-        Сбросить фильтры
+        {t("common:resetFilters")}
       </Button>
     </div>
   );
@@ -267,7 +277,7 @@ const CompanyOfferings = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Витрина" title="Загрузка…" compact />
+        <PageHero eyebrow={t("offerings.eyebrow")} title={t("offerings.loading")} compact />
         <PageContent className="border-b-0">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -283,10 +293,10 @@ const CompanyOfferings = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Витрина" title="Ошибка загрузки" compact />
+        <PageHero eyebrow={t("offerings.eyebrow")} title={t("offerings.loadError")} compact />
         <PageContent className="border-b-0">
           <QueryErrorBlock
-            title="Не удалось загрузить витрину"
+            title={t("offerings.loadErrorTitle")}
             error={error}
             onRetry={() => {
               refetchCompany();
@@ -302,11 +312,11 @@ const CompanyOfferings = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Витрина" title="Компания не найдена" compact />
+        <PageHero eyebrow={t("offerings.eyebrow")} title={t("offerings.notFound")} compact />
         <PageContent className="border-b-0">
           <div className="text-center py-8">
             <Button asChild className="rounded-xl">
-              <Link to="/catalog">Вернуться в каталог</Link>
+              <Link to="/catalog">{t("company.backToCatalog")}</Link>
             </Button>
           </div>
         </PageContent>
@@ -321,26 +331,26 @@ const CompanyOfferings = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Витрина"
+        eyebrow={t("offerings.eyebrow")}
         eyebrowIcon={Building2}
         media={<CompanyLogo name={company.name} logoUrl={company.logo_url} size="md" />}
         title={company.name}
         description={
           totalCount > 0
-            ? `${materials.length} материалов · ${services.length} услуг`
-            : "Пока нет опубликованных позиций на маркетплейсе"
+            ? t("offerings.countSummary", { materials: materials.length, services: services.length })
+            : t("offerings.emptySummary")
         }
         compact
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" className="rounded-xl" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Назад
+              {t("offerings.back")}
             </Button>
             <Button variant="ghost" asChild className="rounded-xl">
               <Link to={`/company/${id}`} state={{ from: returnTo }}>
                 <Building2 className="h-4 w-4 mr-2" />
-                Профиль компании
+                {t("offerings.companyProfile")}
               </Link>
             </Button>
           </div>
@@ -351,15 +361,15 @@ const CompanyOfferings = () => {
         {totalCount === 0 ? (
           <EmptyState
             icon={Package}
-            title="Витрина пуста"
-            description="Компания ещё не опубликовала материалы и услуги на маркетплейсе"
+            title={t("offerings.emptyTitle")}
+            description={t("offerings.emptyDesc")}
             action={
               <div className="flex flex-wrap gap-2 justify-center">
                 <Button variant="outline" className="rounded-xl" onClick={handleBack}>
-                  Назад
+                  {t("offerings.back")}
                 </Button>
                 <Button asChild variant="outline" className="rounded-xl">
-                  <Link to={`/company/${id}`}>Профиль компании</Link>
+                  <Link to={`/company/${id}`}>{t("offerings.companyProfile")}</Link>
                 </Button>
               </div>
             }
@@ -377,11 +387,11 @@ const CompanyOfferings = () => {
               <TabsList className="mb-6 rounded-xl">
                 <TabsTrigger value="materials" className="rounded-lg gap-2">
                   <Package className="h-4 w-4" />
-                  Материалы ({materials.length})
+                  {t("offerings.materialsTab", { count: materials.length })}
                 </TabsTrigger>
                 <TabsTrigger value="services" className="rounded-lg gap-2">
                   <Wrench className="h-4 w-4" />
-                  Услуги ({services.length})
+                  {t("offerings.servicesTab", { count: services.length })}
                 </TabsTrigger>
               </TabsList>
 
@@ -389,17 +399,17 @@ const CompanyOfferings = () => {
                 {materials.length === 0 ? (
                   <EmptyState
                     icon={Package}
-                    title="Материалов нет"
-                    description="Компания не продаёт материалы на маркетплейсе"
+                    title={t("offerings.noMaterials")}
+                    description={t("offerings.noMaterialsDesc")}
                   />
                 ) : filteredMaterials.length === 0 ? (
                   <EmptyState
                     icon={Package}
-                    title="Ничего не найдено"
-                    description="Попробуйте изменить фильтры"
+                    title={t("common:notFound")}
+                    description={t("common:changeFiltersOrSearch")}
                     action={
                       <Button variant="outline" className="rounded-xl" onClick={resetMaterialFilters}>
-                        Сбросить фильтры
+                        {t("common:resetFilters")}
                       </Button>
                     }
                   />
@@ -413,11 +423,11 @@ const CompanyOfferings = () => {
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between mb-2">
                             <Badge variant="secondary" className="rounded-lg font-semibold shadow-sm">
-                              {material.material_group || "Прочее"}
+                              {catalogLabel(material.material_group || OTHER_GROUP)}
                             </Badge>
                             <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
                               <span className="font-semibold text-sm text-primary">
-                                {formatPrice(material.price, material.price_unit)}
+                                {formatPriceWithUnit(material.price, material.price_unit, formatCurrency)}
                               </span>
                             </div>
                           </div>
@@ -436,7 +446,7 @@ const CompanyOfferings = () => {
                           ) : null}
                           {!user ? (
                             <Button asChild className="w-full rounded-xl shadow-sm">
-                              <Link to={authPath(returnTo)}>Войти, чтобы купить</Link>
+                              <Link to={authPath(returnTo)}>{t("common:loginToBuy")}</Link>
                             </Button>
                           ) : caps.canBuyListing(material.company_id) ? (
                             <Button
@@ -444,7 +454,7 @@ const CompanyOfferings = () => {
                               onClick={() => handleOrderMaterial(material)}
                               disabled={createRequest.isPending}
                             >
-                              Купить товар
+                              {t("marketplace:materials.buyProduct")}
                             </Button>
                           ) : null}
                         </CardContent>
@@ -458,17 +468,17 @@ const CompanyOfferings = () => {
                 {services.length === 0 ? (
                   <EmptyState
                     icon={Wrench}
-                    title="Услуг нет"
-                    description="Компания не опубликовала услуги на маркетплейсе"
+                    title={t("offerings.noServices")}
+                    description={t("offerings.noServicesDesc")}
                   />
                 ) : filteredServices.length === 0 ? (
                   <EmptyState
                     icon={Wrench}
-                    title="Ничего не найдено"
-                    description="Попробуйте изменить фильтры"
+                    title={t("common:notFound")}
+                    description={t("common:changeFiltersOrSearch")}
                     action={
                       <Button variant="outline" className="rounded-xl" onClick={resetServiceFilters}>
-                        Сбросить фильтры
+                        {t("common:resetFilters")}
                       </Button>
                     }
                   />
@@ -481,10 +491,12 @@ const CompanyOfferings = () => {
                       >
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between mb-2">
-                            <Badge className="rounded-lg font-semibold shadow-sm">{service.category}</Badge>
+                            <Badge className="rounded-lg font-semibold shadow-sm">
+                              {catalogLabel(service.category)}
+                            </Badge>
                             <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
                               <span className="font-semibold text-sm text-primary">
-                                {formatPrice(service.price)}
+                                {formatCurrency(service.price)}
                               </span>
                             </div>
                           </div>
@@ -502,7 +514,7 @@ const CompanyOfferings = () => {
                           ) : null}
                           {!user ? (
                             <Button asChild className="w-full rounded-xl" variant="outline">
-                              <Link to={authPath(returnTo)}>Войти, чтобы заказать</Link>
+                              <Link to={authPath(returnTo)}>{t("marketplace:services.loginToOrderService")}</Link>
                             </Button>
                           ) : caps.canBuyListing(service.company_id) ? (
                             <Button
@@ -511,7 +523,7 @@ const CompanyOfferings = () => {
                               onClick={() => handleOrderService(service)}
                               disabled={createRequest.isPending}
                             >
-                              Заказать услугу
+                              {t("marketplace:services.orderService")}
                             </Button>
                           ) : null}
                         </CardContent>

@@ -1,4 +1,5 @@
 import { BadgeCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -7,6 +8,8 @@ type Props = {
 };
 
 export function VerifiedBadge({ className, size = "sm" }: Props) {
+  const { t } = useTranslation("common");
+
   return (
     <span
       className={cn(
@@ -14,10 +17,10 @@ export function VerifiedBadge({ className, size = "sm" }: Props) {
         size === "sm" ? "text-[10px] px-2 py-0.5" : "text-xs px-2.5 py-1",
         className,
       )}
-      title="Компания проверена модераторами"
+      title={t("verifiedTitle")}
     >
       <BadgeCheck className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} />
-      Проверено
+      {t("verifiedBadge")}
     </span>
   );
 }

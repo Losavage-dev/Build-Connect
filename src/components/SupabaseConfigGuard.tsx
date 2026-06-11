@@ -1,10 +1,13 @@
 import { ReactNode } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { supabaseConfigError } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
 export default function SupabaseConfigGuard({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("common");
+
   if (!supabaseConfigError) {
     return <>{children}</>;
   }
@@ -15,15 +18,13 @@ export default function SupabaseConfigGuard({ children }: { children: ReactNode 
         <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
-        <h1 className="text-xl font-bold">Нет подключения к базе данных</h1>
+        <h1 className="text-xl font-bold">{t("supabaseGuard.title")}</h1>
         <p className="text-sm text-muted-foreground">{supabaseConfigError}</p>
         <p className="text-xs text-muted-foreground">
-          Скопируйте <code className="bg-muted px-1 rounded">.env.example</code> в{" "}
-          <code className="bg-muted px-1 rounded">.env</code> и укажите URL и ключ из панели Supabase
-          (Settings → API). После изменения перезапустите <code className="bg-muted px-1 rounded">npm run dev</code>.
+          <Trans i18nKey="supabaseGuard.hint" ns="common" components={{ code: <code className="bg-muted px-1 rounded" /> }} />
         </p>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link to="/">На главную</Link>
+          <Link to="/">{t("backHome")}</Link>
         </Button>
       </div>
     </div>

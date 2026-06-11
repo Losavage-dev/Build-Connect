@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { authPath } from "@/lib/authRedirect";
 import { Star, Phone, Mail, Globe, ArrowLeft, Loader2, Send, Settings, Clapperboard, Building2, Store } from "lucide-react";
@@ -28,15 +29,12 @@ import ReviewForm from "@/components/ReviewForm";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  VERIFICATION_STATUS_HINTS,
-  VERIFICATION_STATUS_LABELS,
-  type CompanyVerificationStatus,
-} from "@/lib/companyVerification";
+import { type CompanyVerificationStatus } from "@/lib/companyVerification";
 import { ReportDialog } from "@/components/ReportDialog";
-import { useReviewEligibility, reviewBlockMessage } from "@/hooks/useReviewEligibility";
+import { useReviewEligibility } from "@/hooks/useReviewEligibility";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { useDateFnsLocale } from "@/hooks/useAppFormat";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
 
 import { PortfolioProjectCard } from "@/components/PortfolioProjectCard";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -46,7 +44,13 @@ import { CompanyCompareToggleButton } from "@/components/CompanyCompareBar";
 import { CompanyPrivateDetailsGate } from "@/components/CompanyPrivateDetailsGate";
 import { canViewCompanyPrivateDetails } from "@/lib/companyContactAccess";
 
+const verificationHintKey = (status: CompanyVerificationStatus) =>
+  `company.verification.hint${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+
 const CompanyProfile = () => {
+  const { t } = useTranslation(["profile", "common", "catalogData"]);
+  const dateFnsLocale = useDateFnsLocale();
+  const catalogLabel = useCatalogLabel();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,13 +89,13 @@ const CompanyProfile = () => {
 
   const handleSubmitRequest = async () => {
     if (!user) {
-      toast.error("Войдите, чтобы отправить заявку");
+      toast.error(t("company.loginRequired"));
       navigate(authPath(returnTo));
       return;
     }
 
     if (!requestTitle.trim()) {
-      toast.error("Введите тему заявки");
+      toast.error(t("company.subjectRequired"));
       return;
     }
 
@@ -104,17 +108,17 @@ const CompanyProfile = () => {
         initial_message: requestDescription.trim() || undefined,
         source: buildRequestSource({
           kind: "catalog",
-          detail: `«${company?.name || "компания"}»`,
+          detail: `«${company?.name || t("company.eyebrow")}»`,
           url: `${origin}/company/${id}`,
         }),
       });
-      toast.success("Заявка отправлена — откройте чат для переписки.");
+      toast.success(t("company.requestSent"));
       openRequestChat(navigate, req.id);
       setIsDialogOpen(false);
       setRequestTitle("");
       setRequestDescription("");
     } catch (error) {
-      toast.error("Ошибка при отправке заявки");
+      toast.error(t("company.requestError"));
     }
   };
 
@@ -122,7 +126,7 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Компания" title="Загрузка…" compact />
+        <PageHero eyebrow={t("company.eyebrow")} title={t("company.loading")} compact />
         <PageContent className="border-b-0">
           <div className="max-w-6xl mx-auto space-y-6">
             <Skeleton className="h-32 w-full rounded-2xl" />
@@ -140,13 +144,13 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Компания" title="Ошибка загрузки" compact />
+        <PageHero eyebrow={t("company.eyebrow")} title={t("company.loadError")} compact />
         <PageContent className="border-b-0">
           <div className="max-w-3xl mx-auto">
-            <QueryErrorBlock title="Не удалось загрузить компанию" error={error} onRetry={() => refetch()} />
+            <QueryErrorBlock title={t("company.loadErrorTitle")} error={error} onRetry={() => refetch()} />
             <div className="text-center mt-4">
               <Button asChild variant="outline" className="rounded-xl">
-                <Link to="/catalog">Вернуться в каталог</Link>
+                <Link to="/catalog">{t("company.backToCatalog")}</Link>
               </Button>
             </div>
           </div>
@@ -159,12 +163,12 @@ const CompanyProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <PageHero eyebrow="Компания" title="Не найдена" compact />
+        <PageHero eyebrow={t("company.eyebrow")} title={t("company.notFound")} compact />
         <PageContent className="border-b-0">
           <div className="max-w-3xl mx-auto text-center py-8">
-            <p className="text-destructive mb-4">Компания не найдена</p>
+            <p className="text-destructive mb-4">{t("company.notFoundMessage")}</p>
             <Button asChild className="rounded-xl">
-              <Link to="/catalog">Вернуться в каталог</Link>
+              <Link to="/catalog">{t("company.backToCatalog")}</Link>
             </Button>
           </div>
         </PageContent>
@@ -191,7 +195,7 @@ const CompanyProfile = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Компания"
+        eyebrow={t("company.eyebrow")}
         eyebrowIcon={Building2}
         media={<CompanyLogo name={company.name} logoUrl={company.logo_url} size="md" />}
         title={
@@ -215,7 +219,7 @@ const CompanyProfile = () => {
             <Button variant="ghost" asChild className="rounded-xl">
               <Link to="/catalog">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                К каталогу
+                {t("company.backToCatalogShort")}
               </Link>
             </Button>
           </div>
@@ -232,14 +236,21 @@ const CompanyProfile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clapperboard className="h-5 w-5 text-primary" />
-                    Видео компании
+                    {t("company.videos")}
                   </CardTitle>
                   <CardDescription>
-                    Ролики, которые владелец добавил в разделе управления компанией (YouTube). Общая лента —{" "}
-                    <Link to="/feed" className="text-primary font-medium underline-offset-2 hover:underline">
-                      Витрина роликов
-                    </Link>
-                    .
+                    <Trans
+                      i18nKey="company.videosDesc"
+                      ns="profile"
+                      components={{
+                        feedLink: (
+                          <Link
+                            to="/feed"
+                            className="text-primary font-medium underline-offset-2 hover:underline"
+                          />
+                        ),
+                      }}
+                    />
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -270,9 +281,9 @@ const CompanyProfile = () => {
                             {row.caption ? <p className="text-sm text-muted-foreground">{row.caption}</p> : null}
                             {topics.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5 pt-1">
-                                {topics.map((t) => (
-                                  <Badge key={t} variant="outline" className="text-xs font-normal">
-                                    {t}
+                                {topics.map((topic) => (
+                                  <Badge key={topic} variant="outline" className="text-xs font-normal">
+                                    {catalogLabel(topic)}
                                   </Badge>
                                 ))}
                               </div>
@@ -283,14 +294,11 @@ const CompanyProfile = () => {
                     )
                   ) : (
                     <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        В публичном профиле пока нет роликов. Добавьте ссылку на YouTube во вкладке «Видео» в
-                        управлении компанией — они появятся здесь и в общей витрине.
-                      </p>
+                      <p className="text-sm text-muted-foreground">{t("company.videosEmpty")}</p>
                       <Button asChild variant="default" className="rounded-xl">
                         <Link to={`/company/${id}/manage`}>
                           <Settings className="h-4 w-4 mr-2" />
-                          Управление → Видео
+                          {t("company.manageVideos")}
                         </Link>
                       </Button>
                     </div>
@@ -302,12 +310,9 @@ const CompanyProfile = () => {
             {/* Portfolio */}
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
-                <CardTitle>Портфолио</CardTitle>
+                <CardTitle>{t("company.portfolio")}</CardTitle>
                 {profile && company.owner_id === profile.id ? (
-                  <CardDescription>
-                    Проекты редактируются во вкладке «Проекты» в управлении компанией — здесь они видны всем
-                    посетителям.
-                  </CardDescription>
+                  <CardDescription>{t("company.portfolioOwnerHint")}</CardDescription>
                 ) : null}
               </CardHeader>
               <CardContent>
@@ -319,19 +324,16 @@ const CompanyProfile = () => {
                   </div>
                 ) : profile && company.owner_id === profile.id ? (
                   <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Портфолио пустое. Добавьте выполненные объекты: название, описание, фото — во вкладке
-                      «Проекты» в управлении компанией.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("company.portfolioEmptyOwner")}</p>
                     <Button asChild variant="default" className="rounded-xl">
                       <Link to={`/company/${id}/manage?tab=projects`}>
                         <Settings className="h-4 w-4 mr-2" />
-                        Управление → Проекты
+                        {t("company.manageProjects")}
                       </Link>
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-6">Проекты пока не добавлены</p>
+                  <p className="text-muted-foreground text-center py-6">{t("company.portfolioEmptyGuest")}</p>
                 )}
               </CardContent>
             </Card>
@@ -339,7 +341,7 @@ const CompanyProfile = () => {
             {/* Reviews */}
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur" id="reviews">
               <CardHeader>
-                <CardTitle>Отзывы ({reviews.length})</CardTitle>
+                <CardTitle>{t("company.reviews", { count: reviews.length })}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {reviews.length > 0 ? (
@@ -348,10 +350,11 @@ const CompanyProfile = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="font-semibold">
-                            {review.author?.first_name || "Пользователь"} {review.author?.last_name?.[0] || ""}.
+                            {review.author?.first_name || t("company.anonymousUser")}{" "}
+                            {review.author?.last_name?.[0] || ""}.
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(review.created_at), "d MMM yyyy", { locale: ru })}
+                            {format(new Date(review.created_at), "d MMM yyyy", { locale: dateFnsLocale })}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
@@ -374,7 +377,7 @@ const CompanyProfile = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted-foreground text-center py-6">Отзывов пока нет</p>
+                  <p className="text-muted-foreground text-center py-6">{t("company.reviewsEmpty")}</p>
                 )}
 
                 {user && profile?.id !== company.owner_id ? (
@@ -382,7 +385,7 @@ const CompanyProfile = () => {
                     {reviewEligibilityLoading ? (
                       <>
                         <Separator className="my-6" />
-                        <p className="text-sm text-muted-foreground">Проверка возможности оставить отзыв…</p>
+                        <p className="text-sm text-muted-foreground">{t("company.reviewChecking")}</p>
                       </>
                     ) : reviewEligibility?.canReview ? (
                       <>
@@ -394,7 +397,9 @@ const CompanyProfile = () => {
                       <>
                         <Separator className="my-6" />
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          {reviewBlockMessage(reviewEligibility.reason)}
+                          {reviewEligibility.reason === "already_reviewed"
+                            ? t("company.reviewAlready")
+                            : t("company.reviewInProgress")}
                         </p>
                       </>
                     ) : null}
@@ -403,9 +408,9 @@ const CompanyProfile = () => {
                   <>
                     <Separator className="my-6" />
                     <p className="text-sm text-muted-foreground">
-                      {reviewBlockMessage("guest")}{" "}
+                      {t("company.reviewGuest")}{" "}
                       <Link to={authPath(returnTo)} className="text-primary hover:underline">
-                        Войти
+                        {t("common:signIn")}
                       </Link>
                     </p>
                   </>
@@ -418,7 +423,7 @@ const CompanyProfile = () => {
           <div className="space-y-6">
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur h-fit lg:sticky lg:top-24">
               <CardHeader>
-                <CardTitle>Контакты</CardTitle>
+                <CardTitle>{t("company.contacts")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <CompanyPrivateDetailsGate isAuthenticated={canViewPrivate} returnTo={returnTo}>
@@ -453,7 +458,7 @@ const CompanyProfile = () => {
                       </div>
                     )}
                     {!company.phone && !company.email && !company.website ? (
-                      <p className="text-sm text-muted-foreground">Контакты не указаны</p>
+                      <p className="text-sm text-muted-foreground">{t("company.contactsEmpty")}</p>
                     ) : null}
                   </>
                 </CompanyPrivateDetailsGate>
@@ -463,7 +468,7 @@ const CompanyProfile = () => {
                     <Button asChild className="w-full rounded-xl" size="lg">
                       <Link to={authPath(returnTo)}>
                         <Send className="h-4 w-4 mr-2" />
-                        Войти, чтобы отправить заявку
+                        {t("company.loginToRequest")}
                       </Link>
                     </Button>
                   </>
@@ -474,40 +479,40 @@ const CompanyProfile = () => {
                       <DialogTrigger asChild>
                         <Button className="w-full rounded-xl" size="lg">
                           <Send className="h-4 w-4 mr-2" />
-                          Отправить заявку
+                          {t("company.sendRequest")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-md">
                         <DialogHeader className="space-y-2 text-left">
-                          <DialogTitle className="text-2xl font-bold tracking-tight">Отправить заявку</DialogTitle>
+                          <DialogTitle className="text-2xl font-bold tracking-tight">
+                            {t("company.requestDialogTitle")}
+                          </DialogTitle>
                           <DialogDescription className="text-base text-muted-foreground">
-                            Сообщение из поля ниже уйдёт в чат с компанией первым. Тема заявки будет видна в шапке
-                            диалога.
+                            {t("company.requestDialogDesc")}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="title" className="text-base font-semibold">
-                              Тема заявки <span className="text-destructive">*</span>
+                              {t("company.requestSubject")} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                               id="title"
-                              placeholder="Например: Строительство дома"
+                              placeholder={t("company.requestSubjectPlaceholder")}
                               value={requestTitle}
                               onChange={(e) => setRequestTitle(e.target.value)}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="description" className="text-base font-semibold">
-                              Сообщение в чат
+                              {t("company.requestMessage")}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                              Этот текст сразу появится у {company.name} в переписке (отдельно от служебной ссылки на
-                              карточку).
+                              {t("company.requestMessageHint", { company: company.name })}
                             </p>
                             <Textarea
                               id="description"
-                              placeholder="Опишите ваш проект или вопрос..."
+                              placeholder={t("company.requestMessagePlaceholder")}
                               rows={4}
                               value={requestDescription}
                               onChange={(e) => setRequestDescription(e.target.value)}
@@ -516,16 +521,16 @@ const CompanyProfile = () => {
                         </div>
                         <DialogFooter>
                           <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                            Отмена
+                            {t("common:cancel")}
                           </Button>
                           <Button onClick={handleSubmitRequest} disabled={createRequest.isPending}>
                             {createRequest.isPending ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Отправка...
+                                {t("common:sending")}
                               </>
                             ) : (
-                              "Отправить"
+                              t("promoFeed.send")
                             )}
                           </Button>
                         </DialogFooter>
@@ -540,18 +545,21 @@ const CompanyProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Store className="h-5 w-5 text-muted-foreground" />
-                  Витрина
+                  {t("company.showcase")}
                 </CardTitle>
                 <CardDescription>
                   {vitrineTotal > 0
-                    ? `${vitrineMaterials} материалов · ${vitrineServices} услуг на маркетплейсе`
-                    : "Материалы и услуги, опубликованные на маркетплейсе"}
+                    ? t("company.showcaseCount", {
+                        materials: vitrineMaterials,
+                        services: vitrineServices,
+                      })
+                    : t("company.showcaseEmpty")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button asChild variant="outline" className="w-full rounded-xl">
                   <Link to={`/company/${id}/offerings`} state={{ from: `${location.pathname}${location.search}` }}>
-                    {vitrineTotal > 0 ? "Открыть витрину" : "Посмотреть витрину"}
+                    {vitrineTotal > 0 ? t("company.openShowcase") : t("company.viewShowcase")}
                   </Link>
                 </Button>
               </CardContent>
@@ -559,16 +567,16 @@ const CompanyProfile = () => {
 
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
-                <CardTitle>О компании</CardTitle>
+                <CardTitle>{t("company.about")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
                 {categoryList.length > 0 ? (
                   <div>
-                    <p className="font-medium mb-2">Направления работы</p>
+                    <p className="font-medium mb-2">{t("company.directions")}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {categoryList.map((cat: string) => (
                         <Badge key={cat} variant="secondary" className="text-xs font-normal">
-                          {cat}
+                          {catalogLabel(cat)}
                         </Badge>
                       ))}
                     </div>
@@ -576,7 +584,7 @@ const CompanyProfile = () => {
                 ) : null}
                 {categoryList.length > 0 ? <Separator /> : null}
                 <div>
-                  <p className="font-medium mb-1">Город</p>
+                  <p className="font-medium mb-1">{t("company.city")}</p>
                   <p className="text-muted-foreground">{company.city}</p>
                 </div>
                 <CompanyPrivateDetailsGate isAuthenticated={canViewPrivate} returnTo={returnTo}>
@@ -585,7 +593,7 @@ const CompanyProfile = () => {
                       <>
                         <Separator />
                         <div>
-                          <p className="font-medium mb-1">БИН</p>
+                          <p className="font-medium mb-1">{t("company.bin")}</p>
                           <p className="text-muted-foreground font-mono">{company.bin}</p>
                         </div>
                       </>
@@ -594,19 +602,19 @@ const CompanyProfile = () => {
                       <>
                         <Separator />
                         <div>
-                          <p className="font-medium mb-1">Адрес</p>
+                          <p className="font-medium mb-1">{t("company.address")}</p>
                           <p className="text-muted-foreground">{company.address}</p>
                         </div>
                       </>
                     ) : null}
                     {!company.bin && !company.address ? (
-                      <p className="text-sm text-muted-foreground">Реквизиты и адрес не указаны</p>
+                      <p className="text-sm text-muted-foreground">{t("company.detailsEmpty")}</p>
                     ) : null}
                   </>
                 </CompanyPrivateDetailsGate>
                 <Separator />
                 <div>
-                  <p className="font-medium mb-1">Проектов в портфолио</p>
+                  <p className="font-medium mb-1">{t("company.portfolioCount")}</p>
                   <p className="text-muted-foreground">{projects.length}</p>
                 </div>
                 {user && profile?.id !== company.owner_id ? (
@@ -628,25 +636,29 @@ const CompanyProfile = () => {
             {profile && company.owner_id === profile.id ? (
               <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
                 <CardHeader>
-                  <CardTitle>Управление</CardTitle>
+                  <CardTitle>{t("company.manage")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {(company as { verification_status?: CompanyVerificationStatus }).verification_status !==
                   "verified" ? (
                     <Alert>
                       <AlertTitle>
-                        {VERIFICATION_STATUS_LABELS[
-                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
-                            "draft") as CompanyVerificationStatus
-                        ]}
+                        {t(
+                          `company.verification.${
+                            ((company as { verification_status?: CompanyVerificationStatus })
+                              .verification_status || "draft") as CompanyVerificationStatus
+                          }`,
+                        )}
                       </AlertTitle>
                       <AlertDescription>
-                        {VERIFICATION_STATUS_HINTS[
-                          ((company as { verification_status?: CompanyVerificationStatus }).verification_status ||
-                            "draft") as CompanyVerificationStatus
-                        ]}{" "}
+                        {t(
+                          verificationHintKey(
+                            ((company as { verification_status?: CompanyVerificationStatus })
+                              .verification_status || "draft") as CompanyVerificationStatus,
+                          ),
+                        )}{" "}
                         <Link to={`/company/${id}/manage?tab=verification`} className="text-primary font-medium underline">
-                          Перейти к верификации
+                          {t("company.goToVerification")}
                         </Link>
                       </AlertDescription>
                     </Alert>
@@ -654,7 +666,7 @@ const CompanyProfile = () => {
                   <Button asChild variant="outline" className="w-full rounded-xl">
                     <Link to={`/company/${id}/manage`}>
                       <Settings className="h-4 w-4 mr-2" />
-                      Управление компанией
+                      {t("company.manageCompany")}
                     </Link>
                   </Button>
                 </CardContent>

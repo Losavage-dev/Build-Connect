@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   CheckCircle2,
@@ -16,11 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
-  COMPANY_DOCUMENT_LABELS,
   type CompanyDocumentType,
   type CompanyVerificationStatus,
-  VERIFICATION_STATUS_HINTS,
-  VERIFICATION_STATUS_LABELS,
   canEditVerificationDocuments,
   hasRequiredDocuments,
 } from "@/lib/companyVerification";
@@ -41,6 +39,15 @@ type Props = {
   readOnly?: boolean;
 };
 
+const HINT_KEYS: Record<CompanyVerificationStatus, string> = {
+  draft: "hintDraft",
+  pending: "hintPending",
+  verified: "hintVerified",
+  rejected: "hintRejected",
+  suspended: "hintSuspended",
+  revoked: "hintRevoked",
+};
+
 export function CompanyVerificationPanel({
   companyId,
   status,
@@ -48,6 +55,7 @@ export function CompanyVerificationPanel({
   profileId,
   readOnly = false,
 }: Props) {
+  const { t } = useTranslation("profile");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documentType, setDocumentType] = useState<CompanyDocumentType>("registration");
 
@@ -61,6 +69,9 @@ export function CompanyVerificationPanel({
   const canEdit = !readOnly && canEditVerificationDocuments(status);
   const uploadedTypes = documents.map((d) => d.document_type);
   const readyToSubmit = hasRequiredDocuments(uploadedTypes);
+
+  const docTypeLabel = (type: CompanyDocumentType) =>
+    t(`verificationPanel.docTypes.${type}` as "verificationPanel.docTypes.registration");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,13 +91,13 @@ export function CompanyVerificationPanel({
         sizeBytes: file.size,
         uploadedBy: profileId,
       });
-      toast.success("Документ загружен");
+      toast.success(t("verificationPanel.uploadSuccess"));
     } catch (err: unknown) {
       await removeStorageFile(storagePath);
       const msg =
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Ошибка сохранения";
+          : t("verificationPanel.saveError");
       toast.error(msg);
     }
   };
@@ -96,24 +107,24 @@ export function CompanyVerificationPanel({
     try {
       await deleteDocument.mutateAsync({ id: docId, companyId, storagePath });
       await removeStorageFile(storagePath);
-      toast.success("Документ удалён");
+      toast.success(t("verificationPanel.deleteSuccess"));
     } catch {
-      toast.error("Не удалось удалить документ");
+      toast.error(t("verificationPanel.deleteError"));
     }
   };
 
   const handleOpen = async (storagePath: string) => {
     const url = await getSignedUrl(storagePath);
     if (url) window.open(url, "_blank", "noopener,noreferrer");
-    else toast.error("Не удалось открыть файл");
+    else toast.error(t("verificationPanel.openError"));
   };
 
   const handleSubmit = async () => {
     try {
       await submitVerification.mutateAsync(companyId);
-      toast.success("Заявка отправлена на проверку");
+      toast.success(t("verificationPanel.submitSuccess"));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Ошибка отправки";
+      const msg = err instanceof Error ? err.message : t("verificationPanel.submitError");
       toast.error(msg);
     }
   };
@@ -134,24 +145,22 @@ export function CompanyVerificationPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {statusIcon}
-          Верификация компании
+          {t("verificationPanel.title")}
         </CardTitle>
-        <CardDescription>
-          Для публикации в каталоге нужны документы компании и одобрение модератора.
-        </CardDescription>
+        <CardDescription>{t("verificationPanel.desc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={status === "verified" ? "default" : "secondary"}>
-            {VERIFICATION_STATUS_LABELS[status]}
+            {t(`company.verification.${status}`)}
           </Badge>
-          <p className="text-sm text-muted-foreground">{VERIFICATION_STATUS_HINTS[status]}</p>
+          <p className="text-sm text-muted-foreground">{t(`company.verification.${HINT_KEYS[status]}`)}</p>
         </div>
 
         {status === "rejected" && rejectionReason ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Причина отклонения</AlertTitle>
+            <AlertTitle>{t("verificationPanel.rejectionTitle")}</AlertTitle>
             <AlertDescription>{rejectionReason}</AlertDescription>
           </Alert>
         ) : null}
@@ -162,9 +171,9 @@ export function CompanyVerificationPanel({
           </div>
         ) : (
           <div className="space-y-3">
-            <Label>Загруженные документы</Label>
+            <Label>{t("verificationPanel.uploadedDocs")}</Label>
             {documents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Документы ещё не загружены.</p>
+              <p className="text-sm text-muted-foreground">{t("verificationPanel.noDocs")}</p>
             ) : (
               <ul className="space-y-2">
                 {documents.map((doc) => (
@@ -176,12 +185,12 @@ export function CompanyVerificationPanel({
                       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="truncate font-medium">{doc.file_name}</span>
                       <span className="text-xs text-muted-foreground shrink-0">
-                        {COMPANY_DOCUMENT_LABELS[doc.document_type]}
+                        {docTypeLabel(doc.document_type as CompanyDocumentType)}
                       </span>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Button type="button" variant="ghost" size="sm" onClick={() => handleOpen(doc.storage_path)}>
-                        Открыть
+                        {t("verificationPanel.open")}
                       </Button>
                       {canEdit ? (
                         <Button
@@ -206,7 +215,7 @@ export function CompanyVerificationPanel({
         {canEdit ? (
           <div className="space-y-4 rounded-lg border border-dashed p-4">
             <div className="space-y-2">
-              <Label>Тип документа</Label>
+              <Label>{t("verificationPanel.docType")}</Label>
               <Select
                 value={documentType}
                 onValueChange={(v) => setDocumentType(v as CompanyDocumentType)}
@@ -215,9 +224,18 @@ export function CompanyVerificationPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(COMPANY_DOCUMENT_LABELS) as CompanyDocumentType[]).map((key) => (
+                  {(
+                    [
+                      "registration",
+                      "representative_id",
+                      "power_of_attorney",
+                      "license",
+                      "product_certificate",
+                      "other",
+                    ] as CompanyDocumentType[]
+                  ).map((key) => (
                     <SelectItem key={key} value={key}>
-                      {COMPANY_DOCUMENT_LABELS[key]}
+                      {docTypeLabel(key)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -242,12 +260,9 @@ export function CompanyVerificationPanel({
               ) : (
                 <Upload className="h-4 w-4 mr-2" />
               )}
-              Загрузить файл (PDF или фото, до 10 МБ)
+              {t("verificationPanel.uploadFile")}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Обязательно: выписка о регистрации и удостоверение представителя. Доверенность — если
-              заявку подаёт не директор.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("verificationPanel.requiredHint")}</p>
             <Button
               type="button"
               className="w-full"
@@ -257,7 +272,7 @@ export function CompanyVerificationPanel({
               {submitVerification.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Отправить на проверку
+              {t("verificationPanel.submit")}
             </Button>
           </div>
         ) : null}

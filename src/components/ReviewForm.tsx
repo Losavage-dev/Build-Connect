@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ interface ReviewFormProps {
 }
 
 const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
+  const { t } = useTranslation("profile");
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -19,7 +21,7 @@ const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error("Выберите оценку");
+      toast.error(t("reviewForm.ratingRequired"));
       return;
     }
 
@@ -29,16 +31,17 @@ const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
         rating,
         comment: comment.trim() || undefined,
       });
-      toast.success("Отзыв отправлен!");
+      toast.success(t("reviewForm.success"));
       setRating(0);
       setComment("");
-    } catch (error: any) {
-      if (error?.message?.includes("unique_review_per_user_company")) {
-        toast.error("Вы уже оставляли отзыв для этой компании");
-      } else if (error?.message?.includes("completed")) {
-        toast.error("Отзыв доступен только после завершённой заявки с компанией");
+    } catch (error: unknown) {
+      const message = error && typeof error === "object" && "message" in error ? String((error as { message: string }).message) : "";
+      if (message.includes("unique_review_per_user_company")) {
+        toast.error(t("reviewForm.duplicate"));
+      } else if (message.includes("completed")) {
+        toast.error(t("reviewForm.needsCompleted"));
       } else {
-        toast.error("Ошибка при отправке отзыва");
+        toast.error(t("reviewForm.error"));
       }
     }
   };
@@ -51,7 +54,7 @@ const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
 
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-      <p className="font-medium">Оставить отзыв</p>
+      <p className="font-medium">{t("reviewForm.title")}</p>
       <div className="flex items-center gap-1">
         {Array.from({ length: 5 }).map((_, i) => (
           <button
@@ -76,7 +79,7 @@ const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
         )}
       </div>
       <Textarea
-        placeholder="Напишите ваш отзыв (необязательно)..."
+        placeholder={t("reviewForm.placeholder")}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
@@ -86,10 +89,10 @@ const ReviewForm = ({ companyId, disabled, blockMessage }: ReviewFormProps) => {
         {createReview.isPending ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Отправка...
+            {t("reviewForm.sending")}
           </>
         ) : (
-          "Отправить отзыв"
+          t("reviewForm.submit")
         )}
       </Button>
     </div>

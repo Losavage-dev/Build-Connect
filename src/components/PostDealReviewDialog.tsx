@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 import {
   Dialog,
@@ -28,6 +29,7 @@ function StarRating({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation("profile");
   const [hover, setHover] = useState(0);
 
   return (
@@ -40,7 +42,7 @@ function StarRating({
           onMouseEnter={() => setHover(star)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(star)}
-          aria-label={`${star} звёзд`}
+          aria-label={t("postDealReview.starsAria", { count: star })}
         >
           <Star
             className={cn(
@@ -63,6 +65,7 @@ export function PostDealReviewDialog({
   companyId,
   companyName,
 }: Props) {
+  const { t } = useTranslation(["profile", "common"]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const createReview = useCreateReview();
@@ -78,7 +81,7 @@ export function PostDealReviewDialog({
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error("Выберите оценку");
+      toast.error(t("postDealReview.ratingRequired"));
       return;
     }
 
@@ -88,15 +91,15 @@ export function PostDealReviewDialog({
         rating,
         comment: comment.trim() || undefined,
       });
-      toast.success("Отзыв о компании отправлен");
+      toast.success(t("postDealReview.success"));
       onOpenChange(false);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "";
       if (msg.includes("unique_review_per_user_company")) {
-        toast.error("Вы уже оставляли отзыв этой компании");
+        toast.error(t("postDealReview.duplicate"));
         onOpenChange(false);
       } else {
-        toast.error("Не удалось отправить отзыв");
+        toast.error(t("postDealReview.error"));
       }
     }
   };
@@ -105,16 +108,14 @@ export function PostDealReviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Оцените компанию «{companyName}»</DialogTitle>
-          <DialogDescription>
-            Сделка завершена. Ваш отзыв поможет другим заказчикам выбрать проверенного подрядчика или поставщика.
-          </DialogDescription>
+          <DialogTitle>{t("postDealReview.title", { name: companyName })}</DialogTitle>
+          <DialogDescription>{t("postDealReview.desc")}</DialogDescription>
         </DialogHeader>
 
         <StarRating value={rating} onChange={setRating} />
 
         <Textarea
-          placeholder="Комментарий (необязательно)"
+          placeholder={t("postDealReview.commentPlaceholder")}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           className="min-h-[100px] rounded-xl resize-none"
@@ -123,10 +124,10 @@ export function PostDealReviewDialog({
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button type="button" variant="ghost" className="rounded-xl" onClick={handleSkip} disabled={createReview.isPending}>
-            Позже
+            {t("postDealReview.later")}
           </Button>
           <Button type="button" className="rounded-xl flex-1" onClick={() => void handleSubmit()} disabled={createReview.isPending}>
-            {createReview.isPending ? "Отправка…" : "Отправить отзыв"}
+            {createReview.isPending ? t("postDealReview.sending") : t("postDealReview.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>
