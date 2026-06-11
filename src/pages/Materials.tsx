@@ -5,11 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/Navbar";
+import { MaterialListingCard } from "@/components/MaterialListingCard";
+import { RecommendedMaterialsSection } from "@/components/RecommendedMaterialsSection";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRecommendedMaterials, useSortedMaterials } from "@/hooks/useRecommendations";
+import { useTrackUserEvent } from "@/hooks/useUserEvents";
+import type { SortMode } from "@/lib/recommendations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCapabilities } from "@/hooks/useCapabilities";
 import { useServices, useMyCompanies, useCreateService } from "@/hooks/useServices";
@@ -27,7 +32,6 @@ import { KAZAKHSTAN_CITIES, MATERIAL_CATALOG, MATERIAL_GROUP_NAMES } from "@/lib
 import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
 import { useMarketProducts, findMarketProductByName } from "@/hooks/useMarketProducts";
 import { useListingPriceInsights } from "@/hooks/useListingPriceInsights";
-import { PriceInsightBadge } from "@/components/PriceInsightBadge";
 
 const CUSTOM_MATERIAL_VALUE = "__custom__";
 
@@ -45,6 +49,10 @@ const Materials = () => {
   const { data: myCompanies } = useMyCompanies(profile?.id);
   const createMaterial = useCreateService();
   const createRequest = useCreateRequest();
+  const { track } = useTrackUserEvent();
+
+  const sortParam = searchParams.get("sort");
+  const [sortMode, setSortMode] = useState<SortMode>(sortParam === "for_you" ? "for_you" : "rating");
 
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState("");
@@ -66,6 +74,9 @@ const Materials = () => {
     setNameFilter(searchParams.get("name") || "all");
     setCompanyFilter(searchParams.get("company") || "all");
     setSearch(searchParams.get("search") ?? "");
+    const urlSort = searchParams.get("sort");
+    if (urlSort === "for_you") setSortMode("for_you");
+    else if (urlSort === "rating" || !urlSort) setSortMode("rating");
   }, [searchParams]);
 
   const companyOptions = useMemo(() => {
@@ -116,6 +127,9 @@ const Materials = () => {
       return blob.includes(q);
     });
   }, [materials, city, groupFilter, nameFilter, companyFilter, search]);
+
+  const sortedMaterials = useSortedMaterials(filteredMaterials, sortMode);
+  const recommendedMaterials = useRecommendedMaterials(materials, 6);
 
   const canCreate = caps.canPublishListing();
 
@@ -282,6 +296,11 @@ const Materials = () => {
       });
       toast.success("Запрос отправлен — откройте чат для переписки.");
       openRequestChat(navigate, req.id);
+      track("order_material", "material", material.id, {
+        material_group: material.material_group || "Прочее",
+        city: material.company_city,
+        company_id: material.company_id,
+      });
     } catch {
       toast.error("Ошибка при отправке запроса");
     }
@@ -452,14 +471,34 @@ const Materials = () => {
         <StaffBrowsingBanner />
 
         <MarketplaceFilterLayout filterContent={filterFields}>
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
             <Input
               placeholder="Поиск по названию, описанию, компании..."
               className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <Tabs
+              value={sortMode}
+              onValueChange={(v) => {
+                const mode = v as SortMode;
+                setSortMode(mode);
+                const next = new URLSearchParams(searchParams);
+                if (mode === "for_you") next.set("sort", "for_you");
+                else next.delete("sort");
+                setSearchParams(next, { replace: true });
+              }}
+            >
+              <TabsList className="rounded-xl">
+                <TabsTrigger value="rating">По дате</TabsTrigger>
+                <TabsTrigger value="for_you">Для вас</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
+
+          {!isLoading && recommendedMaterials.length > 0 && (
+            <RecommendedMaterialsSection items={recommendedMaterials} />
+          )}
 
           {isError ? (
             <QueryErrorBlock error={error} onRetry={() => refetch()} />
@@ -488,67 +527,17 @@ const Materials = () => {
             />
           ) : filteredMaterials.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredMaterials.map((material) => (
-              <Card
+            {sortedMaterials.map((material) => (
+              <MaterialListingCard
                 key={material.id}
-                id={`material-listing-${material.id}`}
-                className="group hover-lift border-2 border-transparent hover:border-primary/20 transition-all duration-300 scroll-mt-24"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className="rounded-lg font-semibold shadow-sm">
-                      {material.material_group || "Прочее"}
-                    </Badge>
-                    <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
-                      <span className="font-semibold text-sm text-primary">
-                        {formatPrice(material.price, material.price_unit)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="font-bold text-lg mb-1.5 mt-3 group-hover:text-primary transition-colors line-clamp-1">
-                    {material.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {material.description}
-                  </p>
-
-                  <PriceInsightBadge insight={priceInsights[material.id]} className="mb-4" />
-
-                  {material.company_name && (
-                    <div className="flex items-center gap-3 pt-3 border-t text-sm text-muted-foreground mb-4">
-                      <Package className="h-4 w-4" />
-                      <Link
-                        to={`/company/${material.company_id}/offerings`}
-                        state={{ from: `${location.pathname}${location.search}` }}
-                        className="font-medium hover:text-primary transition-colors"
-                      >
-                        {material.company_name}
-                      </Link>
-                      {material.company_city && (
-                        <div className="flex items-center gap-1 ml-auto">
-                          <MapPin className="h-3.5 w-3.5" />
-                          <span>{material.company_city}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {!user ? (
-                    <Button asChild className="w-full rounded-xl shadow-sm">
-                      <Link to={authPath(returnTo)}>Войти, чтобы купить</Link>
-                    </Button>
-                  ) : caps.canBuyListing(material.company_id) ? (
-                    <Button
-                      className="w-full rounded-xl shadow-sm"
-                      onClick={() => handleOrder(material)}
-                      disabled={createRequest.isPending}
-                    >
-                      Купить товар
-                    </Button>
-                  ) : null}
-                </CardContent>
-              </Card>
+                material={material}
+                priceInsight={priceInsights[material.id]}
+                returnTo={returnTo}
+                user={user}
+                canBuy={!!user && caps.canBuyListing(material.company_id)}
+                onOrder={handleOrder}
+                orderPending={createRequest.isPending}
+              />
             ))}
             </div>
           ) : null}

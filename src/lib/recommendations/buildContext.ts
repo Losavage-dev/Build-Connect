@@ -36,7 +36,18 @@ export function buildRecommendationContext(input: {
   const myCompanyIds = new Set(input.myCompanyIds ?? []);
   const bidTenderIds = new Set<string>();
   const preferredTenderTypes = new Set<string>();
+  const viewedMaterialIds = new Set<string>();
+  const orderedMaterialIds = new Set<string>();
+  const preferredMaterialGroups = new Set<string>();
+  const interestMaterialGroupCounts = new Map<string, number>();
   const trendingCompanyScores = new Map<string, number>();
+
+  function trackMaterialGroup(group: string | undefined | null) {
+    const g = group?.trim();
+    if (!g) return;
+    preferredMaterialGroups.add(g);
+    interestMaterialGroupCounts.set(g, (interestMaterialGroupCounts.get(g) ?? 0) + 1);
+  }
 
   for (const row of input.trending ?? []) {
     trendingCompanyScores.set(row.company_id, Number(row.request_count) || 0);
@@ -75,6 +86,16 @@ export function buildRecommendationContext(input: {
         addCategory(interestCategories, c);
       }
     }
+    if (ev.entity_type === "material" && ev.event_type === "view_material") {
+      viewedMaterialIds.add(ev.entity_id);
+      const meta = ev.metadata as Record<string, unknown> | undefined;
+      trackMaterialGroup(typeof meta?.material_group === "string" ? meta.material_group : null);
+    }
+    if (ev.entity_type === "material" && ev.event_type === "order_material") {
+      orderedMaterialIds.add(ev.entity_id);
+      const meta = ev.metadata as Record<string, unknown> | undefined;
+      trackMaterialGroup(typeof meta?.material_group === "string" ? meta.material_group : null);
+    }
   }
 
   for (const c of ROLE_CATEGORY_HINTS[input.role ?? "client"] ?? []) {
@@ -93,5 +114,11 @@ export function buildRecommendationContext(input: {
     trendingCompanyScores,
     bidTenderIds,
     preferredTenderTypes,
+    viewedMaterialIds,
+    orderedMaterialIds,
+    preferredMaterialGroups,
+    interestMaterialGroups: [...interestMaterialGroupCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([g]) => g),
   };
 }

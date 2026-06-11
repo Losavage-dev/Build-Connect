@@ -24,6 +24,7 @@ import { openRequestChat } from "@/lib/openRequestChat";
 import { authPath } from "@/lib/authRedirect";
 import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
 import { toast } from "sonner";
+import { useTrackUserEvent } from "@/hooks/useUserEvents";
 
 type LocationState = { from?: string };
 
@@ -59,6 +60,7 @@ const CompanyOfferings = () => {
   const { user, profile } = useAuth();
   const caps = useCapabilities();
   const createRequest = useCreateRequest();
+  const { track } = useTrackUserEvent();
 
   const { data: company, isLoading: companyLoading, isError: companyError, error: companyErr, refetch: refetchCompany } =
     useCompany(id);
@@ -154,6 +156,11 @@ const CompanyOfferings = () => {
       });
       toast.success("Запрос отправлен — откройте чат для переписки.");
       openRequestChat(navigate, req.id);
+      track("order_material", "material", material.id, {
+        material_group: material.material_group || "Прочее",
+        city: company?.city,
+        company_id: material.company_id,
+      });
     } catch {
       toast.error("Ошибка при отправке запроса");
     }

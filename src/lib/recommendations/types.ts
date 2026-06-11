@@ -6,7 +6,9 @@ export type UserEventType =
   | "contact_company"
   | "bid_tender"
   | "like_promo"
-  | "view_promo";
+  | "view_promo"
+  | "view_material"
+  | "order_material";
 
 export type EntityType = "company" | "tender" | "promo_post" | "service" | "material";
 
@@ -33,6 +35,12 @@ export type RecommendationContext = {
   bidTenderIds: Set<string>;
   /** Типы тендеров из просмотров (view_tender metadata) */
   preferredTenderTypes: Set<string>;
+  viewedMaterialIds: Set<string>;
+  orderedMaterialIds: Set<string>;
+  /** Категории материалов из просмотров */
+  preferredMaterialGroups: Set<string>;
+  /** Категории материалов по активности (просмотры и заказы) */
+  interestMaterialGroups: string[];
 };
 
 export type SortMode = "rating" | "for_you";

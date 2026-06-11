@@ -6,15 +6,20 @@ import {
   buildRecommendationContext,
   rankCompanies,
   rankTenders,
+  rankMaterials,
   readGuestEvents,
   getTenderRecommendationReasons,
+  getMaterialRecommendationReasons,
   isTenderRecommendable,
+  isMaterialRecommendable,
   type RecommendationContext,
   type SortMode,
   type TenderRecommendationReason,
+  type MaterialRecommendationReason,
 } from "@/lib/recommendations";
 import type { Company } from "@/hooks/useCompanies";
 import type { Tender } from "@/hooks/useTenders";
+import type { Service } from "@/hooks/useServices";
 import { useUserEvents } from "@/hooks/useUserEvents";
 import type { UserRole } from "@/lib/userRoles";
 
@@ -164,4 +169,36 @@ export function useSortedTenders(tenders: Tender[] | undefined, sortMode: SortMo
     if (sortMode === "for_you") return rankTenders(tenders, ctx);
     return tenders;
   }, [tenders, sortMode, ctx]);
+}
+
+export type RecommendedMaterialItem = {
+  material: Service;
+  reasons: MaterialRecommendationReason[];
+};
+
+/** Рекомендации материалов: профиль + поведение; минимум 2 релевантных позиции. */
+export function useRecommendedMaterials(materials: Service[] | undefined, maxItems = 6): RecommendedMaterialItem[] {
+  const { ctx } = useRecommendationContext();
+  const canShow = useCanShowRecommendations();
+
+  return useMemo(() => {
+    if (!materials?.length || !canShow) return [];
+    const ranked = rankMaterials(materials, ctx).filter((m) => isMaterialRecommendable(m, ctx));
+    if (ranked.length < 2) return [];
+    const cap = Math.min(maxItems, ranked.length);
+    return ranked.slice(0, cap).map((material) => ({
+      material,
+      reasons: getMaterialRecommendationReasons(material, ctx),
+    }));
+  }, [materials, ctx, maxItems, canShow]);
+}
+
+export function useSortedMaterials(materials: Service[] | undefined, sortMode: SortMode) {
+  const { ctx } = useRecommendationContext();
+
+  return useMemo(() => {
+    if (!materials?.length) return [];
+    if (sortMode === "for_you") return rankMaterials(materials, ctx);
+    return materials;
+  }, [materials, sortMode, ctx]);
 }
