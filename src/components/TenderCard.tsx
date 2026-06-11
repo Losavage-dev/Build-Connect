@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Building2, Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
 import { authPath } from "@/lib/authRedirect";
-import { formatTenderDate, formatTenderDateShort } from "@/lib/tenderDisplay";
+import {
+  formatTenderDate,
+  formatTenderDateShort,
+  getTenderDeadlineMaxDays,
+} from "@/lib/tenderDisplay";
 import { TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
 import type { Tender, TenderStatus } from "@/hooks/useTenders";
 import type { useCapabilities } from "@/hooks/useCapabilities";
@@ -20,10 +24,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TenderResponsesPanel } from "@/components/TenderResponsesPanel";
@@ -62,6 +68,7 @@ type Props = {
   caps: Caps;
   returnTo: string;
   myCompanies?: { id: string; name: string }[];
+  existingBidRequestId?: string | null;
   onBid: (tender: Tender, companyId: string, description: string) => void | Promise<void>;
   bidPending: boolean;
   onStatusChange: (tenderId: string, status: TenderStatus) => void;
@@ -75,6 +82,7 @@ export function TenderCard({
   caps,
   returnTo,
   myCompanies,
+  existingBidRequestId,
   onBid,
   bidPending,
   onStatusChange,
@@ -130,20 +138,79 @@ export function TenderCard({
   }, [tender.id, tender.city, tender.tender_type, track]);
   const [bidCompanyId, setBidCompanyId] = useState("");
   const [bidDescription, setBidDescription] = useState("");
+  const [bidPrice, setBidPrice] = useState("");
+  const [bidTimeline, setBidTimeline] = useState("");
+
+  useEffect(() => {
+    if (!bidOpen || bidCompanyId) return;
+    if (myCompanies?.length === 1) {
+      setBidCompanyId(myCompanies[0].id);
+    }
+  }, [bidOpen, bidCompanyId, myCompanies]);
+
+  const resetBidForm = () => {
+    setBidCompanyId("");
+    setBidDescription("");
+    setBidPrice("");
+    setBidTimeline("");
+  };
+
+  const composeBidMessage = (): string => {
+    const parts: string[] = [];
+    const price = bidPrice.trim();
+    const timeline = bidTimeline.trim();
+    const proposal = bidDescription.trim();
+
+    if (price) parts.push(`Предлагаемая цена: ${price} ₸`);
+    if (timeline) parts.push(`Срок выполнения: ${timeline} дн.`);
+    if (proposal) {
+      if (parts.length) parts.push("");
+      parts.push("Условия и комментарий:");
+      parts.push(proposal);
+    }
+    return parts.join("\n");
+  };
 
   const isOwner = profile?.id === tender.client_id;
+  const canSubmitBid = caps.canBidOnTender(tender) && !existingBidRequestId;
+  const hasExistingBid = Boolean(existingBidRequestId);
   const typeLabel =
     TENDER_TYPE_LABELS[(tender.tender_type || "subcontract") as TenderTypeValue] || "Другое";
   const published = formatTenderDateShort(tender.created_at);
   const deadline = formatTenderDate(tender.deadline);
+  const maxBidTimelineDays = getTenderDeadlineMaxDays(tender.deadline);
+  const bidTimelineDays = bidTimeline ? Number.parseInt(bidTimeline, 10) : null;
+  const bidTimelineExceedsDeadline =
+    maxBidTimelineDays !== null &&
+    bidTimelineDays !== null &&
+    !Number.isNaN(bidTimelineDays) &&
+    bidTimelineDays > maxBidTimelineDays;
   const company = tender.poster_company;
+
+  const handleBidTimelineChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (!digits) {
+      setBidTimeline("");
+      return;
+    }
+    const value = Number.parseInt(digits, 10);
+    if (maxBidTimelineDays !== null && value > maxBidTimelineDays) {
+      setBidTimeline(String(maxBidTimelineDays));
+      return;
+    }
+    setBidTimeline(digits);
+  };
 
   const handleBidSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void Promise.resolve(onBid(tender, bidCompanyId, bidDescription)).then(() => {
+    if (!bidCompanyId) return;
+    if (bidTimelineExceedsDeadline) return;
+    const messageBody = composeBidMessage();
+    if (messageBody.length < 10) return;
+
+    void Promise.resolve(onBid(tender, bidCompanyId, messageBody)).then(() => {
       setBidOpen(false);
-      setBidCompanyId("");
-      setBidDescription("");
+      resetBidForm();
     });
   };
 
@@ -157,11 +224,16 @@ export function TenderCard({
 
   const bidForm = (
     <form onSubmit={handleBidSubmit} className="space-y-4">
+      <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground space-y-1">
+        <p className="font-medium text-foreground line-clamp-2">{tender.title}</p>
+        {metaLine ? <p>{metaLine}</p> : null}
+      </div>
+
       <div className="space-y-2">
-        <Label>Ваша компания</Label>
+        <Label htmlFor={`bid-company-${tender.id}`}>Ваша компания</Label>
         <Select value={bidCompanyId} onValueChange={setBidCompanyId} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Компания..." />
+          <SelectTrigger id={`bid-company-${tender.id}`} className="rounded-xl">
+            <SelectValue placeholder="Выберите компанию..." />
           </SelectTrigger>
           <SelectContent>
             {myCompanies?.map((c) => (
@@ -172,18 +244,70 @@ export function TenderCard({
           </SelectContent>
         </Select>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor={`bid-price-${tender.id}`}>Цена (₸)</Label>
+          <Input
+            id={`bid-price-${tender.id}`}
+            type="text"
+            inputMode="numeric"
+            value={bidPrice}
+            onChange={(e) => setBidPrice(e.target.value.replace(/[^\d\s]/g, ""))}
+            placeholder={tender.budget ? `Бюджет: ${formatBudget(tender.budget)}` : "Например: 1 500 000"}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`bid-timeline-${tender.id}`}>Срок (дней)</Label>
+          <Input
+            id={`bid-timeline-${tender.id}`}
+            type="text"
+            inputMode="numeric"
+            value={bidTimeline}
+            onChange={(e) => handleBidTimelineChange(e.target.value)}
+            placeholder={
+              maxBidTimelineDays !== null ? `до ${maxBidTimelineDays} дн.` : "30"
+            }
+            className="rounded-xl"
+            maxLength={4}
+            aria-invalid={bidTimelineExceedsDeadline}
+          />
+          {maxBidTimelineDays !== null ? (
+            <p className="text-xs text-muted-foreground">
+              Не более {maxBidTimelineDays} дн. — дедлайн тендера{deadline ? ` ${deadline}` : ""}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label>Предложение</Label>
+        <Label htmlFor={`bid-proposal-${tender.id}`}>Условия и комментарий</Label>
         <Textarea
+          id={`bid-proposal-${tender.id}`}
           value={bidDescription}
           onChange={(e) => setBidDescription(e.target.value)}
           rows={4}
           required
-          placeholder="Условия, сроки..."
+          minLength={10}
+          maxLength={2000}
+          placeholder="Опишите объём работ, гарантии, что входит в цену..."
+          className="rounded-xl"
         />
+        <p className="text-xs text-muted-foreground">{bidDescription.trim().length} / 2000</p>
       </div>
-      <Button type="submit" className="w-full" disabled={bidPending}>
-        {bidPending ? "Отправка..." : "Отправить"}
+
+      <Button
+        type="submit"
+        className="w-full rounded-xl"
+        disabled={
+          bidPending ||
+          !bidCompanyId ||
+          composeBidMessage().length < 10 ||
+          bidTimelineExceedsDeadline
+        }
+      >
+        {bidPending ? "Отправка..." : "Отправить отклик"}
       </Button>
     </form>
   );
@@ -335,13 +459,19 @@ export function TenderCard({
                   </Button>
                 ) : null}
 
-                {caps.canBidOnTender(tender) ? (
+                {canSubmitBid ? (
                   <Button className="w-full rounded-xl mb-4" onClick={() => setBidOpen(true)}>
                     Откликнуться
                   </Button>
                 ) : null}
 
-                {user && !caps.isStaff && !isOwner && tender.status === "open" && !caps.canBidOnTender(tender) ? (
+                {hasExistingBid ? (
+                  <Button asChild className="w-full rounded-xl mb-4" variant="secondary">
+                    <Link to={`/chat/${existingBidRequestId}`}>Ваш отклик — открыть чат</Link>
+                  </Button>
+                ) : null}
+
+                {user && !caps.isStaff && !isOwner && tender.status === "open" && !canSubmitBid && !hasExistingBid ? (
                   <div className="text-sm text-muted-foreground text-center mb-4 space-y-2">
                     <p>{caps.bidBlockReason(tender) || "Отклик недоступен"}</p>
                     {caps.myCompanyIds.length === 0 && !isOwner ? (
@@ -365,9 +495,15 @@ export function TenderCard({
               </SheetContent>
             </Sheet>
 
-            {caps.canBidOnTender(tender) ? (
+            {canSubmitBid ? (
               <Button size="sm" className="h-8 rounded-lg" onClick={() => setBidOpen(true)}>
                 Откликнуться
+              </Button>
+            ) : null}
+
+            {hasExistingBid ? (
+              <Button size="sm" variant="secondary" className="h-8 rounded-lg" asChild>
+                <Link to={`/chat/${existingBidRequestId}`}>Ваш отклик</Link>
               </Button>
             ) : null}
 
@@ -380,10 +516,16 @@ export function TenderCard({
         </CardContent>
       </Card>
 
-      <Dialog open={bidOpen} onOpenChange={setBidOpen}>
-        <DialogContent>
+      <Dialog open={bidOpen} onOpenChange={(open) => {
+        setBidOpen(open);
+        if (!open) resetBidForm();
+      }}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Отклик на тендер</DialogTitle>
+            <DialogDescription>
+              Укажите цену, срок и условия — заказчик получит отклик и сможет перейти в чат.
+            </DialogDescription>
           </DialogHeader>
           {bidForm}
         </DialogContent>

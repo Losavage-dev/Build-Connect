@@ -14,9 +14,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCapabilities } from "@/hooks/useCapabilities";
 import { useTenders, useCreateTender, useUpdateTender, type Tender, type TenderStatus } from "@/hooks/useTenders";
 import { useCreateRequest } from "@/hooks/useRequests";
+import { useMyActiveTenderBids } from "@/hooks/useMyActiveTenderBids";
 import { buildRequestSource } from "@/lib/requestSource";
 import { openRequestChat } from "@/lib/openRequestChat";
 import { formatSupabaseError } from "@/lib/formatSupabaseError";
+import { DuplicateTenderBidError } from "@/lib/tenderBidGuard";
 import { useMyCompanies } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -56,6 +58,7 @@ const Tenders = () => {
   const updateTender = useUpdateTender();
   const createRequest = useCreateRequest();
   const { data: myCompanies } = useMyCompanies(profile?.id);
+  const { data: activeTenderBids } = useMyActiveTenderBids(profile?.id);
 
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortMode, setSortMode] = useState<SortMode>("for_you");
@@ -250,6 +253,13 @@ const Tenders = () => {
       toast.success("Отклик отправлен — откройте чат для переписки.");
       openRequestChat(navigate, req.id);
     } catch (err) {
+      if (err instanceof DuplicateTenderBidError) {
+        toast.info("Вы уже откликались на этот тендер — открываем переписку.");
+        if (err.existingRequestId !== "existing") {
+          openRequestChat(navigate, err.existingRequestId);
+        }
+        return;
+      }
       console.error("Bid failed:", err);
       toast.error(formatSupabaseError(err, "Ошибка при отправке отклика"));
     }
@@ -455,6 +465,7 @@ const Tenders = () => {
                 caps={caps}
                 returnTo={returnTo}
                 myCompanies={myCompanies}
+                existingBidRequestId={activeTenderBids?.get(tender.id) ?? null}
                 onBid={handleBid}
                 bidPending={createRequest.isPending}
                 onStatusChange={handleStatusChange}
