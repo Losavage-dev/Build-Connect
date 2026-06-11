@@ -1,6 +1,7 @@
 -- =============================================================================
 -- BuildConnect: тестовые аккаунты для проверки ролей и сценариев
 -- Запуск: Supabase Dashboard → SQL Editor → вставить весь файл → Run
+-- Затем: seed_rich_demo_data.sql (расширенный каталог, медиана цен, витрина Steppe)
 -- Пароль у ВСЕХ аккаунтов: 123456
 -- =============================================================================
 
@@ -96,6 +97,51 @@ INSERT INTO auth.users (
   '{"full_name": "Алия Модераторова", "role": "moderator"}',
   '{"provider": "email", "providers": ["email"]}',
   now(), now(), '', '', '', '', '', '', '', false
+),
+-- 9. Подрядчик Тараз (рекомендации по городу)
+(
+  'c8f33161-5ccf-4409-a1fc-224445582c09',
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'contractor3@test.com', crypt('123456', gen_salt('bf')), now(),
+  '{"full_name": "Ерлан Таразов", "role": "contractor"}',
+  '{"provider": "email", "providers": ["email"]}',
+  now(), now(), '', '', '', '', '', '', '', false
+),
+-- 10. Подрядчик Шымкент (фасады / отделка)
+(
+  'c8f33161-5ccf-4409-a1fc-224445582c0a',
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'contractor4@test.com', crypt('123456', gen_salt('bf')), now(),
+  '{"full_name": "Асель Шымкентова", "role": "contractor"}',
+  '{"provider": "email", "providers": ["email"]}',
+  now(), now(), '', '', '', '', '', '', '', false
+),
+-- 11. Заказчик Тараз
+(
+  'c8f33161-5ccf-4409-a1fc-224445582c0b',
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'client-taraz@test.com', crypt('123456', gen_salt('bf')), now(),
+  '{"full_name": "Гульнара Таразова", "role": "client"}',
+  '{"provider": "email", "providers": ["email"]}',
+  now(), now(), '', '', '', '', '', '', '', false
+),
+-- 12. Поставщик №2 (Алматы)
+(
+  'c8f33161-5ccf-4409-a1fc-224445582c0c',
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'supplier2@test.com', crypt('123456', gen_salt('bf')), now(),
+  '{"full_name": "Канат Снабженцев", "role": "supplier"}',
+  '{"provider": "email", "providers": ["email"]}',
+  now(), now(), '', '', '', '', '', '', '', false
+),
+-- 13. Подрядчик кровля (Астана)
+(
+  'c8f33161-5ccf-4409-a1fc-224445582c0d',
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'contractor-roof@test.com', crypt('123456', gen_salt('bf')), now(),
+  '{"full_name": "Серик Кровлев", "role": "contractor"}',
+  '{"provider": "email", "providers": ["email"]}',
+  now(), now(), '', '', '', '', '', '', '', false
 );
 
 INSERT INTO auth.identities (id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at)
@@ -115,40 +161,79 @@ VALUES
 (gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c07', 'contractor-noco@test.com', 'email',
  '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c07", "email": "contractor-noco@test.com"}', now(), now(), now()),
 (gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c08', 'moderator@test.com', 'email',
- '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c08", "email": "moderator@test.com"}', now(), now(), now());
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c08", "email": "moderator@test.com"}', now(), now(), now()),
+(gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c09', 'contractor3@test.com', 'email',
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c09", "email": "contractor3@test.com"}', now(), now(), now()),
+(gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c0a', 'contractor4@test.com', 'email',
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c0a", "email": "contractor4@test.com"}', now(), now(), now()),
+(gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c0b', 'client-taraz@test.com', 'email',
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c0b", "email": "client-taraz@test.com"}', now(), now(), now()),
+(gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c0c', 'supplier2@test.com', 'email',
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c0c", "email": "supplier2@test.com"}', now(), now(), now()),
+(gen_random_uuid(), 'c8f33161-5ccf-4409-a1fc-224445582c0d', 'contractor-roof@test.com', 'email',
+ '{"sub": "c8f33161-5ccf-4409-a1fc-224445582c0d", "email": "contractor-roof@test.com"}', now(), now(), now());
 
 -- Профили (триггер уже создал строки; дополняем контакты)
 UPDATE public.profiles SET
-  first_name = 'Азамат', last_name = 'Заказчиков', phone = '+77011111101', city = 'Астана', role = 'client'
+  first_name = 'Азамат', last_name = 'Сейлханов', phone = '+77011111101', city = 'Астана', role = 'client'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c01';
 
 UPDATE public.profiles SET
-  first_name = 'Берик', last_name = 'Строителев', phone = '+77011111102', city = 'Алматы', role = 'contractor'
+  first_name = 'Берик', last_name = 'Оразов', phone = '+77011111102', city = 'Алматы', role = 'contractor'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c02';
 
 UPDATE public.profiles SET
-  first_name = 'Данияр', last_name = 'Монтажников', phone = '+77011111103', city = 'Астана', role = 'contractor'
+  first_name = 'Данияр', last_name = 'Нуржанов', phone = '+77011111103', city = 'Астана', role = 'contractor'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c03';
 
 UPDATE public.profiles SET
-  first_name = 'Мадина', last_name = 'Поставкина', phone = '+77011111104', city = 'Астана', role = 'supplier'
+  first_name = 'Мадина', last_name = 'Касымова', phone = '+77011111104', city = 'Астана', role = 'supplier'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c04';
 
 UPDATE public.profiles SET
-  first_name = 'Серик', last_name = 'Поставщиков', phone = '+77011111105', city = 'Шымкент', role = 'supplier'
+  first_name = 'Серик', last_name = 'Жумабеков', phone = '+77011111105', city = 'Шымкент', role = 'supplier'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c05';
 
 UPDATE public.profiles SET
-  first_name = 'Айгуль', last_name = 'Заказова', phone = '+77011111106', city = 'Астана', role = 'client'
+  first_name = 'Айгуль', last_name = 'Бекенова', phone = '+77011111106', city = 'Астана', role = 'client'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c06';
 
 UPDATE public.profiles SET
-  first_name = 'Нурлан', last_name = 'Бригадиров', phone = '+77011111107', city = 'Алматы', role = 'contractor'
+  first_name = 'Нурлан', last_name = 'Ахметов', phone = '+77011111107', city = 'Алматы', role = 'contractor'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c07';
 
 UPDATE public.profiles SET
-  first_name = 'Алия', last_name = 'Модераторова', phone = '+77011111108', city = 'Астана', role = 'moderator'
+  first_name = 'Алия', last_name = 'Мусаева', phone = '+77011111108', city = 'Астана', role = 'moderator'
 WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c08';
+
+UPDATE public.profiles SET
+  first_name = 'Ерлан', last_name = 'Тарасов', phone = '+77011111109', city = 'Тараз', role = 'contractor'
+WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c09';
+
+UPDATE public.profiles SET
+  first_name = 'Асель', last_name = 'Рахимова', phone = '+77011111110', city = 'Шымкент', role = 'contractor'
+WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c0a';
+
+UPDATE public.profiles SET
+  first_name = 'Гульнара', last_name = 'Тлеубергенова', phone = '+77011111111', city = 'Тараз', role = 'client'
+WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c0b';
+
+UPDATE public.profiles SET
+  first_name = 'Канат', last_name = 'Елеуов', phone = '+77011111112', city = 'Алматы', role = 'supplier'
+WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c0c';
+
+UPDATE public.profiles SET
+  first_name = 'Серик', last_name = 'Кошкарбаев', phone = '+77011111113', city = 'Астана', role = 'contractor'
+WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c0d';
+
+-- Полные профили: фиксация ФИО/телефона (как после CompleteProfile)
+UPDATE public.profiles
+SET identity_locked_at = COALESCE(identity_locked_at, now())
+WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@test.com')
+  AND trim(coalesce(first_name, '')) <> ''
+  AND trim(coalesce(last_name, '')) <> ''
+  AND trim(coalesce(phone, '')) <> ''
+  AND trim(coalesce(city, '')) <> '';
 
 -- -----------------------------------------------------------------------------
 -- Компании, тендеры, услуги, материалы
@@ -175,24 +260,36 @@ BEGIN
   SELECT id INTO p_clientco FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c06';
   SELECT id INTO p_cont_noco FROM public.profiles WHERE user_id = 'c8f33161-5ccf-4409-a1fc-224445582c07';
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, rating, review_count)
-  VALUES (p_cont1, 'Alatau Build LLP', 'Генеральный подряд', 'Алматы',
-    'Генподряд, коттеджи и коммерция. Тестовая компания подрядчика 1.', true, 0, 0)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  VALUES (
+    p_cont1, 'ТОО «Alatau Build»', 'Генеральный подряд', 'Алматы',
+    'Генеральный подряд, коттеджное и коммерческое строительство. Работаем по Алматы и области с 2014 года. Собственная техника и проектный отдел.',
+    '+77272700101', 'office@alatau-build.kz', 'пр. Абая 150/230, офис 412', true, 'verified', 0, 0, '101240012345'
+  )
   RETURNING id INTO c_alatau;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, rating, review_count)
-  VALUES (p_cont2, 'Astana Monolit', 'Бетонные работы', 'Астана',
-    'Монолит, бетон, фундаменты. Тестовая компания подрядчика 2.', true, 0, 0)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  VALUES (
+    p_cont2, 'ТОО «Astana Monolit»', 'Бетонные работы', 'Астана',
+    'Монолитные работы, бетонные смеси, фундаменты и перекрытия. Собственный БМЗ, сертификаты качества на каждую поставку.',
+    '+77172700202', 'info@astana-monolit.kz', 'ул. Кенесары 45, база', true, 'verified', 0, 0, '101240023456'
+  )
   RETURNING id INTO c_monolit;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, rating, review_count)
-  VALUES (p_sup, 'Steppe Materials', 'Материалы', 'Астана',
-    'Поставка арматуры, бетона, кирпича. Тестовый поставщик.', true, 0, 0)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, website, is_verified, verification_status, rating, review_count, bin)
+  VALUES (
+    p_sup, 'ТОО «Steppe Materials»', 'Материалы', 'Астана',
+    'Оптовый склад стройматериалов: металл, бетон, блоки, кровля, изоляция. Доставка по Астане и области, резка и комплектация объектов.',
+    '+77172700303', 'sales@steppe-materials.kz', 'пр. Туран 55, склад №2', 'https://steppe-materials.kz', true, 'verified', 0, 0, '101240034567'
+  )
   RETURNING id INTO c_materials;
 
-  INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, rating, review_count)
-  VALUES (p_clientco, 'ZakazTech LLP', 'Ремонт', 'Астана',
-    'Компания заказчика с витриной — тест «клиент + компания».', true, 0, 0)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
+  VALUES (
+    p_clientco, 'ТОО «ZakazTech»', 'Ремонт', 'Астана',
+    'Ремонт офисов и коммерческих помещений под ключ. Работаем с корпоративными заказчиками, фиксированная смета.',
+    '+77172700404', 'hello@zakaztech.kz', 'ул. Сыганак 25, офис 8', true, 'verified', 0, 0, '101240045678'
+  )
   RETURNING id INTO c_clientco;
 
   -- Категории компаний (если таблица есть)
@@ -208,32 +305,34 @@ BEGIN
 
   -- Тендеры заказчика (разные статусы)
   INSERT INTO public.tenders (client_id, title, description, budget, deadline, status, city, tender_type) VALUES
-    (p_client, 'Строительство коттеджа 200 кв.м', 'Двухэтажный дом, черновая отделка', 45000000, '2026-09-01', 'open', 'Алматы', 'subcontract'),
-    (p_client, 'Капитальный ремонт офиса', 'Ремонт 150 кв.м под ключ', 15000000, '2026-06-15', 'open', 'Астана', 'subcontract'),
-    (p_client, 'Заливка фундамента', 'Ленточный фундамент под склад', 3000000, '2026-05-20', 'open', 'Шымкент', 'subcontract'),
-    (p_client, 'Фасад торгового центра', 'Утепление и облицовка — исполнитель выбран', 22000000, '2026-04-01', 'in_progress', 'Алматы', 'subcontract'),
-    (p_client, 'Старый склад — демонтаж', 'Тендер закрыт, работы не актуальны', 800000, '2025-12-01', 'closed', 'Астана', 'subcontract');
+    (p_client, 'Строительство коттеджа 200 м² в Алматы', 'Двухэтажный дом, газоблок, мягкая кровля. Нужен подрядчик с опытом ИЖС.', 45000000, '2026-09-01', 'open', 'Алматы', 'subcontract'),
+    (p_client, 'Капитальный ремонт офиса 150 м²', 'Астана, Esil district: демонтаж, электрика, чистовая отделка.', 15000000, '2026-06-15', 'open', 'Астана', 'subcontract'),
+    (p_client, 'Заливка ленточного фундамента под склад', 'Шымкент, индустриальная зона. Бетон М300, ~85 м³.', 3000000, '2026-05-20', 'open', 'Шымкент', 'subcontract'),
+    (p_client, 'Фасад торгового центра — этап 2', 'Утепление и облицовка, исполнитель выбран, контроль качества.', 22000000, '2026-04-01', 'in_progress', 'Алматы', 'subcontract'),
+    (p_client, 'Демонтаж неиспользуемого склада', 'Тендер закрыт — объект передан другому подрядчику.', 800000, '2025-12-01', 'closed', 'Астана', 'subcontract');
 
   -- Тендер поставщика без компании (отклики → в профиль)
   INSERT INTO public.tenders (client_id, title, description, budget, deadline, status, city, tender_type) VALUES
-    (p_sup_noco, 'Нужна доставка цемента на объект', 'Доставка М400, 30 тонн, Астана', 450000, '2026-05-25', 'open', 'Астана', 'logistics');
+    (p_sup_noco, 'Доставка цемента М400 на объект', '30 тонн, разгрузка манипулятором, Астана.', 450000, '2026-05-25', 'open', 'Астана', 'logistics');
 
   -- Тендер поставщика с компанией
   INSERT INTO public.tenders (client_id, title, description, budget, deadline, status, city, tender_type) VALUES
-    (p_sup, 'Ищем бригаду для разгрузки склада', 'Разгрузка и складирование материалов', 350000, '2026-05-30', 'open', 'Астана', 'subcontract');
+    (p_sup, 'Бригада на разгрузку и складирование', 'Склад Steppe Materials, смена 2–3 дня.', 350000, '2026-05-30', 'open', 'Астана', 'subcontract');
 
-  -- Услуги подрядчиков
+  -- Услуги подрядчиков (базовая витрина; расширение — seed_rich_demo_data.sql)
   INSERT INTO public.services (company_id, title, description, price, category) VALUES
-    (c_alatau, 'Возведение стен из газоблока', 'Кладка с соблюдением технологии', 8000, 'Кладка'),
-    (c_alatau, 'Отделка фасада травертином', 'Натуральный камень', 12000, 'Фасады'),
-    (c_monolit, 'Заливка бетона М300', 'Свой узел, доставка миксером', 25000, 'Бетонные работы'),
-    (c_clientco, 'Мелкий ремонт офиса', 'Косметический ремонт под ключ', 1500000, 'Ремонт');
+    (c_alatau, 'Возведение стен из газоблока', 'Кладка D500, перевязка, armopoyas', 8500, 'Кладка'),
+    (c_alatau, 'Отделка фасада травертином', 'Натуральный камень, кляммерная система', 12500, 'Фасадные работы'),
+    (c_alatau, 'Монтаж кровли из металлочерепицы', 'Под ключ с утеплением', 7200, 'Кровельные работы'),
+    (c_monolit, 'Заливка бетона М300', 'Собственный БМЗ, насос, виброуплотнение', 26500, 'Бетонные работы'),
+    (c_monolit, 'Армирование монолитной плиты', 'Вязка каркаса по проекту', 4800, 'Бетонные работы'),
+    (c_clientco, 'Косметический ремонт офиса', 'Покраска, замена напольного покрытия', 1550000, 'Ремонт');
 
-  -- Материалы поставщика
+  -- Материалы поставщика (расширяются в seed_rich_demo_data.sql)
   INSERT INTO public.services (company_id, title, description, price, category, material_group) VALUES
-    (c_materials, 'Арматура A500C', 'Диаметры 10–18 мм, резка в размер', 420000, 'Материалы', 'Металлопрокат'),
-    (c_materials, 'Бетон М300', 'Доставка миксером по Астане', 28000, 'Материалы', 'Бетон и растворы'),
-    (c_materials, 'Газобетонный блок', 'D500, поддоны', 185000, 'Материалы', 'Кирпич и блоки');
+    (c_materials, 'Арматура A500C', '10–18 мм, сертификат, резка в размер', 425000, 'Материалы', 'Металлопрокат'),
+    (c_materials, 'Бетон М300', 'Доставка миксером по Астане, мин. 7 м³', 28500, 'Материалы', 'Бетон и растворы'),
+    (c_materials, 'Газобетонный блок D500', 'Поддон 1.8 м³, разгрузка', 188000, 'Материалы', 'Кирпич и блоки');
 
   -- Завершённые заявки (в проде отзыв возможен только при status = completed и client_id = автор отзыва)
   INSERT INTO public.requests (client_id, company_id, title, description, status) VALUES
@@ -250,17 +349,17 @@ BEGIN
     (p_cont1, c_clientco, 'Доработки по договору', 'Гарантийный осмотр пройден', 'completed'),
     (p_sup, c_clientco, 'Материалы для ремонта', 'Поставка закрыта', 'completed');
 
-  -- Первое сообщение в чате = текст заявки (как при создании через UI)
+  -- Первое сообщение в чате — как buildFirstChatMessage (текст + блок «Источник»)
   INSERT INTO public.messages (request_id, sender_id, content, is_read)
   SELECT
     r.id,
     r.client_id,
-    CASE
-      WHEN coalesce(trim(r.description), '') <> '' THEN trim(r.title) || E'\n\n' || trim(r.description)
-      ELSE trim(r.title)
-    END,
+    trim(coalesce(nullif(trim(r.description), ''), trim(r.title)))
+      || E'\n\n⟦buildconnect:context⟧\n'
+      || 'Источник: Каталог: «' || c.name || '»',
     true
   FROM public.requests r
+  INNER JOIN public.companies c ON c.id = r.company_id
   WHERE r.company_id IN (c_alatau, c_monolit, c_materials, c_clientco)
     AND r.status = 'completed'
     AND NOT EXISTS (SELECT 1 FROM public.messages m WHERE m.request_id = r.id);
@@ -297,16 +396,37 @@ INSERT INTO public.messages (request_id, sender_id, content, is_read)
 SELECT
   r.id,
   r.client_id,
-  CASE
-    WHEN coalesce(trim(r.description), '') <> '' THEN trim(r.title) || E'\n\n' || trim(r.description)
-    ELSE trim(r.title)
-  END,
+  trim(coalesce(nullif(trim(r.description), ''), trim(r.title)))
+    || E'\n\n⟦buildconnect:context⟧\n'
+    || 'Источник: Каталог: «' || c.name || '»',
   true
 FROM public.requests r
 INNER JOIN public.companies c ON c.id = r.company_id
 WHERE r.status = 'completed'
-  AND c.name IN ('Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
+  AND c.name IN ('ТОО «Alatau Build»', 'ТОО «Astana Monolit»', 'ТОО «Steppe Materials»', 'ТОО «ZakazTech»',
+    'Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
   AND NOT EXISTS (SELECT 1 FROM public.messages m WHERE m.request_id = r.id);
+
+-- Привести старые demo-сообщения к формату UI (если патч уже запускали раньше)
+UPDATE public.messages m
+SET content =
+  trim(coalesce(nullif(trim(r.description), ''), trim(r.title)))
+  || E'\n\n⟦buildconnect:context⟧\n'
+  || 'Источник: Каталог: «' || c.name || '»'
+FROM public.requests r
+INNER JOIN public.companies c ON c.id = r.company_id
+WHERE m.request_id = r.id
+  AND m.sender_id = r.client_id
+  AND r.status = 'completed'
+  AND c.name IN ('ТОО «Alatau Build»', 'ТОО «Astana Monolit»', 'ТОО «Steppe Materials»', 'ТОО «ZakazTech»',
+    'Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
+  AND m.content NOT LIKE '%⟦buildconnect:context⟧%'
+  AND m.id = (
+    SELECT m2.id FROM public.messages m2
+    WHERE m2.request_id = r.id
+    ORDER BY m2.created_at ASC
+    LIMIT 1
+  );
 
 UPDATE public.notifications n
 SET read_at = now()
@@ -314,7 +434,8 @@ FROM public.requests r
 INNER JOIN public.companies c ON c.id = r.company_id
 WHERE n.request_id = r.id
   AND r.status = 'completed'
-  AND c.name IN ('Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
+  AND c.name IN ('ТОО «Alatau Build»', 'ТОО «Astana Monolit»', 'ТОО «Steppe Materials»', 'ТОО «ZakazTech»',
+    'Alatau Build LLP', 'Astana Monolit', 'Steppe Materials', 'ZakazTech LLP')
   AND n.read_at IS NULL;
 
 -- Города у любых тендеров без city

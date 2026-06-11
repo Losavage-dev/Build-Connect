@@ -122,6 +122,22 @@ DECLARE
   base numeric;
   i integer;
   cities text[] := ARRAY['Алматы', 'Астана', 'Шымкент', 'Караганда', 'Актobe'];
+  demo_addresses text[] := ARRAY[
+    'ул. Райымбека 180, склад №1',
+    'пр. Туран 55, склад №2',
+    'пр. Байdibek bi 78',
+    'ул. Бухар жырау 52',
+    'пр. Абая 14, база'
+  ];
+  demo_phones text[] := ARRAY['+77022000001', '+77022000002', '+77022000003', '+77022000004', '+77022000005'];
+  demo_emails text[] := ARRAY[
+    'warehouse-almaty@demo-supply.kz',
+    'warehouse-astana@demo-supply.kz',
+    'warehouse-shymkent@demo-supply.kz',
+    'warehouse-karaganda@demo-supply.kz',
+    'warehouse-aktobe@demo-supply.kz'
+  ];
+  demo_bins text[] := ARRAY['990002020001', '990002010001', '990002030001', '990002040001', '990002050001'];
   profiles uuid[] := ARRAY[
     NULL::uuid, NULL::uuid, NULL::uuid, NULL::uuid, NULL::uuid
   ];
@@ -137,17 +153,21 @@ BEGIN
   profiles := ARRAY[p_almaty, p_astana, p_shymkent, p_karaganda, p_aktobe];
 
   FOR i IN 1..5 LOOP
-    INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, verification_status, rating, review_count)
+    INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
     VALUES (
       profiles[i],
       'Demo Supply ' || cities[i],
       'Материалы',
       cities[i],
-      'Демо-поставщик для сравнения цен на BuildConnect.',
+      'Демо-поставщик для сравнения цен на BuildConnect. Самовывоз и доставка по ' || cities[i] || '.',
+      demo_phones[i],
+      demo_emails[i],
+      demo_addresses[i],
       true,
       'verified',
       0,
-      0
+      0,
+      demo_bins[i]
     )
     RETURNING id INTO c_id;
 
@@ -157,10 +177,12 @@ BEGIN
   END LOOP;
 
   -- Вторая компания в Алматы (больше объявлений в одном городе)
-  INSERT INTO public.companies (owner_id, name, category, city, description, is_verified, verification_status, rating, review_count)
+  INSERT INTO public.companies (owner_id, name, category, city, description, phone, email, address, is_verified, verification_status, rating, review_count, bin)
   VALUES (
     p_almaty, 'Demo Supply Almaty 2', 'Материалы', 'Алматы',
-    'Второй демо-склад в Алматы.', true, 'verified', 0, 0
+    'Второй демо-склад в Алматы. Расширенный ассортимент для сравнения цен.',
+    '+77022000006', 'warehouse-almaty2@demo-supply.kz', 'ул. Жандосова 45, ангар 2',
+    true, 'verified', 0, 0, '990002020002'
   )
   RETURNING id INTO c_id;
 
