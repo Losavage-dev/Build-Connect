@@ -303,6 +303,12 @@ const CompanyProfile = () => {
             <Card className="rounded-2xl border-border/60 bg-card/90 backdrop-blur">
               <CardHeader>
                 <CardTitle>Портфолио</CardTitle>
+                {profile && company.owner_id === profile.id ? (
+                  <CardDescription>
+                    Проекты редактируются во вкладке «Проекты» в управлении компанией — здесь они видны всем
+                    посетителям.
+                  </CardDescription>
+                ) : null}
               </CardHeader>
               <CardContent>
                 {projects.length > 0 ? (
@@ -310,6 +316,19 @@ const CompanyProfile = () => {
                     {projects.map((project: any) => (
                       <PortfolioProjectCard key={project.id} project={project} />
                     ))}
+                  </div>
+                ) : profile && company.owner_id === profile.id ? (
+                  <div className="rounded-xl border border-dashed bg-muted/30 p-6 text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Портфолио пустое. Добавьте выполненные объекты: название, описание, фото — во вкладке
+                      «Проекты» в управлении компанией.
+                    </p>
+                    <Button asChild variant="default" className="rounded-xl">
+                      <Link to={`/company/${id}/manage?tab=projects`}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Управление → Проекты
+                      </Link>
+                    </Button>
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-6">Проекты пока не добавлены</p>
