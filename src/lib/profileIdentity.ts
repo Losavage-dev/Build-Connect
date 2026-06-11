@@ -42,6 +42,13 @@ export function isIdentityNameEditable(
   return canCorrectIdentityName(profile, now);
 }
 
+/** Телефон можно задать до фиксации профиля; после — только через поддержку. */
+export function isIdentityPhoneEditable(profile: ProfileIdentityFields | null | undefined): boolean {
+  if (!profile) return false;
+  if (profile.role === "moderator" || profile.role === "admin") return true;
+  return !isIdentityLocked(profile);
+}
+
 export function identityCorrectionExpiresAt(profile: ProfileIdentityFields | null | undefined): Date | null {
   if (!profile?.created_at) return null;
   const created = new Date(profile.created_at);

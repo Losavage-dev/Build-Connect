@@ -10,9 +10,10 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { KAZAKHSTAN_CITIES } from "@/lib/constants";
 import { isProfileComplete } from "@/lib/profile";
-import { isIdentityNameEditable } from "@/lib/profileIdentity";
+import { isIdentityNameEditable, isIdentityPhoneEditable } from "@/lib/profileIdentity";
 import { hasCompletedOnboardingIntent, setOnboardingIntent } from "@/lib/onboarding";
 import { completeProfileSchema, firstZodError } from "@/lib/validation";
+import { formatKzPhoneDisplay, normalizeKzPhone } from "@/lib/phone";
 import { toast } from "sonner";
 
 type Step = "profile" | "intent";
@@ -29,6 +30,7 @@ const CompleteProfile = () => {
   const syncedProfileIdRef = useRef<string | null>(null);
 
   const namesEditable = isIdentityNameEditable(profile);
+  const phoneEditable = isIdentityPhoneEditable(profile);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -45,7 +47,7 @@ const CompleteProfile = () => {
     syncedProfileIdRef.current = profile.id;
     setFirstName((profile.first_name ?? "").trim());
     setLastName((profile.last_name ?? "").trim());
-    setPhone((profile.phone ?? "").trim());
+    setPhone(normalizeKzPhone((profile.phone ?? "").trim()) ?? (profile.phone ?? "").trim());
     setCity((profile.city ?? "").trim());
   }, [profile]);
 
@@ -60,18 +62,38 @@ const CompleteProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !city.trim()) {
-      toast.error("Заполните все обязательные поля");
+
+    const parsed = completeProfileSchema.safeParse({
+      firstName: namesEditable ? firstName : (profile?.first_name ?? "").trim(),
+      lastName: namesEditable ? lastName : (profile?.last_name ?? "").trim(),
+      phone,
+      city,
+    });
+    const err = firstZodError(parsed);
+    if (err) {
+      toast.error(err);
       return;
     }
+    if (!parsed.success) return;
+
     setSaving(true);
     try {
-      await updateProfile({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        phone: phone.trim(),
-        city: city.trim(),
-      });
+      const payload: {
+        first_name?: string;
+        last_name?: string;
+        phone?: string;
+        city: string;
+      } = { city: parsed.data.city };
+
+      if (namesEditable) {
+        payload.first_name = parsed.data.firstName;
+        payload.last_name = parsed.data.lastName;
+      }
+      if (phoneEditable) {
+        payload.phone = parsed.data.phone;
+      }
+
+      await updateProfile(payload);
       setStep("intent");
     } catch {
       // toast в контексте
@@ -121,11 +143,23 @@ const CompleteProfile = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fn">Имя *</Label>
-                    <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                    <Input
+                      id="fn"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      disabled={!namesEditable}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="ln">Фамилия *</Label>
-                    <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                    <Input
+                      id="ln"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      disabled={!namesEditable}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -133,11 +167,16 @@ const CompleteProfile = () => {
                   <Input
                     id="ph"
                     type="tel"
-                    placeholder="+7 700 000 00 00"
-                    value={phone}
+                    placeholder="+7 700 123 45 67"
+                    value={phoneEditable ? phone : formatKzPhoneDisplay(phone)}
                     onChange={(e) => setPhone(e.target.value)}
                     required
+                    disabled={!phoneEditable}
+                    maxLength={18}
                   />
+                  {phoneEditable ? (
+                    <p className="text-xs text-muted-foreground">10 цифр (7XX…) или формат +7 …</p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label>Город *</Label>

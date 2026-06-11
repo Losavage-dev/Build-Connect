@@ -3,6 +3,7 @@ export {
   registerSchema,
   completeProfileSchema,
   profileSettingsSchema,
+  parseProfileSettingsSave,
   personNameSchema,
   createCompanySchema,
   reportSchema,
