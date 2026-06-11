@@ -4,7 +4,6 @@ import { scoreMaterial } from "./scoreMaterial";
 
 export type MaterialRecommendationReason = {
   id: string;
-  label: string;
 };
 
 const BUYER_ROLES = new Set(["client", "contractor"]);
@@ -25,27 +24,27 @@ export function getMaterialRecommendationReasons(
   const group = material.material_group || "Прочее";
 
   if (ctx.city && material.company_city === ctx.city) {
-    reasons.push({ id: "city", label: "В вашем городе" });
+    reasons.push({ id: "city" });
   }
 
   if (ctx.role && BUYER_ROLES.has(ctx.role)) {
-    reasons.push({ id: "role", label: "Для закупок" });
+    reasons.push({ id: "role" });
   }
 
   if (ctx.preferredMaterialGroups.has(group) || ctx.interestMaterialGroups.includes(group)) {
-    reasons.push({ id: "group", label: "Похожая категория" });
+    reasons.push({ id: "group" });
   }
 
   if (ctx.viewedCompanyIds.has(material.company_id)) {
-    reasons.push({ id: "company", label: "Компания из ваших просмотров" });
+    reasons.push({ id: "company" });
   }
 
   if (!ctx.viewedMaterialIds.has(material.id)) {
-    reasons.push({ id: "new", label: "Новый для вас" });
+    reasons.push({ id: "new" });
   }
 
   if (material.price > 0) {
-    reasons.push({ id: "price", label: "Цена указана" });
+    reasons.push({ id: "price" });
   }
 
   return reasons.slice(0, 3);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { MapPin, Package, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,13 +30,18 @@ import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
 import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
 import { KAZAKHSTAN_CITIES, MATERIAL_CATALOG, MATERIAL_GROUP_NAMES } from "@/lib/constants";
-import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
 import { useMarketProducts, findMarketProductByName } from "@/hooks/useMarketProducts";
 import { useListingPriceInsights } from "@/hooks/useListingPriceInsights";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 const CUSTOM_MATERIAL_VALUE = "__custom__";
+const OTHER_GROUP = "Прочее";
 
 const Materials = () => {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatCurrency, compareStrings } = useAppFormat();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -84,8 +90,8 @@ const Materials = () => {
     for (const m of materials || []) {
       if (m.company_id && m.company_name) map.set(m.company_id, m.company_name);
     }
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ru"));
-  }, [materials]);
+    return [...map.entries()].sort((a, b) => compareStrings(a[1], b[1]));
+  }, [materials, compareStrings]);
 
   const nameOptionsForFilter = useMemo(() => {
     const fromCatalog =
@@ -93,10 +99,10 @@ const Materials = () => {
         ? Object.values(MATERIAL_CATALOG).flat()
         : MATERIAL_CATALOG[groupFilter] || [];
     const fromDb = (materials || [])
-      .filter((m) => groupFilter === "all" || (m.material_group || "Прочее") === groupFilter)
+      .filter((m) => groupFilter === "all" || (m.material_group || OTHER_GROUP) === groupFilter)
       .map((m) => m.title);
-    return [...new Set([...fromCatalog, ...fromDb])].sort((a, b) => a.localeCompare(b, "ru"));
-  }, [groupFilter, materials]);
+    return [...new Set([...fromCatalog, ...fromDb])].sort((a, b) => compareStrings(a, b));
+  }, [groupFilter, materials, compareStrings]);
 
   const nameOptionsForCreate = materialGroup ? MATERIAL_CATALOG[materialGroup] || [] : [];
 
@@ -107,10 +113,10 @@ const Materials = () => {
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
     }, 2600);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [searchParams, materials]);
 
   const filteredMaterials = useMemo(() => {
@@ -118,7 +124,7 @@ const Materials = () => {
     const q = search.trim().toLowerCase();
     return materials.filter((m) => {
       if (city !== "all" && (m.company_city || "") !== city) return false;
-      const group = m.material_group || "Прочее";
+      const group = m.material_group || OTHER_GROUP;
       if (groupFilter !== "all" && group !== groupFilter) return false;
       if (nameFilter !== "all" && m.title !== nameFilter) return false;
       if (companyFilter !== "all" && m.company_id !== companyFilter) return false;
@@ -153,7 +159,7 @@ const Materials = () => {
   const filterFields = (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Категория материала</label>
+        <label className="text-sm font-medium mb-2 block">{t("materials.materialCategory")}</label>
         <Select
           value={groupFilter}
           onValueChange={(v) => {
@@ -162,43 +168,43 @@ const Materials = () => {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Категория" />
+            <SelectValue placeholder={t("common:category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все категории</SelectItem>
+            <SelectItem value="all">{t("common:allCategories")}</SelectItem>
             {MATERIAL_GROUP_NAMES.map((g) => (
               <SelectItem key={g} value={g}>
-                {g}
+                {catalogLabel(g)}
               </SelectItem>
             ))}
-            <SelectItem value="Прочее">Прочее</SelectItem>
+            <SelectItem value={OTHER_GROUP}>{catalogLabel(OTHER_GROUP)}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Наименование</label>
+        <label className="text-sm font-medium mb-2 block">{t("materials.materialName")}</label>
         <Select value={nameFilter} onValueChange={setNameFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Материал" />
+            <SelectValue placeholder={t("materials.materialName")} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            <SelectItem value="all">Все наименования</SelectItem>
+            <SelectItem value="all">{t("materials.allNames")}</SelectItem>
             {nameOptionsForFilter.map((n) => (
               <SelectItem key={n} value={n}>
-                {n}
+                {catalogLabel(n)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Компания</label>
+        <label className="text-sm font-medium mb-2 block">{t("materials.company")}</label>
         <Select value={companyFilter} onValueChange={setCompanyFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Компания" />
+            <SelectValue placeholder={t("materials.company")} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            <SelectItem value="all">Все компании</SelectItem>
+            <SelectItem value="all">{t("materials.allCompanies")}</SelectItem>
             {companyOptions.map(([cid, name]) => (
               <SelectItem key={cid} value={cid}>
                 {name}
@@ -208,13 +214,13 @@ const Materials = () => {
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Город</label>
+        <label className="text-sm font-medium mb-2 block">{t("common:city")}</label>
         <Select value={city} onValueChange={setCity}>
           <SelectTrigger>
-            <SelectValue placeholder="Город" />
+            <SelectValue placeholder={t("common:city")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все города</SelectItem>
+            <SelectItem value="all">{t("common:allCities")}</SelectItem>
             {KAZAKHSTAN_CITIES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -224,7 +230,7 @@ const Materials = () => {
         </Select>
       </div>
       <Button variant="outline" className="w-full" onClick={handleResetFilters}>
-        Сбросить фильтры
+        {t("common:resetFilters")}
       </Button>
     </div>
   );
@@ -232,17 +238,17 @@ const Materials = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) {
-      toast.error("Выберите компанию");
+      toast.error(t("materials.selectCompany"));
       return;
     }
     if (!materialGroup) {
-      toast.error("Выберите категорию материала");
+      toast.error(t("materials.selectMaterialCategory"));
       return;
     }
     const resolvedTitle =
       materialName === CUSTOM_MATERIAL_VALUE ? customTitle.trim() : materialName;
     if (!resolvedTitle) {
-      toast.error("Укажите наименование материала");
+      toast.error(t("materials.specifyMaterialName"));
       return;
     }
     try {
@@ -260,7 +266,7 @@ const Materials = () => {
         market_product_id: matchedProduct?.id ?? null,
         price_unit: matchedProduct?.price_unit ?? null,
       });
-      toast.success("Товар успешно добавлен!");
+      toast.success(t("materials.createSuccess"));
       setOpen(false);
       setMaterialGroup("");
       setMaterialName("");
@@ -269,23 +275,30 @@ const Materials = () => {
       setPrice("");
       setCompanyId("");
     } catch {
-      toast.error("Ошибка при добавлении товара");
+      toast.error(t("materials.createError"));
     }
   };
 
-  const handleOrder = async (material: any) => {
+  const handleOrder = async (material: {
+    id: string;
+    title: string;
+    price: number;
+    company_id: string;
+    material_group?: string | null;
+    company_city?: string | null;
+  }) => {
     if (!user || !profile) {
-      toast.error("Войдите, чтобы сделать заказ");
+      toast.error(t("common:loginToOrder"));
       navigate(authPath(returnTo));
       return;
     }
 
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const msg = `Заинтересован в покупке "${material.title}" по цене ${formatPrice(material.price)}`;
+      const msg = t("marketplace:orders.materialMsg", { title: material.title, price: formatCurrency(material.price) });
       const req = await createRequest.mutateAsync({
         company_id: material.company_id,
-        title: `Заказ материала: ${material.title}`,
+        title: t("marketplace:orders.materialTitle", { title: material.title }),
         description: msg,
         initial_message: msg,
         source: buildRequestSource({
@@ -294,28 +307,16 @@ const Materials = () => {
           url: `${origin}/materials?listing=${encodeURIComponent(material.id)}`,
         }),
       });
-      toast.success("Запрос отправлен — откройте чат для переписки.");
+      toast.success(t("materials.orderSuccess"));
       openRequestChat(navigate, req.id);
       track("order_material", "material", material.id, {
-        material_group: material.material_group || "Прочее",
+        material_group: material.material_group || OTHER_GROUP,
         city: material.company_city,
         company_id: material.company_id,
       });
     } catch {
-      toast.error("Ошибка при отправке запроса");
+      toast.error(t("materials.orderError"));
     }
-  };
-
-  const formatPrice = (price: number, unit?: string | null) => {
-    const base = new Intl.NumberFormat("ru-KZ", {
-      style: "currency",
-      currency: "KZT",
-      maximumFractionDigits: 0,
-    }).format(price);
-    if (unit && unit in PRICE_UNIT_LABELS) {
-      return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
-    }
-    return base;
   };
 
   const MaterialSkeleton = () => (
@@ -337,13 +338,16 @@ const Materials = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Материалы"
+        eyebrow={t("materials.eyebrow")}
         eyebrowIcon={Package}
-        title="Каталог строительных материалов"
+        title={t("materials.title")}
         description={
           isLoading
-            ? "Загрузка…"
-            : `${filteredMaterials.length} из ${materials?.length || 0} товаров (с учётом фильтров)`
+            ? t("common:loading")
+            : t("materials.found", {
+                filtered: filteredMaterials.length,
+                total: materials?.length || 0,
+              })
         }
         compact
         actions={
@@ -352,19 +356,19 @@ const Materials = () => {
               <DialogTrigger asChild>
                 <Button className="rounded-xl btn-glow font-semibold gap-2">
                   <Plus className="h-4 w-4" />
-                  Выставить товар
+                  {t("materials.addProduct")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle>Новый товар</DialogTitle>
+                  <DialogTitle>{t("materials.newProduct")}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Компания</Label>
+                    <Label>{t("materials.company")}</Label>
                     <Select value={companyId} onValueChange={setCompanyId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите компанию" />
+                        <SelectValue placeholder={t("materials.selectCompany")} />
                       </SelectTrigger>
                       <SelectContent>
                         {myCompanies?.map((c) => (
@@ -376,7 +380,7 @@ const Materials = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Категория материала</Label>
+                    <Label>{t("materials.materialCategory")}</Label>
                     <Select
                       value={materialGroup}
                       onValueChange={(v) => {
@@ -387,19 +391,19 @@ const Materials = () => {
                       required
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите категорию" />
+                        <SelectValue placeholder={t("materials.selectCategory")} />
                       </SelectTrigger>
                       <SelectContent>
                         {MATERIAL_GROUP_NAMES.map((g) => (
                           <SelectItem key={g} value={g}>
-                            {g}
+                            {catalogLabel(g)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Наименование</Label>
+                    <Label>{t("materials.materialName")}</Label>
                     <Select
                       value={materialName}
                       onValueChange={setMaterialName}
@@ -407,24 +411,32 @@ const Materials = () => {
                       required
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={materialGroup ? "Выберите материал" : "Сначала категория"} />
+                        <SelectValue
+                          placeholder={
+                            materialGroup
+                              ? t("materials.selectMaterial")
+                              : t("materials.selectCategoryFirst")
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent className="max-h-64">
                         {nameOptionsForCreate.map((n) => (
                           <SelectItem key={n} value={n}>
-                            {n}
+                            {catalogLabel(n)}
                           </SelectItem>
                         ))}
-                        <SelectItem value={CUSTOM_MATERIAL_VALUE}>Другое (своё название)</SelectItem>
+                        <SelectItem value={CUSTOM_MATERIAL_VALUE}>
+                          {t("materials.customName")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   {materialName === CUSTOM_MATERIAL_VALUE ? (
                     <div className="space-y-2">
-                      <Label htmlFor="mat-custom-title">Своё наименование</Label>
+                      <Label htmlFor="mat-custom-title">{t("materials.customNameLabel")}</Label>
                       <Input
                         id="mat-custom-title"
-                        placeholder="Например: Арматура 12 мм, бухта"
+                        placeholder={t("materials.customNamePlaceholder")}
                         value={customTitle}
                         onChange={(e) => setCustomTitle(e.target.value)}
                         required
@@ -432,10 +444,10 @@ const Materials = () => {
                     </div>
                   ) : null}
                   <div className="space-y-2">
-                    <Label htmlFor="mat-desc">Описание</Label>
+                    <Label htmlFor="mat-desc">{t("materials.description")}</Label>
                     <Textarea
                       id="mat-desc"
-                      placeholder="Характеристики, размеры, наличие..."
+                      placeholder={t("materials.descriptionPlaceholder")}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       required
@@ -443,11 +455,11 @@ const Materials = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="mat-price">Цена (₸)</Label>
+                    <Label htmlFor="mat-price">{t("materials.price")}</Label>
                     <Input
                       id="mat-price"
                       type="number"
-                      placeholder="120000"
+                      placeholder={t("materials.pricePlaceholder")}
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       required
@@ -458,7 +470,7 @@ const Materials = () => {
                     className="w-full rounded-xl"
                     disabled={createMaterial.isPending}
                   >
-                    {createMaterial.isPending ? "Добавление..." : "Опубликовать товар"}
+                    {createMaterial.isPending ? t("common:adding") : t("materials.publishProduct")}
                   </Button>
                 </form>
               </DialogContent>
@@ -473,7 +485,7 @@ const Materials = () => {
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
             <Input
-              placeholder="Поиск по названию, описанию, компании..."
+              placeholder={t("materials.searchPlaceholder")}
               className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -490,8 +502,8 @@ const Materials = () => {
               }}
             >
               <TabsList className="rounded-xl">
-                <TabsTrigger value="rating">По дате</TabsTrigger>
-                <TabsTrigger value="for_you">Для вас</TabsTrigger>
+                <TabsTrigger value="rating">{t("common:sortByDate")}</TabsTrigger>
+                <TabsTrigger value="for_you">{t("common:forYou")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -511,17 +523,17 @@ const Materials = () => {
           ) : materials?.length === 0 ? (
             <EmptyState
               icon={Package}
-              title="Товаров пока нет"
-              description="Поставщики ещё не выставили товары в эту категорию"
+              title={t("materials.emptyTitle")}
+              description={t("materials.emptyDesc")}
             />
           ) : materials && materials.length > 0 && filteredMaterials.length === 0 ? (
             <EmptyState
               icon={Package}
-              title="Ничего не найдено"
-              description="Попробуйте изменить фильтры или поиск"
+              title={t("common:notFound")}
+              description={t("common:changeFiltersOrSearch")}
               action={
                 <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
-                  Сбросить фильтры
+                  {t("common:resetFilters")}
                 </Button>
               }
             />
@@ -548,4 +560,3 @@ const Materials = () => {
 };
 
 export default Materials;
-

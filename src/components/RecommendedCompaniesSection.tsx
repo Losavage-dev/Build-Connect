@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ArrowRight } from "lucide-react";
 import CompanyCard from "@/components/CompanyCard";
 import { statsFromCompanyRow } from "@/lib/companyReviewStats";
 import { companyCardCategoryProps } from "@/lib/companyDisplay";
@@ -17,29 +18,34 @@ type Props = {
 
 export function RecommendedCompaniesSection({
   companies,
-  title = "Рекомендуем вам",
-  subtitle = "Появляется после просмотров и действий; чем больше активности — тем точнее подбор",
+  title,
+  subtitle,
   catalogLink = "/catalog?sort=for_you",
 }: Props) {
   const { profile } = useAuth();
+  const { t } = useTranslation(["marketplace", "common"]);
 
   if (companies.length === 0) return null;
+
+  const resolvedTitle = title ?? t("recommendedCompanies.title");
+  const resolvedSubtitle =
+    subtitle ?? t("recommendedCompanies.defaultSubtitle");
 
   return (
     <section className="py-12 md:py-16 border-y bg-gradient-to-b from-primary/5 to-transparent">
       <div className="container px-4">
         <SectionHeader
-          eyebrow="Персональная лента"
-          title={title}
+          eyebrow={t("recommendedCompanies.eyebrow")}
+          title={resolvedTitle}
           description={
             profile
-              ? subtitle
-              : "Просматривайте компании — мы запомним интересы в этом браузере"
+              ? resolvedSubtitle
+              : t("recommendedCompanies.guestSubtitle")
           }
           action={
             <Button variant="outline" asChild className="hidden sm:inline-flex gap-2 group shrink-0 rounded-xl">
               <Link to={catalogLink}>
-                Весь каталог
+                {t("recommendedCompanies.wholeCatalog")}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -71,7 +77,7 @@ export function RecommendedCompaniesSection({
 
         <div className="mt-8 text-center sm:hidden">
           <Button variant="outline" asChild className="rounded-xl">
-            <Link to={catalogLink}>Смотреть каталог</Link>
+            <Link to={catalogLink}>{t("recommendedCompanies.viewCatalog")}</Link>
           </Button>
         </div>
       </div>

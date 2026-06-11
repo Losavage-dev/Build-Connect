@@ -1,30 +1,38 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, Building2, Calendar, MapPin, Sparkles, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatTenderDateShort } from "@/lib/tenderDisplay";
-import { TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
+import { type TenderTypeValue } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import type { RecommendedTenderItem } from "@/hooks/useRecommendations";
 import { cn } from "@/lib/utils";
+import { useTenderTypeLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 type Props = {
   items: RecommendedTenderItem[];
 };
 
-function formatBudget(budget: number | null) {
-  if (!budget) return null;
-  return new Intl.NumberFormat("ru-KZ", {
-    style: "currency",
-    currency: "KZT",
-    maximumFractionDigits: 0,
-  }).format(budget);
-}
+const TENDER_REASON_KEYS: Record<string, string> = {
+  city: "reasonCity",
+  role: "reasonRole",
+  interest: "reasonInterest",
+  views: "reasonViews",
+  deadline: "reasonDeadline",
+  budget: "reasonBudget",
+  new: "reasonNew",
+};
 
 function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const tenderTypeLabel = useTenderTypeLabel();
+  const { formatCurrency } = useAppFormat();
+
   const typeLabel =
-    TENDER_TYPE_LABELS[(tender.tender_type || "other") as TenderTypeValue] ?? tender.tender_type;
-  const budget = formatBudget(tender.budget);
+    tenderTypeLabel((tender.tender_type || "other") as TenderTypeValue) ?? tender.tender_type;
+  const budget = tender.budget ? formatCurrency(tender.budget) : null;
 
   return (
     <Link
@@ -40,7 +48,7 @@ function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
           {typeLabel}
         </Badge>
         <Badge variant="outline" className="text-[11px] rounded-lg border-green-500/30 text-green-700 dark:text-green-300">
-          Открыт
+          {t("tenders.statusOpen")}
         </Badge>
       </div>
 
@@ -71,7 +79,7 @@ function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
         {tender.deadline ? (
           <p className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 shrink-0 text-primary/70" />
-            до {formatTenderDateShort(tender.deadline)}
+            {t("tenders.deadlinePrefix")} {formatTenderDateShort(tender.deadline)}
           </p>
         ) : null}
       </div>
@@ -84,7 +92,7 @@ function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
               variant="outline"
               className="text-[10px] font-normal rounded-md px-2 py-0 h-5 border-primary/25 bg-primary/5 text-primary"
             >
-              {r.label}
+              {t(`tenders.${TENDER_REASON_KEYS[r.id] ?? r.id}`)}
             </Badge>
           ))}
         </div>
@@ -95,12 +103,20 @@ function RecommendedTenderCard({ tender, reasons }: RecommendedTenderItem) {
 
 export function RecommendedTendersSection({ items }: Props) {
   const { profile } = useAuth();
+  const { t } = useTranslation(["marketplace", "common", "recommendations"]);
 
   if (items.length === 0) return null;
 
+  const roleSuffix =
+    profile?.role === "contractor"
+      ? t("recommendations:roleContractor")
+      : profile?.role === "supplier"
+        ? t("recommendations:roleSupplier")
+        : "";
+
   const subtitle = profile?.city
-    ? `Подбор для ${profile.city}${profile.role === "contractor" ? " · подрядчик" : profile.role === "supplier" ? " · поставщик" : ""}`
-    : "Подбор по городу, роли и вашей активности на платформе";
+    ? t("tenders.recommendedSubtitleCity", { city: profile.city, role: roleSuffix })
+    : t("tenders.recommendedSubtitleDefault");
 
   return (
     <section className="mb-8">
@@ -108,14 +124,14 @@ export function RecommendedTendersSection({ items }: Props) {
         <div>
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-widest text-primary mb-2">
             <Sparkles className="h-4 w-4" />
-            Для вас
+            {t("recommendations:forYou")}
           </p>
-          <h2 className="text-xl md:text-2xl font-bold">Рекомендуемые тендеры</h2>
+          <h2 className="text-xl md:text-2xl font-bold">{t("tenders.recommendedTitle")}</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-xl">{subtitle}</p>
         </div>
         <Button variant="outline" size="sm" asChild className="gap-1 rounded-xl shrink-0 self-start sm:self-auto">
           <Link to="/tenders?sort=for_you">
-            Все для вас
+            {t("common:allForYou")}
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>

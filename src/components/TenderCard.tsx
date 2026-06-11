@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Building2, Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
 import { authPath } from "@/lib/authRedirect";
 import {
@@ -7,7 +8,6 @@ import {
   formatTenderDateShort,
   getTenderDeadlineMaxDays,
 } from "@/lib/tenderDisplay";
-import { TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
 import type { Tender, TenderStatus } from "@/hooks/useTenders";
 import type { useCapabilities } from "@/hooks/useCapabilities";
 import { Button } from "@/components/ui/button";
@@ -37,27 +37,14 @@ import { TenderOwnerStatusSelect } from "@/components/TenderOwnerStatusSelect";
 import { ReportDialog } from "@/components/ReportDialog";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useTrackUserEvent } from "@/hooks/useUserEvents";
-
-const statusLabels: Record<string, string> = {
-  open: "Открыт",
-  closed: "Закрыт",
-  in_progress: "В работе",
-};
+import { useTenderTypeLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 const statusColors: Record<string, string> = {
   open: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   closed: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
   in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 };
-
-function formatBudget(budget: number | null) {
-  if (!budget) return "Не указан";
-  return new Intl.NumberFormat("ru-KZ", {
-    style: "currency",
-    currency: "KZT",
-    maximumFractionDigits: 0,
-  }).format(budget);
-}
 
 type Caps = ReturnType<typeof useCapabilities>;
 
@@ -88,12 +75,26 @@ export function TenderCard({
   onStatusChange,
   statusUpdatePending,
 }: Props) {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const tenderTypeLabel = useTenderTypeLabel();
+  const { formatCurrency } = useAppFormat();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { track } = useTrackUserEvent();
   const sheetTrackedRef = useRef(false);
   const listViewTrackedRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [bidOpen, setBidOpen] = useState(false);
+
+  const statusLabels: Record<string, string> = {
+    open: t("tenders.statusOpen"),
+    closed: t("tenders.statusClosed"),
+    in_progress: t("tenders.statusInProgress"),
+  };
+
+  const formatBudget = (budget: number | null) => {
+    if (!budget) return t("tenders.budgetNotSet");
+    return formatCurrency(budget);
+  };
 
   useEffect(() => {
     if (!sheetOpen || sheetTrackedRef.current) return;
@@ -136,6 +137,7 @@ export function TenderCard({
       if (timer) clearTimeout(timer);
     };
   }, [tender.id, tender.city, tender.tender_type, track]);
+
   const [bidCompanyId, setBidCompanyId] = useState("");
   const [bidDescription, setBidDescription] = useState("");
   const [bidPrice, setBidPrice] = useState("");
@@ -161,11 +163,11 @@ export function TenderCard({
     const timeline = bidTimeline.trim();
     const proposal = bidDescription.trim();
 
-    if (price) parts.push(`Предлагаемая цена: ${price} ₸`);
-    if (timeline) parts.push(`Срок выполнения: ${timeline} дн.`);
+    if (price) parts.push(t("tenderCard.bidPrice", { price }));
+    if (timeline) parts.push(t("tenderCard.bidTimeline", { days: timeline }));
     if (proposal) {
       if (parts.length) parts.push("");
-      parts.push("Условия и комментарий:");
+      parts.push(t("tenderCard.bidConditions"));
       parts.push(proposal);
     }
     return parts.join("\n");
@@ -174,8 +176,7 @@ export function TenderCard({
   const isOwner = profile?.id === tender.client_id;
   const canSubmitBid = caps.canBidOnTender(tender) && !existingBidRequestId;
   const hasExistingBid = Boolean(existingBidRequestId);
-  const typeLabel =
-    TENDER_TYPE_LABELS[(tender.tender_type || "subcontract") as TenderTypeValue] || "Другое";
+  const typeLabel = tenderTypeLabel(tender.tender_type || "subcontract") || t("common:other");
   const published = formatTenderDateShort(tender.created_at);
   const deadline = formatTenderDate(tender.deadline);
   const maxBidTimelineDays = getTenderDeadlineMaxDays(tender.deadline);
@@ -217,7 +218,7 @@ export function TenderCard({
   const metaLine = [
     tender.city,
     tender.budget ? formatBudget(tender.budget) : null,
-    deadline ? `до ${deadline}` : null,
+    deadline ? t("tenderCard.deadlinePrefix", { date: deadline }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -230,10 +231,10 @@ export function TenderCard({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`bid-company-${tender.id}`}>Ваша компания</Label>
+        <Label htmlFor={`bid-company-${tender.id}`}>{t("tenderCard.yourCompany")}</Label>
         <Select value={bidCompanyId} onValueChange={setBidCompanyId} required>
           <SelectTrigger id={`bid-company-${tender.id}`} className="rounded-xl">
-            <SelectValue placeholder="Выберите компанию..." />
+            <SelectValue placeholder={t("tenderCard.selectCompany")} />
           </SelectTrigger>
           <SelectContent>
             {myCompanies?.map((c) => (
@@ -247,19 +248,23 @@ export function TenderCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`bid-price-${tender.id}`}>Цена (₸)</Label>
+          <Label htmlFor={`bid-price-${tender.id}`}>{t("tenderCard.price")}</Label>
           <Input
             id={`bid-price-${tender.id}`}
             type="text"
             inputMode="numeric"
             value={bidPrice}
             onChange={(e) => setBidPrice(e.target.value.replace(/[^\d\s]/g, ""))}
-            placeholder={tender.budget ? `Бюджет: ${formatBudget(tender.budget)}` : "Например: 1 500 000"}
+            placeholder={
+              tender.budget
+                ? t("tenderCard.budgetHint", { budget: formatBudget(tender.budget) })
+                : t("tenderCard.pricePlaceholder")
+            }
             className="rounded-xl"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`bid-timeline-${tender.id}`}>Срок (дней)</Label>
+          <Label htmlFor={`bid-timeline-${tender.id}`}>{t("tenderCard.timeline")}</Label>
           <Input
             id={`bid-timeline-${tender.id}`}
             type="text"
@@ -267,7 +272,9 @@ export function TenderCard({
             value={bidTimeline}
             onChange={(e) => handleBidTimelineChange(e.target.value)}
             placeholder={
-              maxBidTimelineDays !== null ? `до ${maxBidTimelineDays} дн.` : "30"
+              maxBidTimelineDays !== null
+                ? t("tenderCard.timelineMax", { days: maxBidTimelineDays })
+                : "30"
             }
             className="rounded-xl"
             maxLength={4}
@@ -275,14 +282,17 @@ export function TenderCard({
           />
           {maxBidTimelineDays !== null ? (
             <p className="text-xs text-muted-foreground">
-              Не более {maxBidTimelineDays} дн. — дедлайн тендера{deadline ? ` ${deadline}` : ""}
+              {t("tenderCard.timelineHint", {
+                days: maxBidTimelineDays,
+                deadline: deadline ? t("tenderCard.timelineHintDeadline", { deadline }) : "",
+              })}
             </p>
           ) : null}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`bid-proposal-${tender.id}`}>Условия и комментарий</Label>
+        <Label htmlFor={`bid-proposal-${tender.id}`}>{t("tenderCard.proposal")}</Label>
         <Textarea
           id={`bid-proposal-${tender.id}`}
           value={bidDescription}
@@ -291,7 +301,7 @@ export function TenderCard({
           required
           minLength={10}
           maxLength={2000}
-          placeholder="Опишите объём работ, гарантии, что входит в цену..."
+          placeholder={t("tenderCard.proposalPlaceholder")}
           className="rounded-xl"
         />
         <p className="text-xs text-muted-foreground">{bidDescription.trim().length} / 2000</p>
@@ -307,7 +317,7 @@ export function TenderCard({
           bidTimelineExceedsDeadline
         }
       >
-        {bidPending ? "Отправка..." : "Отправить отклик"}
+        {bidPending ? t("common:sending") : t("tenderCard.submitBid")}
       </Button>
     </form>
   );
@@ -354,7 +364,7 @@ export function TenderCard({
           ) : (
             <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
               <Building2 className="h-3.5 w-3.5" />
-              Заказчик без карточки компании
+              {t("tenderCard.clientNoCompany")}
             </p>
           )}
 
@@ -363,7 +373,7 @@ export function TenderCard({
           {published ? (
             <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
               <Clock className="h-3 w-3" />
-              Опубликован {published}
+              {t("tenderCard.published", { date: published })}
             </p>
           ) : (
             <div className="mb-3" />
@@ -373,7 +383,7 @@ export function TenderCard({
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1 h-8">
-                  Подробнее
+                  {t("tenderCard.details")}
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </SheetTrigger>
@@ -402,20 +412,20 @@ export function TenderCard({
                           <div className="flex gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <div>
-                              <dt className="text-muted-foreground text-xs">Город</dt>
+                              <dt className="text-muted-foreground text-xs">{t("common:city")}</dt>
                               <dd>{tender.city}</dd>
                             </div>
                           </div>
                         ) : null}
                         <div>
-                          <dt className="text-muted-foreground text-xs">Бюджет</dt>
+                          <dt className="text-muted-foreground text-xs">{t("tenderCard.budget")}</dt>
                           <dd className="font-medium">{formatBudget(tender.budget)}</dd>
                         </div>
                         {deadline ? (
                           <div className="flex gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <div>
-                              <dt className="text-muted-foreground text-xs">Дедлайн</dt>
+                              <dt className="text-muted-foreground text-xs">{t("tenderCard.deadline")}</dt>
                               <dd>{deadline}</dd>
                             </div>
                           </div>
@@ -424,7 +434,7 @@ export function TenderCard({
                           <div className="flex gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <div>
-                              <dt className="text-muted-foreground text-xs">Опубликован</dt>
+                              <dt className="text-muted-foreground text-xs">{t("tenderCard.publishedLabel")}</dt>
                               <dd>{formatTenderDate(tender.created_at)}</dd>
                             </div>
                           </div>
@@ -455,28 +465,28 @@ export function TenderCard({
 
                 {!user && tender.status === "open" ? (
                   <Button asChild className="w-full rounded-xl mb-4">
-                    <Link to={authPath(returnTo)}>Войти, чтобы откликнуться</Link>
+                    <Link to={authPath(returnTo)}>{t("tenderCard.loginToBid")}</Link>
                   </Button>
                 ) : null}
 
                 {canSubmitBid ? (
                   <Button className="w-full rounded-xl mb-4" onClick={() => setBidOpen(true)}>
-                    Откликнуться
+                    {t("tenderCard.bid")}
                   </Button>
                 ) : null}
 
                 {hasExistingBid ? (
                   <Button asChild className="w-full rounded-xl mb-4" variant="secondary">
-                    <Link to={`/chat/${existingBidRequestId}`}>Ваш отклик — открыть чат</Link>
+                    <Link to={`/chat/${existingBidRequestId}`}>{t("tenderCard.yourBidOpenChat")}</Link>
                   </Button>
                 ) : null}
 
                 {user && !caps.isStaff && !isOwner && tender.status === "open" && !canSubmitBid && !hasExistingBid ? (
                   <div className="text-sm text-muted-foreground text-center mb-4 space-y-2">
-                    <p>{caps.bidBlockReason(tender) || "Отклик недоступен"}</p>
+                    <p>{caps.bidBlockReason(tender) || t("tenderCard.bidUnavailable")}</p>
                     {caps.myCompanyIds.length === 0 && !isOwner ? (
                       <Button variant="outline" size="sm" className="rounded-lg" asChild>
-                        <Link to="/create-company">Создать компанию</Link>
+                        <Link to="/create-company">{t("tenderCard.createCompany")}</Link>
                       </Button>
                     ) : null}
                   </div>
@@ -497,35 +507,36 @@ export function TenderCard({
 
             {canSubmitBid ? (
               <Button size="sm" className="h-8 rounded-lg" onClick={() => setBidOpen(true)}>
-                Откликнуться
+                {t("tenderCard.bid")}
               </Button>
             ) : null}
 
             {hasExistingBid ? (
               <Button size="sm" variant="secondary" className="h-8 rounded-lg" asChild>
-                <Link to={`/chat/${existingBidRequestId}`}>Ваш отклик</Link>
+                <Link to={`/chat/${existingBidRequestId}`}>{t("tenderCard.yourBid")}</Link>
               </Button>
             ) : null}
 
             {!user && tender.status === "open" ? (
               <Button size="sm" variant="secondary" className="h-8" asChild>
-                <Link to={authPath(returnTo)}>Войти</Link>
+                <Link to={authPath(returnTo)}>{t("tenderCard.login")}</Link>
               </Button>
             ) : null}
           </div>
         </CardContent>
       </Card>
 
-      <Dialog open={bidOpen} onOpenChange={(open) => {
-        setBidOpen(open);
-        if (!open) resetBidForm();
-      }}>
+      <Dialog
+        open={bidOpen}
+        onOpenChange={(open) => {
+          setBidOpen(open);
+          if (!open) resetBidForm();
+        }}
+      >
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Отклик на тендер</DialogTitle>
-            <DialogDescription>
-              Укажите цену, срок и условия — заказчик получит отклик и сможет перейти в чат.
-            </DialogDescription>
+            <DialogTitle>{t("tenderCard.bidDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("tenderCard.bidDialogDesc")}</DialogDescription>
           </DialogHeader>
           {bidForm}
         </DialogContent>

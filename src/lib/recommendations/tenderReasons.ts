@@ -5,7 +5,6 @@ import { scoreTender } from "./scoreTender";
 
 export type TenderRecommendationReason = {
   id: string;
-  label: string;
 };
 
 const ROLE_TENDER_TYPES: Partial<Record<string, TenderTypeValue[]>> = {
@@ -38,36 +37,36 @@ export function getTenderRecommendationReasons(
   const tType = (tender.tender_type || "other") as TenderTypeValue;
 
   if (ctx.city && tender.city === ctx.city) {
-    reasons.push({ id: "city", label: "Ваш город" });
+    reasons.push({ id: "city" });
   }
 
   const preferred = ROLE_TENDER_TYPES[ctx.role ?? ""] ?? [];
   if (ctx.role && preferred.includes(tType)) {
-    reasons.push({ id: "role", label: "Под вашу роль" });
+    reasons.push({ id: "role" });
   }
 
   const typeCats = TENDER_TYPE_INTEREST_CATEGORIES[tType] ?? [];
   if (typeCats.some((c) => ctx.interestCategories.includes(c))) {
-    reasons.push({ id: "interest", label: "По вашим интересам" });
+    reasons.push({ id: "interest" });
   }
 
   if (ctx.preferredTenderTypes.has(tType)) {
-    reasons.push({ id: "views", label: "Вы смотрели похожие" });
+    reasons.push({ id: "views" });
   }
 
   if (tender.deadline) {
     const days = (new Date(tender.deadline).getTime() - Date.now()) / 86400000;
     if (days > 0 && days < 14) {
-      reasons.push({ id: "deadline", label: "Срочный срок" });
+      reasons.push({ id: "deadline" });
     }
   }
 
   if (tender.budget && tender.budget > 0) {
-    reasons.push({ id: "budget", label: "Указан бюджет" });
+    reasons.push({ id: "budget" });
   }
 
   if (!ctx.viewedTenderIds.has(tender.id)) {
-    reasons.push({ id: "new", label: "Новый для вас" });
+    reasons.push({ id: "new" });
   }
 
   return reasons.slice(0, 3);

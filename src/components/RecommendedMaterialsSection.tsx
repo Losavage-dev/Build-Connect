@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, MapPin, Package, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,24 +7,28 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { RecommendedMaterialItem } from "@/hooks/useRecommendations";
 import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
 import { cn } from "@/lib/utils";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 type Props = {
   items: RecommendedMaterialItem[];
 };
 
-function formatPrice(price: number, unit?: string | null) {
-  const base = new Intl.NumberFormat("ru-KZ", {
-    style: "currency",
-    currency: "KZT",
-    maximumFractionDigits: 0,
-  }).format(price);
-  if (unit && unit in PRICE_UNIT_LABELS) {
-    return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
-  }
-  return base;
-}
-
 function RecommendedMaterialCard({ material, reasons }: RecommendedMaterialItem) {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatCurrency } = useAppFormat();
+
+  const formatPrice = (price: number, unit?: string | null) => {
+    const base = formatCurrency(price);
+    if (unit && unit in PRICE_UNIT_LABELS) {
+      return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
+    }
+    return base;
+  };
+
+  const groupLabel = catalogLabel(material.material_group || t("common:other"));
+
   return (
     <Link
       to={`/materials?listing=${encodeURIComponent(material.id)}`}
@@ -35,7 +40,7 @@ function RecommendedMaterialCard({ material, reasons }: RecommendedMaterialItem)
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <Badge variant="secondary" className="text-[11px] rounded-lg font-normal shrink-0">
-          {material.material_group || "Прочее"}
+          {groupLabel}
         </Badge>
         <span className="text-sm font-semibold text-primary shrink-0">
           {formatPrice(material.price, material.price_unit)}
@@ -70,7 +75,7 @@ function RecommendedMaterialCard({ material, reasons }: RecommendedMaterialItem)
               variant="outline"
               className="text-[10px] font-normal rounded-md px-2 py-0 h-5 border-primary/25 bg-primary/5 text-primary"
             >
-              {r.label}
+              {t(`materialReasons.${r.id}`)}
             </Badge>
           ))}
         </div>
@@ -81,12 +86,20 @@ function RecommendedMaterialCard({ material, reasons }: RecommendedMaterialItem)
 
 export function RecommendedMaterialsSection({ items }: Props) {
   const { profile } = useAuth();
+  const { t } = useTranslation(["marketplace", "common", "recommendations"]);
 
   if (items.length === 0) return null;
 
+  const roleSuffix =
+    profile?.role === "contractor"
+      ? t("recommendations:roleContractor")
+      : profile?.role === "client"
+        ? t("recommendations:roleClient")
+        : "";
+
   const subtitle = profile?.city
-    ? `Подбор для ${profile.city}${profile.role === "contractor" ? " · подрядчик" : profile.role === "client" ? " · заказчик" : ""}`
-    : "Подбор по городу, роли и вашей активности на платформе";
+    ? t("materials.recommendedSubtitleCity", { city: profile.city, role: roleSuffix })
+    : t("materials.recommendedSubtitleDefault");
 
   return (
     <section className="mb-8">
@@ -94,14 +107,14 @@ export function RecommendedMaterialsSection({ items }: Props) {
         <div>
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-widest text-primary mb-2">
             <Sparkles className="h-4 w-4" />
-            Для вас
+            {t("recommendations:forYou")}
           </p>
-          <h2 className="text-xl md:text-2xl font-bold">Рекомендуемые материалы</h2>
+          <h2 className="text-xl md:text-2xl font-bold">{t("materials.recommendedTitle")}</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-xl">{subtitle}</p>
         </div>
         <Button variant="outline" size="sm" asChild className="gap-1 rounded-xl shrink-0 self-start sm:self-auto">
           <Link to="/materials?sort=for_you">
-            Все для вас
+            {t("common:allForYou")}
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>

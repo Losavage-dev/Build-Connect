@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MapPin, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,8 @@ import { useTrackUserEvent } from "@/hooks/useUserEvents";
 import type { Service } from "@/hooks/useServices";
 import type { ListingPriceInsight } from "@/lib/priceInsight";
 import { authPath } from "@/lib/authRedirect";
+import { useAppFormat } from "@/hooks/useAppFormat";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
 import { PRICE_UNIT_LABELS } from "@/lib/priceInsight";
 
 type Props = {
@@ -21,12 +24,12 @@ type Props = {
   orderPending: boolean;
 };
 
-function formatPrice(price: number, unit?: string | null) {
-  const base = new Intl.NumberFormat("ru-KZ", {
-    style: "currency",
-    currency: "KZT",
-    maximumFractionDigits: 0,
-  }).format(price);
+function formatPriceWithUnit(
+  price: number,
+  unit: string | null | undefined,
+  formatCurrency: (n: number) => string,
+) {
+  const base = formatCurrency(price);
   if (unit && unit in PRICE_UNIT_LABELS) {
     return `${base}${PRICE_UNIT_LABELS[unit as keyof typeof PRICE_UNIT_LABELS].replace("₸", "")}`;
   }
@@ -42,10 +45,14 @@ export function MaterialListingCard({
   onOrder,
   orderPending,
 }: Props) {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatCurrency } = useAppFormat();
   const location = useLocation();
   const { track } = useTrackUserEvent();
   const cardRef = useRef<HTMLDivElement>(null);
   const listViewTrackedRef = useRef(false);
+  const groupLabel = catalogLabel(material.material_group || t("common:other"));
 
   useEffect(() => {
     const el = cardRef.current;
@@ -64,7 +71,7 @@ export function MaterialListingCard({
           if (listViewTrackedRef.current) return;
           listViewTrackedRef.current = true;
           track("view_material", "material", material.id, {
-            material_group: material.material_group || "Прочее",
+            material_group: material.material_group || groupLabel,
             city: material.company_city,
             company_id: material.company_id,
             source: "list_impression",
@@ -79,7 +86,7 @@ export function MaterialListingCard({
       observer.disconnect();
       if (timer) clearTimeout(timer);
     };
-  }, [material.id, material.material_group, material.company_city, material.company_id, track]);
+  }, [material.id, material.material_group, material.company_city, material.company_id, track, groupLabel]);
 
   return (
     <Card
@@ -90,11 +97,11 @@ export function MaterialListingCard({
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-2">
           <Badge variant="secondary" className="rounded-lg font-semibold shadow-sm">
-            {material.material_group || "Прочее"}
+            {groupLabel}
           </Badge>
           <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
             <span className="font-semibold text-sm text-primary">
-              {formatPrice(material.price, material.price_unit)}
+              {formatPriceWithUnit(material.price, material.price_unit, formatCurrency)}
             </span>
           </div>
         </div>
@@ -127,7 +134,7 @@ export function MaterialListingCard({
 
         {!user ? (
           <Button asChild className="w-full rounded-xl shadow-sm">
-            <Link to={authPath(returnTo)}>Войти, чтобы купить</Link>
+            <Link to={authPath(returnTo)}>{t("common:loginToBuy")}</Link>
           </Button>
         ) : canBuy ? (
           <Button
@@ -135,7 +142,7 @@ export function MaterialListingCard({
             onClick={() => onOrder(material)}
             disabled={orderPending}
           >
-            Купить товар
+            {t("materials.buyProduct")}
           </Button>
         ) : null}
       </CardContent>

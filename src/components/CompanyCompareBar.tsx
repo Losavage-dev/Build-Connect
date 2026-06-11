@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { GitCompare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { companyCompareIdsParam } from "@/lib/companyCompare";
 import { useCompanyCompare } from "@/hooks/useCompanyCompare";
 
 export function CompanyCompareBar() {
+  const { t } = useTranslation(["marketplace", "common"]);
   const navigate = useNavigate();
   const { entries, count, canCompare, remove, clear } = useCompanyCompare();
 
@@ -16,7 +18,7 @@ export function CompanyCompareBar() {
       <div className="container px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 text-sm font-medium shrink-0">
           <GitCompare className="h-4 w-4 text-primary" />
-          Сравнение: {count}/3
+          {t("companyCompare.title", { count })}
         </div>
 
         <div className="flex flex-wrap gap-2 flex-1 min-w-0">
@@ -26,7 +28,7 @@ export function CompanyCompareBar() {
               <button
                 type="button"
                 className="rounded-md p-0.5 hover:bg-muted"
-                aria-label={`Убрать ${entry.name} из сравнения`}
+                aria-label={t("companyCompare.removeNamed", { name: entry.name })}
                 onClick={() => remove(entry.id)}
               >
                 <X className="h-3.5 w-3.5" />
@@ -37,7 +39,7 @@ export function CompanyCompareBar() {
 
         <div className="flex gap-2 shrink-0">
           <Button type="button" variant="outline" size="sm" className="rounded-xl" onClick={clear}>
-            Очистить
+            {t("companyCompare.clear")}
           </Button>
           <Button
             type="button"
@@ -46,7 +48,7 @@ export function CompanyCompareBar() {
             disabled={!canCompare}
             onClick={() => navigate(`/catalog/compare?ids=${companyCompareIdsParam(entries)}`)}
           >
-            Сравнить
+            {t("companyCompare.compare")}
           </Button>
         </div>
       </div>
@@ -54,7 +56,6 @@ export function CompanyCompareBar() {
   );
 }
 
-/** Кнопка «Добавить в сравнение» для профиля компании */
 export function CompanyCompareToggleButton({
   companyId,
   companyName,
@@ -62,6 +63,7 @@ export function CompanyCompareToggleButton({
   companyId: string;
   companyName: string;
 }) {
+  const { t } = useTranslation("marketplace");
   const { isSelected, toggle, isFull } = useCompanyCompare();
   const selected = isSelected(companyId);
 
@@ -75,13 +77,13 @@ export function CompanyCompareToggleButton({
       onClick={() => toggle({ id: companyId, name: companyName })}
     >
       <GitCompare className="h-4 w-4 mr-2" />
-      {selected ? "В сравнении" : "В сравнение"}
+      {selected ? t("companyCompare.inCompareBtn") : t("companyCompare.addBtn")}
     </Button>
   );
 }
 
-/** Ссылка на сравнение в шапке каталога */
 export function CompanyCompareLink() {
+  const { t } = useTranslation("marketplace");
   const { count, entries, canCompare } = useCompanyCompare();
 
   if (count === 0) return null;
@@ -90,7 +92,7 @@ export function CompanyCompareLink() {
     <Button asChild variant="outline" size="sm" className="rounded-xl" disabled={!canCompare}>
       <Link to={canCompare ? `/catalog/compare?ids=${companyCompareIdsParam(entries)}` : "#"}>
         <GitCompare className="h-4 w-4 mr-2" />
-        Сравнить ({count})
+        {t("companyCompare.compareCount", { count })}
       </Link>
     </Button>
   );

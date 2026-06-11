@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MapPin } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,9 +13,7 @@ interface CompanyCardProps {
   description: string;
   city: string;
   reviewStats: CompanyReviewStats;
-  /** Краткая подпись на превью (например первая категория + «+2») */
   overlayLabel: string;
-  /** Полный список категорий — под описанием, не перекрывает обложку */
   categoriesLine: string;
   imageUrl?: string;
   isVerified?: boolean;
@@ -37,6 +36,8 @@ const CompanyCard = ({
   isVerified,
   compare,
 }: CompanyCardProps) => {
+  const { t } = useTranslation("marketplace");
+
   return (
     <Link to={`/company/${id}`} className={compare ? "block relative" : undefined}>
       <Card className="group hover-lift cursor-pointer h-full border-2 border-transparent hover:border-primary/20 transition-all duration-300 overflow-hidden">
@@ -45,7 +46,11 @@ const CompanyCard = ({
             {compare ? (
               <button
                 type="button"
-                aria-label={compare.selected ? "Убрать из сравнения" : "Добавить в сравнение"}
+                aria-label={
+                  compare.selected
+                    ? t("companyCompare.removeFromCompare")
+                    : t("companyCompare.addToCompare")
+                }
                 disabled={compare.disabled}
                 className={`absolute top-3 left-3 z-10 rounded-lg border px-2.5 py-1 text-xs font-medium shadow-md transition-colors ${
                   compare.selected
@@ -58,7 +63,7 @@ const CompanyCard = ({
                   if (!compare.disabled) compare.onToggle();
                 }}
               >
-                {compare.selected ? "✓ В сравнении" : "+ Сравнить"}
+                {compare.selected ? t("companyCompare.inCompare") : t("companyCompare.addToCompare")}
               </button>
             ) : null}
             {imageUrl ? (

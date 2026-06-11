@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { MapPin, Wrench, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +25,13 @@ import { MarketplaceFilterLayout } from "@/components/MarketplaceFilterLayout";
 import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
 import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
+import { useCatalogLabel } from "@/lib/i18nCatalog";
+import { useAppFormat } from "@/hooks/useAppFormat";
 
 const Services = () => {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const catalogLabel = useCatalogLabel();
+  const { formatCurrency, compareStrings } = useAppFormat();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -61,8 +67,8 @@ const Services = () => {
     for (const s of services || []) {
       if (s.company_id && s.company_name) map.set(s.company_id, s.company_name);
     }
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ru"));
-  }, [services]);
+    return [...map.entries()].sort((a, b) => compareStrings(a[1], b[1]));
+  }, [services, compareStrings]);
 
   useEffect(() => {
     const listingId = searchParams.get("listing");
@@ -71,10 +77,10 @@ const Services = () => {
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
     }, 2600);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [searchParams, services]);
 
   const filteredServices = useMemo(() => {
@@ -110,13 +116,13 @@ const Services = () => {
   const filterFields = (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Город</label>
+        <label className="text-sm font-medium mb-2 block">{t("common:city")}</label>
         <Select value={city} onValueChange={setCity}>
           <SelectTrigger>
-            <SelectValue placeholder="Город" />
+            <SelectValue placeholder={t("common:city")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все города</SelectItem>
+            <SelectItem value="all">{t("common:allCities")}</SelectItem>
             {KAZAKHSTAN_CITIES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -126,29 +132,29 @@ const Services = () => {
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Категория</label>
+        <label className="text-sm font-medium mb-2 block">{t("common:category")}</label>
         <Select value={catFilter} onValueChange={setCatFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Категория" />
+            <SelectValue placeholder={t("common:category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все категории</SelectItem>
+            <SelectItem value="all">{t("common:allCategories")}</SelectItem>
             {SERVICE_VITRINE_CATEGORIES.map((c) => (
               <SelectItem key={c} value={c}>
-                {c}
+                {catalogLabel(c)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Компания</label>
+        <label className="text-sm font-medium mb-2 block">{t("filters.company")}</label>
         <Select value={companyFilter} onValueChange={setCompanyFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Компания" />
+            <SelectValue placeholder={t("filters.company")} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            <SelectItem value="all">Все компании</SelectItem>
+            <SelectItem value="all">{t("services.allCompanies")}</SelectItem>
             {companyOptions.map(([cid, name]) => (
               <SelectItem key={cid} value={cid}>
                 {name}
@@ -158,7 +164,7 @@ const Services = () => {
         </Select>
       </div>
       <Button variant="outline" className="w-full" onClick={handleResetFilters}>
-        Сбросить фильтры
+        {t("common:resetFilters")}
       </Button>
     </div>
   );
@@ -166,7 +172,7 @@ const Services = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) {
-      toast.error("Выберите компанию");
+      toast.error(t("materials.selectCompany"));
       return;
     }
     try {
@@ -177,7 +183,7 @@ const Services = () => {
         price: Number(price),
         category,
       });
-      toast.success("Услуга успешно добавлена!");
+      toast.success(t("services.createSuccess"));
       setOpen(false);
       setTitle("");
       setDescription("");
@@ -185,23 +191,23 @@ const Services = () => {
       setCategory("");
       setCompanyId("");
     } catch {
-      toast.error("Ошибка при создании услуги");
+      toast.error(t("services.createError"));
     }
   };
 
-  const handleOrder = async (service: any) => {
+  const handleOrder = async (service: { id: string; title: string; price: number; company_id: string }) => {
     if (!user || !profile) {
-      toast.error("Войдите, чтобы сделать заказ");
+      toast.error(t("common:loginToOrder"));
       navigate(authPath(returnTo));
       return;
     }
 
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const msg = `Заинтересован в услуге "${service.title}" по цене ${formatPrice(service.price)}`;
+      const msg = t("marketplace:orders.serviceMsg", { title: service.title, price: formatCurrency(service.price) });
       const req = await createRequest.mutateAsync({
         company_id: service.company_id,
-        title: `Заказ услуги: ${service.title}`,
+        title: t("marketplace:orders.serviceTitle", { title: service.title }),
         description: msg,
         initial_message: msg,
         source: buildRequestSource({
@@ -210,19 +216,11 @@ const Services = () => {
           url: `${origin}/services?listing=${encodeURIComponent(service.id)}`,
         }),
       });
-      toast.success("Запрос отправлен — откройте чат для переписки.");
+      toast.success(t("services.orderSuccess"));
       openRequestChat(navigate, req.id);
     } catch {
-      toast.error("Ошибка при отправке запроса");
+      toast.error(t("services.orderError"));
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("ru-KZ", {
-      style: "currency",
-      currency: "KZT",
-      maximumFractionDigits: 0,
-    }).format(price);
   };
 
   const ServiceSkeleton = () => (
@@ -244,13 +242,16 @@ const Services = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Услуги"
+        eyebrow={t("services.eyebrow")}
         eyebrowIcon={Wrench}
-        title="Витрина работ подрядчиков"
+        title={t("services.title")}
         description={
           isLoading
-            ? "Загрузка…"
-            : `${filteredServices.length} из ${services?.length || 0} услуг (с учётом фильтров)`
+            ? t("common:loading")
+            : t("services.found", {
+                filtered: filteredServices.length,
+                total: services?.length || 0,
+              })
         }
         compact
         actions={
@@ -259,19 +260,19 @@ const Services = () => {
               <DialogTrigger asChild>
                 <Button className="rounded-xl btn-glow font-semibold gap-2">
                   <Plus className="h-4 w-4" />
-                  Добавить услугу
+                  {t("services.addService")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle>Новая услуга</DialogTitle>
+                  <DialogTitle>{t("services.newService")}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Компания</Label>
+                    <Label>{t("materials.company")}</Label>
                     <Select value={companyId} onValueChange={setCompanyId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите компанию" />
+                        <SelectValue placeholder={t("materials.selectCompany")} />
                       </SelectTrigger>
                       <SelectContent>
                         {myCompanies?.map((c) => (
@@ -283,20 +284,20 @@ const Services = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="svc-title">Название услуги</Label>
+                    <Label htmlFor="svc-title">{t("services.serviceTitle")}</Label>
                     <Input
                       id="svc-title"
-                      placeholder="Например: Кладка газоблока"
+                      placeholder={t("services.titlePlaceholder")}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="svc-desc">Описание</Label>
+                    <Label htmlFor="svc-desc">{t("materials.description")}</Label>
                     <Textarea
                       id="svc-desc"
-                      placeholder="Подробное описание услуги..."
+                      placeholder={t("services.descPlaceholder")}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       required
@@ -305,26 +306,26 @@ const Services = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="svc-price">Цена (₸)</Label>
+                      <Label htmlFor="svc-price">{t("services.priceLabel")}</Label>
                       <Input
                         id="svc-price"
                         type="number"
-                        placeholder="8000"
+                        placeholder={t("services.pricePlaceholder")}
                         value={price}
                         onChange={(e) => setPrice(e.target.value)}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Категория</Label>
+                      <Label>{t("common:category")}</Label>
                       <Select value={category} onValueChange={setCategory} required>
                         <SelectTrigger>
-                          <SelectValue placeholder="Выберите" />
+                          <SelectValue placeholder={t("services.selectPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {SERVICE_VITRINE_CATEGORIES.map((cat) => (
                             <SelectItem key={cat} value={cat}>
-                              {cat}
+                              {catalogLabel(cat)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -336,7 +337,7 @@ const Services = () => {
                     className="w-full rounded-xl"
                     disabled={createService.isPending}
                   >
-                    {createService.isPending ? "Создание..." : "Опубликовать услугу"}
+                    {createService.isPending ? t("common:creating") : t("services.publishService")}
                   </Button>
                 </form>
               </DialogContent>
@@ -351,7 +352,7 @@ const Services = () => {
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6">
             <Input
-              placeholder="Поиск по названию, описанию, компании, категории..."
+              placeholder={t("services.searchPlaceholderFull")}
               className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -369,17 +370,17 @@ const Services = () => {
           ) : services?.length === 0 ? (
             <EmptyState
               icon={Wrench}
-              title="Услуг пока нет"
-              description="Подрядчики ещё не опубликовали свои услуги"
+              title={t("services.emptyTitle")}
+              description={t("services.emptyDesc")}
             />
           ) : services && services.length > 0 && filteredServices.length === 0 ? (
             <EmptyState
               icon={Wrench}
-              title="Ничего не найдено"
-              description="Попробуйте изменить фильтры или поиск"
+              title={t("common:notFound")}
+              description={t("common:changeFiltersOrSearch")}
               action={
                 <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
-                  Сбросить фильтры
+                  {t("common:resetFilters")}
                 </Button>
               }
             />
@@ -394,11 +395,11 @@ const Services = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-2">
                     <Badge className="rounded-lg font-semibold shadow-sm">
-                      {service.category}
+                      {catalogLabel(service.category)}
                     </Badge>
                     <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg">
                       <span className="font-semibold text-sm text-primary">
-                        {formatPrice(service.price)}
+                        {formatCurrency(service.price)}
                       </span>
                     </div>
                   </div>
@@ -431,7 +432,7 @@ const Services = () => {
 
                   {!user ? (
                     <Button asChild className="w-full rounded-xl" variant="outline">
-                      <Link to={authPath(returnTo)}>Войти, чтобы заказать</Link>
+                      <Link to={authPath(returnTo)}>{t("services.loginToOrderService")}</Link>
                     </Button>
                   ) : caps.canBuyListing(service.company_id) ? (
                     <Button
@@ -440,7 +441,7 @@ const Services = () => {
                       onClick={() => handleOrder(service)}
                       disabled={createRequest.isPending}
                     >
-                      Заказать услугу
+                      {t("services.orderService")}
                     </Button>
                   ) : null}
                 </CardContent>

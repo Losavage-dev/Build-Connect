@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { authPath } from "@/lib/authRedirect";
 import { FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,17 @@ import QueryErrorBlock from "@/components/QueryErrorBlock";
 import { TenderCard } from "@/components/TenderCard";
 import { StaffBrowsingBanner } from "@/components/StaffBrowsingBanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { KAZAKHSTAN_CITIES, TENDER_TYPES, TENDER_TYPE_LABELS, type TenderTypeValue } from "@/lib/constants";
+import { KAZAKHSTAN_CITIES, TENDER_TYPES, type TenderTypeValue } from "@/lib/constants";
 import { useRecommendedTenders, useSortedTenders } from "@/hooks/useRecommendations";
 import { RecommendedTendersSection } from "@/components/RecommendedTendersSection";
 import type { SortMode } from "@/lib/recommendations";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHero, PageContent, EmptyState } from "@/components/layout/PageHero";
+import { useTenderTypeLabel } from "@/lib/i18nCatalog";
 
 const Tenders = () => {
+  const { t } = useTranslation(["marketplace", "common"]);
+  const tenderTypeLabel = useTenderTypeLabel();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,19 +72,20 @@ const Tenders = () => {
   const filteredTenders = useMemo(() => {
     if (!tenders?.length) return [];
     const q = search.trim().toLowerCase();
-    let list = tenders.filter((t) => {
-      if (cityFilter !== "all" && (t.city || "") !== cityFilter) return false;
-      if (typeFilter !== "all" && (t.tender_type || "subcontract") !== typeFilter) return false;
+    let list = tenders.filter((tender) => {
+      if (cityFilter !== "all" && (tender.city || "") !== cityFilter) return false;
+      if (typeFilter !== "all" && (tender.tender_type || "subcontract") !== typeFilter) return false;
       if (!q) return true;
-      const typeLabel = TENDER_TYPE_LABELS[(t.tender_type || "subcontract") as TenderTypeValue] || "";
-      return `${t.title} ${t.description || ""} ${t.city || ""} ${typeLabel}`.toLowerCase().includes(q);
+      const typeLabel =
+        tenderTypeLabel((tender.tender_type || "subcontract") as TenderTypeValue) || "";
+      return `${tender.title} ${tender.description || ""} ${tender.city || ""} ${typeLabel}`.toLowerCase().includes(q);
     });
-    if (listingIdFromUrl && !list.some((t) => t.id === listingIdFromUrl)) {
-      const highlighted = tenders.find((t) => t.id === listingIdFromUrl);
+    if (listingIdFromUrl && !list.some((tender) => tender.id === listingIdFromUrl)) {
+      const highlighted = tenders.find((tender) => tender.id === listingIdFromUrl);
       if (highlighted) list = [highlighted, ...list];
     }
     return list;
-  }, [tenders, search, cityFilter, typeFilter, listingIdFromUrl]);
+  }, [tenders, search, cityFilter, typeFilter, listingIdFromUrl, tenderTypeLabel]);
 
   const sortedTenders = useSortedTenders(filteredTenders, sortMode);
   const recommendedTenders = useRecommendedTenders(tenders);
@@ -92,10 +97,10 @@ const Tenders = () => {
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       el.classList.remove("ring-2", "ring-primary", "ring-offset-2", "rounded-xl");
     }, 2600);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [searchParams, filteredTenders]);
 
   const [open, setOpen] = useState(false);
@@ -117,43 +122,43 @@ const Tenders = () => {
   const filterFields = (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Статус</label>
+        <label className="text-sm font-medium mb-2 block">{t("tenders.status")}</label>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Статус" />
+            <SelectValue placeholder={t("tenders.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все статусы</SelectItem>
-            <SelectItem value="open">Открыт</SelectItem>
-            <SelectItem value="in_progress">В работе</SelectItem>
-            <SelectItem value="closed">Закрыт</SelectItem>
+            <SelectItem value="all">{t("tenders.allStatuses")}</SelectItem>
+            <SelectItem value="open">{t("tenders.statusOpen")}</SelectItem>
+            <SelectItem value="in_progress">{t("tenders.statusInProgress")}</SelectItem>
+            <SelectItem value="closed">{t("tenders.statusClosed")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Тип задачи</label>
+        <label className="text-sm font-medium mb-2 block">{t("tenders.taskType")}</label>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Тип" />
+            <SelectValue placeholder={t("tenders.taskType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все типы</SelectItem>
-            {TENDER_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
+            <SelectItem value="all">{t("tenders.allTypes")}</SelectItem>
+            {TENDER_TYPES.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {tenderTypeLabel(type.value)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Город работ</label>
+        <label className="text-sm font-medium mb-2 block">{t("tenders.workCity")}</label>
         <Select value={cityFilter} onValueChange={setCityFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Город" />
+            <SelectValue placeholder={t("common:city")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все города</SelectItem>
+            <SelectItem value="all">{t("common:allCities")}</SelectItem>
             {KAZAKHSTAN_CITIES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -163,7 +168,7 @@ const Tenders = () => {
         </Select>
       </div>
       <Button variant="outline" className="w-full" onClick={handleResetFilters}>
-        Сбросить фильтры
+        {t("common:resetFilters")}
       </Button>
     </div>
   );
@@ -172,7 +177,7 @@ const Tenders = () => {
     e.preventDefault();
     if (!profile) return;
     if (!tenderCity) {
-      toast.error("Укажите город выполнения работ");
+      toast.error(t("tenders.specifyWorkCity"));
       return;
     }
 
@@ -186,7 +191,7 @@ const Tenders = () => {
         budget: budget ? Number(budget) : undefined,
         deadline: deadline || undefined,
       });
-      toast.success("Тендер успешно создан!");
+      toast.success(t("tenders.createSuccess"));
       setOpen(false);
       setTitle("");
       setDescription("");
@@ -195,18 +200,18 @@ const Tenders = () => {
       setTenderCity("");
       setTenderType("subcontract");
     } catch {
-      toast.error("Ошибка при создании тендера");
+      toast.error(t("tenders.createError"));
     }
   };
 
   const handleBid = async (tender: Tender, bidCompanyId: string, bidDescription: string) => {
     if (!bidCompanyId || !profile) {
-      toast.error("Выберите компанию для отклика");
+      toast.error(t("tenders.selectCompanyForBid"));
       return;
     }
 
     if (tender.client_id === profile.id) {
-      toast.error("Нельзя откликнуться на свой тендер");
+      toast.error(t("tenders.cannotBidOwn"));
       return;
     }
 
@@ -216,13 +221,13 @@ const Tenders = () => {
       .eq("owner_id", tender.client_id);
 
     if (qErr) {
-      toast.error("Не удалось проверить данные автора тендера");
+      toast.error(t("tenders.cannotVerifyAuthor"));
       return;
     }
 
     const authorCompanyIds = new Set((authorCompanies || []).map((c) => c.id));
     if (authorCompanyIds.has(bidCompanyId)) {
-      toast.error("Нельзя откликнуться компанией автора тендера");
+      toast.error(t("tenders.cannotBidAuthorCompany"));
       return;
     }
 
@@ -232,7 +237,7 @@ const Tenders = () => {
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const payload = {
-        title: `Отклик на тендер: ${tender.title}`,
+        title: t("marketplace:orders.tenderBidTitle", { title: tender.title }),
         description: messageBody || null,
         initial_message: messageBody || undefined,
         acting_company_name: myCompany?.name,
@@ -250,27 +255,27 @@ const Tenders = () => {
         recipient_profile_id: tender.client_id,
       });
 
-      toast.success("Отклик отправлен — откройте чат для переписки.");
+      toast.success(t("tenders.bidSent"));
       openRequestChat(navigate, req.id);
     } catch (err) {
       if (err instanceof DuplicateTenderBidError) {
-        toast.info("Вы уже откликались на этот тендер — открываем переписку.");
+        toast.info(t("tenders.alreadyBid"));
         if (err.existingRequestId !== "existing") {
           openRequestChat(navigate, err.existingRequestId);
         }
         return;
       }
       console.error("Bid failed:", err);
-      toast.error(formatSupabaseError(err, "Ошибка при отправке отклика"));
+      toast.error(formatSupabaseError(err, t("tenders.bidError")));
     }
   };
 
   const handleStatusChange = async (tenderId: string, status: TenderStatus) => {
     try {
       await updateTender.mutateAsync({ id: tenderId, status });
-      toast.success("Статус тендера обновлён");
+      toast.success(t("tenders.statusUpdated"));
     } catch {
-      toast.error("Не удалось изменить статус");
+      toast.error(t("tenders.statusUpdateError"));
     }
   };
 
@@ -293,48 +298,51 @@ const Tenders = () => {
       <Navbar />
 
       <PageHero
-        eyebrow="Тендеры"
+        eyebrow={t("tenders.eyebrow")}
         eyebrowIcon={FileText}
-        title="Заказы и отклики подрядчиков"
+        title={t("tenders.title")}
         description={
           isLoading
-            ? "Загрузка…"
-            : `${filteredTenders.length} из ${tenders?.length || 0} тендеров (с учётом фильтров)`
+            ? t("common:loading")
+            : t("tenders.foundFiltered", {
+                filtered: filteredTenders.length,
+                total: tenders?.length || 0,
+              })
         }
         compact
         actions={
           !user ? (
             <Button asChild className="rounded-xl font-semibold btn-glow">
-              <Link to={authPath(returnTo)}>Войти, чтобы создать тендер</Link>
+              <Link to={authPath(returnTo)}>{t("tenders.loginToCreate")}</Link>
             </Button>
           ) : caps.canCreateTender() ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-xl font-semibold gap-2 btn-glow">
                   <Plus className="h-4 w-4" />
-                  Создать тендер
+                  {t("tenders.create")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle>Новый тендер</DialogTitle>
+                  <DialogTitle>{t("tenders.newTender")}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="tender-title">Название</Label>
+                    <Label htmlFor="tender-title">{t("tenders.name")}</Label>
                     <Input
                       id="tender-title"
-                      placeholder="Например: Строительство дома"
+                      placeholder={t("tenders.titlePlaceholder")}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tender-desc">Описание</Label>
+                    <Label htmlFor="tender-desc">{t("tenders.description")}</Label>
                     <Textarea
                       id="tender-desc"
-                      placeholder="Подробное описание работ..."
+                      placeholder={t("tenders.descPlaceholder")}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       required
@@ -342,25 +350,25 @@ const Tenders = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Тип задачи</Label>
+                    <Label>{t("tenders.taskType")}</Label>
                     <Select value={tenderType} onValueChange={(v) => setTenderType(v as TenderTypeValue)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите тип" />
+                        <SelectValue placeholder={t("tenders.selectType")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {TENDER_TYPES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
+                        {TENDER_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {tenderTypeLabel(type.value)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Город выполнения работ</Label>
+                    <Label>{t("tenders.workCity")}</Label>
                     <Select value={tenderCity} onValueChange={setTenderCity} required>
                       <SelectTrigger id="tender-city">
-                        <SelectValue placeholder="Выберите город" />
+                        <SelectValue placeholder={t("common:selectCity")} />
                       </SelectTrigger>
                       <SelectContent>
                         {KAZAKHSTAN_CITIES.map((c) => (
@@ -373,17 +381,17 @@ const Tenders = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="tender-budget">Бюджет (₸)</Label>
+                      <Label htmlFor="tender-budget">{t("tenders.budgetLabel")}</Label>
                       <Input
                         id="tender-budget"
                         type="number"
-                        placeholder="5 000 000"
+                        placeholder={t("tenders.budgetPlaceholder")}
                         value={budget}
                         onChange={(e) => setBudget(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tender-deadline">Дедлайн</Label>
+                      <Label htmlFor="tender-deadline">{t("tenders.deadline")}</Label>
                       <Input
                         id="tender-deadline"
                         type="date"
@@ -397,7 +405,7 @@ const Tenders = () => {
                     className="w-full rounded-xl"
                     disabled={createTender.isPending}
                   >
-                    {createTender.isPending ? "Создание..." : "Опубликовать тендер"}
+                    {createTender.isPending ? t("common:creating") : t("tenders.publish")}
                   </Button>
                 </form>
               </DialogContent>
@@ -412,15 +420,15 @@ const Tenders = () => {
         <MarketplaceFilterLayout filterContent={filterFields}>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
             <Input
-              placeholder="Поиск по названию, описанию или городу..."
+              placeholder={t("tenders.searchPlaceholder")}
               className="max-w-md rounded-xl bg-card/80 border-border/60"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
               <TabsList className="rounded-xl">
-                <TabsTrigger value="for_you">Для вас</TabsTrigger>
-                <TabsTrigger value="rating">По дате</TabsTrigger>
+                <TabsTrigger value="for_you">{t("common:forYou")}</TabsTrigger>
+                <TabsTrigger value="rating">{t("common:sortByDate")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -440,17 +448,17 @@ const Tenders = () => {
         ) : tenders?.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="Тендеров пока нет"
-            description="Создайте первый тендер, чтобы найти исполнителя или поставщика"
+            title={t("tenders.emptyTitle")}
+            description={t("tenders.emptyDesc")}
           />
         ) : tenders && tenders.length > 0 && filteredTenders.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="Ничего не найдено"
-            description="Попробуйте изменить фильтры или поиск"
+            title={t("common:notFound")}
+            description={t("common:changeFiltersOrSearch")}
             action={
               <Button variant="outline" className="rounded-xl" onClick={handleResetFilters}>
-                Сбросить фильтры
+                {t("common:resetFilters")}
               </Button>
             }
           />
@@ -481,4 +489,3 @@ const Tenders = () => {
 };
 
 export default Tenders;
-
