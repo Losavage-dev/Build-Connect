@@ -1,10 +1,11 @@
-/** Кто может завершить заявку и кто оставляет отзыв о компании. */
+import type { Request } from "@/hooks/useRequests";
 
 export type RequestCompletionFields = {
   client_id: string;
   company_id: string | null;
   recipient_profile_id: string | null;
   source_tender_id?: string | null;
+  status?: Request["status"];
 };
 
 /** Заказчик каталога / автор тендера для отклика. */
@@ -20,6 +21,7 @@ export function canProfileCompleteRequest(
   profileId: string | undefined,
 ): boolean {
   if (!profileId) return false;
+  if (request.status && request.status !== "accepted") return false;
   return getRequestCustomerProfileId(request) === profileId;
 }
 

@@ -24,6 +24,7 @@ import { KAZAKHSTAN_CITIES, TENDER_TYPE_LABELS, type TenderTypeValue } from "@/l
 import { useMyTenders, useUpdateTender, type TenderStatus } from "@/hooks/useTenders";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRequests, useDeleteRequest } from "@/hooks/useRequests";
+import { canDeleteRequest } from "@/lib/requestWorkflow";
 import { useInboxCounts } from "@/hooks/useInboxCounts";
 import { useRequestChatSummaries } from "@/hooks/useRequestChatSummaries";
 import { useQuery } from "@tanstack/react-query";
@@ -49,8 +50,10 @@ import {
   identityCorrectionExpiresAt,
   isIdentityLocked,
   isIdentityNameEditable,
+  isIdentityPhoneEditable,
 } from "@/lib/profileIdentity";
-import { profileSettingsSchema, firstZodError } from "@/lib/validation";
+import { parseProfileSettingsSave } from "@/lib/validation";
+import { formatKzPhoneDisplay, normalizeKzPhone } from "@/lib/phone";
 const PROFILE_TABS = ["requests", "tenders", "companies", "reviews", "settings"] as const;
 
 type ProfileFormSnapshot = {
@@ -68,10 +71,12 @@ function snapshotFromProfile(p: {
   city: string | null;
   avatar_url: string | null;
 }): ProfileFormSnapshot {
+  const rawPhone = (p.phone ?? "").trim();
+  const normalizedPhone = normalizeKzPhone(rawPhone) ?? rawPhone;
   return {
     firstName: (p.first_name ?? "").trim(),
     lastName: (p.last_name ?? "").trim(),
-    phone: (p.phone ?? "").trim(),
+    phone: normalizedPhone,
     city: (p.city ?? "").trim(),
     avatarUrl: p.avatar_url ?? "",
   };
@@ -222,34 +227,39 @@ const Profile = () => {
 
   const handleSaveProfile = async () => {
     const namesEditable = isIdentityNameEditable(profile);
+    const phoneEditable = isIdentityPhoneEditable(profile);
 
-    const parsed = profileSettingsSchema.safeParse({
-      firstName,
-      lastName,
-      phone,
+    const parsed = parseProfileSettingsSave({
+      firstName: namesEditable ? firstName : (profile?.first_name ?? "").trim(),
+      lastName: namesEditable ? lastName : (profile?.last_name ?? "").trim(),
+      phone: phoneEditable ? phone : (savedBaseline?.phone ?? phone),
       city,
       avatarUrl,
+      namesEditable,
+      phoneEditable,
     });
-    const err = firstZodError(parsed);
-    if (err) {
-      toast.error(err);
+
+    if (!parsed.success) {
+      toast.error(parsed.error);
       return;
     }
-    if (!parsed.success) return;
 
     setIsSaving(true);
     try {
       const payload: {
         first_name?: string;
         last_name?: string;
-        phone: string;
+        phone?: string;
         city: string;
         avatar_url: string | null;
       } = {
-        phone: parsed.data.phone,
         city: parsed.data.city,
         avatar_url: parsed.data.avatarUrl?.trim() || null,
       };
+
+      if (phoneEditable && parsed.data.phone) {
+        payload.phone = parsed.data.phone;
+      }
 
       if (namesEditable) {
         payload.first_name = parsed.data.firstName;
@@ -261,7 +271,7 @@ const Profile = () => {
       const savedSnap: ProfileFormSnapshot = {
         firstName: namesEditable ? parsed.data.firstName : (profile?.first_name ?? "").trim(),
         lastName: namesEditable ? parsed.data.lastName : (profile?.last_name ?? "").trim(),
-        phone: parsed.data.phone,
+        phone: phoneEditable ? parsed.data.phone : snapshotFromProfile(profile!).phone,
         city: parsed.data.city,
         avatarUrl: parsed.data.avatarUrl?.trim() || "",
       };
@@ -269,6 +279,9 @@ const Profile = () => {
       if (namesEditable) {
         setFirstName(savedSnap.firstName);
         setLastName(savedSnap.lastName);
+      }
+      if (phoneEditable) {
+        setPhone(savedSnap.phone);
       }
     } finally {
       setIsSaving(false);
@@ -338,8 +351,9 @@ const Profile = () => {
     try {
       await deleteRequest.mutateAsync(id);
       toast.success("Заявка успешно удалена");
-    } catch {
-      toast.error("Ошибка при удалении заявки");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Ошибка при удалении заявки";
+      toast.error(message);
     }
   };
 
@@ -387,8 +401,10 @@ const Profile = () => {
 
   const identityLocked = isIdentityLocked(profile);
   const namesEditable = isIdentityNameEditable(profile);
+  const phoneEditable = isIdentityPhoneEditable(profile);
   const nameCorrectionAllowed = canCorrectIdentityName(profile);
   const correctionDeadline = identityCorrectionExpiresAt(profile);
+  const phoneDisplay = formatKzPhoneDisplay(phone);
 
   const displayName = profile?.first_name
     ? `${profile.first_name} ${profile.last_name || ""}`
@@ -680,13 +696,14 @@ const Profile = () => {
                             </div>
                             
                             <div className="flex gap-2">
-                              {!isArchived ? (
+                              {canDeleteRequest(request.status) ? (
                               <Button 
                                 variant="outline" 
                                 size="icon" 
                                 className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
                                 onClick={() => handleDeleteRequest(request.id)}
                                 disabled={deleteRequest.isPending}
+                                title="Удалить завершённую заявку"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -960,6 +977,25 @@ const Profile = () => {
                     <CardTitle>Основная информация</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6 pt-6">
+                    {identityLocked ? (
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+                        {nameCorrectionAllowed && correctionDeadline ? (
+                          <>
+                            Исправление опечатки в ФИО доступно до{" "}
+                            <span className="font-medium text-foreground">
+                              {format(correctionDeadline, "d MMMM yyyy, HH:mm", { locale: ru })}
+                            </span>
+                            . Телефон после сохранения профиля не меняется.
+                          </>
+                        ) : (
+                          <>
+                            Имя, фамилия и телефон зафиксированы. Изменить можно через поддержку. Редактируются
+                            город и фото профиля.
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-2">
                       <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
                         <AvatarImage src={avatarUrl} />
@@ -1013,11 +1049,25 @@ const Profile = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="firstName" className="font-medium">Имя</Label>
-                        <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Введите имя" className="rounded-xl bg-muted/50" />
+                        <Input
+                          id="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Введите имя"
+                          className="rounded-xl bg-muted/50"
+                          disabled={!namesEditable}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName" className="font-medium">Фамилия</Label>
-                        <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Введите фамилию" className="rounded-xl bg-muted/50" />
+                        <Input
+                          id="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Введите фамилию"
+                          className="rounded-xl bg-muted/50"
+                          disabled={!namesEditable}
+                        />
                       </div>
                     </div>
 
@@ -1030,7 +1080,19 @@ const Profile = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="phone" className="font-medium">Телефон</Label>
-                        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (777) 123-45-67" className="rounded-xl bg-muted/50" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={phoneEditable ? phone : phoneDisplay}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+7 700 123 45 67"
+                          className="rounded-xl bg-muted/50"
+                          disabled={!phoneEditable}
+                          maxLength={18}
+                        />
+                        {phoneEditable ? (
+                          <p className="text-xs text-muted-foreground">10 цифр без префикса или формат +7 …</p>
+                        ) : null}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="city" className="font-medium">Город</Label>
@@ -1084,7 +1146,12 @@ const Profile = () => {
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                      <Button onClick={handleSaveProfile} disabled={isSaving} className="rounded-xl px-8 shadow-sm" size="lg">
+                      <Button
+                        onClick={handleSaveProfile}
+                        disabled={isSaving || !isSettingsDirty}
+                        className="rounded-xl px-8 shadow-sm"
+                        size="lg"
+                      >
                         {isSaving ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Сохранение...</>
                         ) : (

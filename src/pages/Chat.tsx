@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Send, ArrowLeft, Building2, CheckCircle2, Star, Paperclip, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, Building2, CheckCircle2, Star, Paperclip, Loader2, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,15 +22,17 @@ import {
 import { getRequestDisplay, counterpartyHref } from "@/lib/requestDisplay";
 import type { Request } from "@/hooks/useRequests";
 import { useUpdateRequestStatus } from "@/hooks/useRequests";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ChatFileAttachment } from "@/components/ChatFileAttachment";
 import { buildChatFileMessage, tryParseChatFileMessage } from "@/lib/chatAttachmentMessage";
 import { uploadRequestChatFile } from "@/lib/requestChatUpload";
 import { PostDealReviewDialog } from "@/components/PostDealReviewDialog";
 import { usePendingCompanyReview } from "@/hooks/usePendingCompanyReview";
+import { useCapabilities } from "@/hooks/useCapabilities";
 import { canProfileCompleteRequest } from "@/lib/requestCompletion";
+import { canProfileAcceptRequest, canProfileRejectRequest } from "@/lib/requestWorkflow";
 import { fetchPendingCompanyReview } from "@/lib/pendingCompanyReview";
+import { RequestDealPanel } from "@/components/RequestDealPanel";
 
 function linkActionLabel(url: string): string {
   try {
@@ -152,6 +154,7 @@ const Chat = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const caps = useCapabilities();
   const queryClient = useQueryClient();
 
   const { data: messages, isLoading } = useMessages(requestId);
@@ -173,7 +176,8 @@ const Chat = () => {
         .from("requests")
         .select(`
           *,
-          company:companies (name, logo_url),
+          company:companies (id, name, logo_url),
+          source_tender:tenders (id, title),
           client:profiles!requests_client_id_fkey (first_name, last_name, avatar_url),
           recipient:profiles!requests_recipient_profile_id_fkey (first_name, last_name, avatar_url)
         `)
@@ -280,33 +284,63 @@ const Chat = () => {
   };
 
   const chatDisplay = requestInfo && profile?.id ? getRequestDisplay(requestInfo, profile.id) : null;
+  const openingMessageContent = messages?.[0]?.content ?? null;
 
-  const requestStatusLabel: Record<string, string> = {
-    pending: "На рассмотрении",
-    accepted: "Принята",
-    rejected: "Отклонена",
-    completed: "Завершена",
-  };
+  const canAcceptRequest =
+    requestInfo && profile?.id && canProfileAcceptRequest(requestInfo, profile.id, caps.myCompanyIds);
+
+  const canRejectRequest =
+    requestInfo && profile?.id && canProfileRejectRequest(requestInfo, profile.id, caps.myCompanyIds);
 
   const canCompleteRequest =
     requestInfo &&
     profile?.id &&
-    canProfileCompleteRequest(requestInfo, profile.id) &&
-    requestInfo.status !== "completed" &&
-    requestInfo.status !== "rejected";
+    canProfileCompleteRequest(requestInfo, profile.id);
 
-  /** Исполнитель: завершение — у заказчика / автора тендера. */
-  const showRequestCompleteHint =
+  /** Исполнитель ждёт решения заказчика. */
+  const showPendingHint =
     requestInfo &&
     profile &&
-    !canProfileCompleteRequest(requestInfo, profile.id) &&
-    requestInfo.status !== "completed" &&
-    requestInfo.status !== "rejected";
+    requestInfo.status === "pending" &&
+    !canProfileAcceptRequest(requestInfo, profile.id, caps.myCompanyIds);
+
+  /** Исполнитель: сделка принята, завершит заказчик после выполнения. */
+  const showAcceptedHint =
+    requestInfo &&
+    profile &&
+    requestInfo.status === "accepted" &&
+    !canProfileCompleteRequest(requestInfo, profile.id);
 
   const canLeaveReview = Boolean(pendingCompanyReview ?? reviewTarget);
 
   const chatClosed =
     requestInfo?.status === "completed" || requestInfo?.status === "rejected";
+
+  const handleAcceptRequest = async () => {
+    if (!requestId) return;
+    try {
+      await updateRequest.mutateAsync({ id: requestId, status: "accepted" });
+      toast.success(
+        requestInfo?.source_tender_id
+          ? "Исполнитель принят, заявка переведена в работу."
+          : "Заявка принята в работу.",
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Не удалось принять заявку";
+      toast.error(msg);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!requestId) return;
+    try {
+      await updateRequest.mutateAsync({ id: requestId, status: "rejected" });
+      toast.success("Заявка отклонена");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Не удалось отклонить заявку";
+      toast.error(msg);
+    }
+  };
 
   const handleCompleteRequest = async () => {
     if (!requestId || !profile?.id) return;
@@ -333,8 +367,9 @@ const Chat = () => {
       } else {
         await queryClient.invalidateQueries({ queryKey: ["pending-company-review", requestId] });
       }
-    } catch {
-      toast.error("Не удалось завершить заявку");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Не удалось завершить заявку";
+      toast.error(msg);
     }
   };
 
@@ -387,11 +422,41 @@ const Chat = () => {
           </div>
         </div>
 
+        {requestInfo && chatDisplay ? (
+          <RequestDealPanel
+            request={requestInfo}
+            display={chatDisplay}
+            openingMessageContent={openingMessageContent}
+          />
+        ) : null}
+
         {requestInfo ? (
           <div className="border-b border-border/60 bg-muted/20 px-4 py-2.5 flex flex-wrap items-center gap-2 text-sm shrink-0">
-            <Badge variant="outline" className="rounded-lg font-normal">
-              {requestStatusLabel[requestInfo.status] || requestInfo.status}
-            </Badge>
+            {canAcceptRequest ? (
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-lg h-8"
+                disabled={updateRequest.isPending}
+                onClick={() => void handleAcceptRequest()}
+              >
+                <UserCheck className="h-3.5 w-3.5 mr-1" />
+                Принять в работу
+              </Button>
+            ) : null}
+            {canRejectRequest ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg h-8"
+                disabled={updateRequest.isPending}
+                onClick={() => void handleRejectRequest()}
+              >
+                <XCircle className="h-3.5 w-3.5 mr-1" />
+                Отклонить
+              </Button>
+            ) : null}
             {canCompleteRequest ? (
               <Button
                 type="button"
@@ -405,9 +470,14 @@ const Chat = () => {
                 Завершить заявку
               </Button>
             ) : null}
-            {showRequestCompleteHint ? (
+            {showPendingHint ? (
               <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
-                Завершить заявку и оставить отзыв может заказчик (автор тендера или инициатор заявки из каталога).
+                Заказчик рассматривает заявку. Принять или отклонить может автор тендера / инициатор заявки.
+              </span>
+            ) : null}
+            {showAcceptedHint ? (
+              <span className="text-xs text-muted-foreground max-sm:w-full sm:ml-1">
+                Сделка в работе. Завершить заявку и оставить отзыв может заказчик после выполнения.
               </span>
             ) : null}
             {canLeaveReview ? (

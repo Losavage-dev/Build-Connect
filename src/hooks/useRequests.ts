@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CHAT_REQUEST_CONTEXT_MARKER, META_LINE_COMPANY, META_LINE_LINK, META_LINE_SOURCE } from "@/lib/requestChatMessage";
 import { isMissingColumnError } from "@/lib/formatSupabaseError";
 import { trackUserEvent } from "@/lib/recommendations";
+import { assertNoActiveTenderBid, DuplicateTenderBidError, findActiveTenderBid } from "@/lib/tenderBidGuard";
+import { canDeleteRequest, canTransitionRequestStatus, REQUEST_DELETE_BLOCKED_MESSAGE, transitionErrorMessage } from "@/lib/requestWorkflow";
 
 export interface Request {
   id: string;
@@ -163,6 +165,10 @@ export function useCreateRequest() {
         throw new Error("Нельзя отправить заявку самому себе");
       }
 
+      if (source_tender_id) {
+        await assertNoActiveTenderBid(source_tender_id, profile.id);
+      }
+
       const baseRow = {
         company_id: company_id ?? null,
         recipient_profile_id: recipient_profile_id ?? null,
@@ -182,7 +188,13 @@ export function useCreateRequest() {
       }
 
       const { data: req, error } = reqResult;
-      if (error) throw error;
+      if (error) {
+        if (source_tender_id && error.code === "23505") {
+          const existing = await findActiveTenderBid(source_tender_id, profile.id);
+          throw new DuplicateTenderBidError(existing?.id ?? "existing");
+        }
+        throw error;
+      }
 
       const content = buildFirstChatMessage(request);
       const { error: msgErr } = await supabase.from("messages").insert({
@@ -209,6 +221,8 @@ export function useCreateRequest() {
       queryClient.invalidateQueries({ queryKey: ["inbox-counts"] });
       queryClient.invalidateQueries({ queryKey: ["request-chat-summaries"] });
       queryClient.invalidateQueries({ queryKey: ["tender-responses"] });
+      queryClient.invalidateQueries({ queryKey: ["my-active-tender-bids"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-counterparties"] });
     },
   });
 }
@@ -218,6 +232,19 @@ export function useUpdateRequestStatus() {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Request["status"] }) => {
+      const { data: current, error: readErr } = await supabase
+        .from("requests")
+        .select("status, source_tender_id")
+        .eq("id", id)
+        .single();
+
+      if (readErr) throw readErr;
+      if (!canTransitionRequestStatus(current.status as Request["status"], status)) {
+        throw new Error(
+          transitionErrorMessage(current.status as Request["status"], status),
+        );
+      }
+
       const { data, error } = await supabase
         .from("requests")
         .update({ status })
@@ -226,6 +253,14 @@ export function useUpdateRequestStatus() {
         .single();
 
       if (error) throw error;
+
+      if (status === "accepted" && data.source_tender_id) {
+        const { error: tenderErr } = await supabase
+          .from("tenders")
+          .update({ status: "in_progress", updated_at: new Date().toISOString() })
+          .eq("id", data.source_tender_id);
+        if (tenderErr) throw tenderErr;
+      }
 
       if (status === "completed" && data.source_tender_id) {
         const { error: tenderErr } = await supabase
@@ -243,9 +278,11 @@ export function useUpdateRequestStatus() {
       queryClient.invalidateQueries({ queryKey: ["request-chat-summaries"] });
       queryClient.invalidateQueries({ queryKey: ["request-info", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["tender-responses"] });
+      queryClient.invalidateQueries({ queryKey: ["my-active-tender-bids"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-counterparties"] });
       queryClient.invalidateQueries({ queryKey: ["review-eligibility"] });
       queryClient.invalidateQueries({ queryKey: ["pending-company-review"] });
-      if (variables.status === "completed") {
+      if (variables.status === "accepted" || variables.status === "completed") {
         queryClient.invalidateQueries({ queryKey: ["tenders"] });
         queryClient.invalidateQueries({ queryKey: ["my-tenders"] });
       }
@@ -257,6 +294,20 @@ export function useDeleteRequest() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: row, error: readErr } = await supabase
+        .from("requests")
+        .select("id, status")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (readErr) throw readErr;
+      if (!row) {
+        throw new Error("Заявка не найдена");
+      }
+      if (!canDeleteRequest(row.status as Request["status"])) {
+        throw new Error(REQUEST_DELETE_BLOCKED_MESSAGE);
+      }
+
       const { data, error } = await supabase.from("requests").delete().eq("id", id).select("id");
       if (error) throw error;
       if (!data?.length) {
@@ -269,6 +320,8 @@ export function useDeleteRequest() {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["inbox-counts"] });
       queryClient.invalidateQueries({ queryKey: ["request-chat-summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-counterparties"] });
+      queryClient.invalidateQueries({ queryKey: ["my-active-tender-bids"] });
     },
   });
 }
